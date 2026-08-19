@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faultline — Adversarial testing for learned robot policies</title>
+<meta name="description" content="We hunt the conditions where a learned robot policy fails — thousands of them, on purpose — so the first failure happens in simulation, not in a warehouse.">
+<meta name="theme-color" content="#050A07">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Faultline — The ground gives way somewhere. We find where.">
+<meta property="og:description" content="Adversarial testing for learned robot policies. Ahead of EU Machinery Regulation 2023/1230, 20 January 2027.">
+
+<link rel="preload" href="assets/fonts/jizBRFtNs2ka5fXjeivQ4LroWlx-6zsTjmbI.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<a class="skip" href="#hero">Skip to content</a>
+
+<!-- ─────────────────────────── NAV ─────────────────────────── -->
+<header class="nav" id="nav">
+  <div class="nav__in">
+    <a class="mark" href="#hero" aria-label="Faultline, home">
+      <svg class="mark__glyph" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 1 L9.4 8.2 L13.6 11.4 L8.8 15 L11.6 23" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="mark__word">Faultline</span>
+    </a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#deadline">Why now</a>
+      <a href="#method">Method</a>
+      <a href="#status">Status</a>
+    </nav>
+    <a class="nav__cta" href="mailto:hello@faultline.dev">Talk to us</a>
+  </div>
+</header>
+
+<main>
+
+<!-- ─────────────────────────── 1 · HERO ─────────────────────────── -->
+<section class="hero" id="hero">
+
+  <!-- Layered scene. Each [data-depth] layer parallaxes independently. -->
+  <div class="scene" aria-hidden="true">
+    <svg class="scene__svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="sky" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="520">
+          <stop offset="0%"   stop-color="#050A07"/>
+          <stop offset="34%"  stop-color="#0A1510"/>
+          <stop offset="66%"  stop-color="#16291E"/>
+          <stop offset="88%"  stop-color="#253D2E"/>
+          <stop offset="100%" stop-color="#35543F"/>
+        </linearGradient>
+        <radialGradient id="bloom" gradientUnits="userSpaceOnUse" cx="1082" cy="504" r="660">
+          <stop offset="0%"   stop-color="#9CC2A9" stop-opacity=".34"/>
+          <stop offset="34%"  stop-color="#4A7259" stop-opacity=".18"/>
+          <stop offset="72%"  stop-color="#22392B" stop-opacity=".07"/>
+          <stop offset="100%" stop-color="#0A1510" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="emberGlow" gradientUnits="userSpaceOnUse" cx="1078" cy="720" r="260">
+          <stop offset="0%"   stop-color="#E0651F" stop-opacity=".16"/>
+          <stop offset="42%"  stop-color="#E0651F" stop-opacity=".05"/>
+          <stop offset="100%" stop-color="#E0651F" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="ground" gradientUnits="userSpaceOnUse" x1="0" y1="500" x2="0" y2="900">
+          <stop offset="0%"   stop-color="#1A2E22"/>
+          <stop offset="26%"  stop-color="#0E1B14"/>
+          <stop offset="100%" stop-color="#040806"/>
+        </linearGradient>
+        <linearGradient id="crackLight" gradientUnits="userSpaceOnUse" x1="0" y1="508" x2="0" y2="900">
+          <stop offset="0%"   stop-color="#E0651F" stop-opacity="0"/>
+          <stop offset="18%"  stop-color="#E0651F" stop-opacity=".45"/>
+          <stop offset="55%"  stop-color="#FF9A4A" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#E0651F" stop-opacity=".72"/>
+        </linearGradient>
+        <filter id="soft"   x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="24"/></filter>
+        <filter id="softer" x="-90%" y="-90%" width="280%" height="280%"><feGaussianBlur stdDeviation="58"/></filter>
+        <filter id="hair"   x="-60%" y="-40%" width="220%" height="180%"><feGaussianBlur stdDeviation="6"/></filter>
+        <filter id="grain">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
+          <feColorMatrix type="saturate" values="0"/>
+        </filter>
+        <clipPath id="groundClip"><rect x="-200" y="500" width="2000" height="400"/></clipPath>
+      </defs>
+
+      <!-- sky + horizon bloom -->
+      <g data-depth="0.02">
+        <rect x="-200" y="-100" width="2000" height="1100" fill="#050A07"/>
+        <rect x="-200" y="-100" width="2000" height="640" fill="url(#sky)"/>
+        <rect x="-200" y="-100" width="2000" height="1100" fill="url(#bloom)"/>
+      </g>
+
+      <!-- far ridge -->
+      <g data-depth="0.05">
+        <path fill="#26402F" opacity=".72" d="M-200,432 L60,398 L210,424 L352,376 L470,416 L600,368 L742,410 L884,362 L1010,404 L1140,374 L1282,416 L1420,382 L1560,420 L1800,396 L1800,540 L-200,540 Z"/>
+      </g>
+
+      <!-- mist over the far ridge base -->
+      <g data-depth="0.07">
+        <ellipse class="fog fog--a" cx="700" cy="462" rx="900" ry="34" fill="#C2D6C8" opacity=".20" filter="url(#soft)"/>
+      </g>
+
+      <!-- mid ridge -->
+      <g data-depth="0.10">
+        <path fill="#17291E" d="M-200,478 L40,458 L200,476 L360,448 L520,472 L680,444 L840,470 L1000,442 L1160,472 L1320,448 L1480,474 L1640,454 L1800,470 L1800,560 L-200,560 Z"/>
+      </g>
+
+      <!-- mist over the mid ridge base -->
+      <g data-depth="0.13">
+        <ellipse class="fog fog--b" cx="1020" cy="498" rx="980" ry="26" fill="#D3E4D8" opacity=".22" filter="url(#soft)"/>
+      </g>
+
+      <!-- near ridge -->
+      <g data-depth="0.16">
+        <path fill="#0D1912" d="M-200,506 L160,494 L420,506 L700,492 L960,504 L1220,491 L1480,505 L1800,496 L1800,580 L-200,580 Z"/>
+      </g>
+
+      <!-- ground plane and the faultline -->
+      <g data-depth="0.24">
+        <rect x="-200" y="500" width="2000" height="400" fill="url(#ground)"/>
+
+        <g clip-path="url(#groundClip)">
+          <!-- warm light pooling on the ground around the crack -->
+          <rect x="-200" y="500" width="2000" height="400" fill="url(#emberGlow)"/>
+
+          <!-- striations, for perspective -->
+          <g stroke="#7FA88A" fill="none">
+            <path d="M-240,530 Q800,522 1840,532" stroke-width="1"   opacity=".14"/>
+            <path d="M-240,562 Q800,548 1840,566" stroke-width="1"   opacity=".13"/>
+            <path d="M-260,614 Q800,590 1860,620" stroke-width="1.1" opacity=".11"/>
+            <path d="M-300,692 Q800,652 1900,700" stroke-width="1.2" opacity=".09"/>
+            <path d="M-360,800 Q800,738 1960,812" stroke-width="1.3" opacity=".07"/>
+          </g>
+
+          <!-- glow bleeding out of the crack -->
+          <path class="glow" filter="url(#softer)" fill="#E0651F" opacity=".18"
+                d="M1057.5,508 L1051.0,546 L1059.0,584 L1042.3,626 L1050.3,668 L1028.7,712 L1035.6,758 L1009.9,806 L1014.6,856 L992.5,900 1103.5,900 L1117.4,856 L1104.1,806 L1122.4,758 L1109.3,712 L1125.7,668 L1113.7,626 L1127.0,584 L1117.0,546 L1122.5,508 Z"/>
+          <path class="glow" filter="url(#soft)" fill="#FF8A3C" opacity=".20"
+                d="M1076.5,508 L1070.0,546 L1078.0,584 L1061.3,626 L1069.3,668 L1047.7,712 L1054.6,758 L1028.9,806 L1033.6,856 L1011.5,900 1084.5,900 L1098.4,856 L1085.1,806 L1103.4,758 L1090.3,712 L1106.7,668 L1094.7,626 L1108.0,584 L1098.0,546 L1103.5,508 Z"/>
+
+          <!-- the crack -->
+          <path fill="#020503" d="M1087.5,508 L1081.0,546 L1089.0,584 L1072.3,626 L1080.3,668 L1058.7,712 L1065.6,758 L1039.9,806 L1044.6,856 L1022.5,900 1073.5,900 L1087.4,856 L1074.1,806 L1092.4,758 L1079.3,712 L1095.7,668 L1083.7,626 L1097.0,584 L1087.0,546 L1092.5,508 Z"/>
+
+          <!-- molten hairline running down inside it -->
+          <path class="hairline" filter="url(#hair)" stroke="url(#crackLight)" stroke-width="5" fill="none" stroke-linecap="round"
+                d="M090,508 L1084,546 L1093,584 L1078,626 L1088,668 L1069,712 L1079,758 L1057,806 L1066,856 L1048,900"/>
+          <path class="hairline hairline--core" stroke="url(#crackLight)" stroke-width="1.2" fill="none" stroke-linecap="round"
+                d="M090,508 L1084,546 L1093,584 L1078,626 L1088,668 L1069,712 L1079,758 L1057,806 L1066,856 L1048,900"/>
+
+          <!-- lit rims: the far wall catches the light, the near one barely -->
+          <path stroke="#E0651F" stroke-width="1.2" fill="none" opacity=".38" d="M073.5,900 L1087.4,856 L1074.1,806 L1092.4,758 L1079.3,712 L1095.7,668 L1083.7,626 L1097.0,584 L1087.0,546 L1092.5,508"/>
+          <path stroke="#E0651F" stroke-width="1"   fill="none" opacity=".16" d="M087.5,508 L1081.0,546 L1089.0,584 L1072.3,626 L1080.3,668 L1058.7,712 L1065.6,758 L1039.9,806 L1044.6,856 L1022.5,900"/>
+
+          <!-- hairline fractures spreading from the main break -->
+          <g stroke="#E0651F" fill="none" opacity=".12" stroke-linecap="round">
+            <path d="M1068,626 L1014,616 L966,630" stroke-width="1"/>
+            <path d="M1100,712 L1168,720 L1226,708" stroke-width="1.1"/>
+            <path d="M1052,806 L978,820 L918,808" stroke-width="1"/>
+            <path d="M1108,668 L1166,660" stroke-width="1"/>
+            <path d="M1086,856 L1164,868" stroke-width="1"/>
+          </g>
+
+          <!-- the quadruped, near side, walking toward the break -->
+          <g class="bot">
+            <ellipse cx="30" cy="50" rx="38" ry="5" fill="#020503" opacity=".5"/>
+            <g stroke="#050B07" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".6">
+              <path d="M39,16 L33,31 L39,47"/><path d="M16,16 L22,31 L16,47"/>
+            </g>
+            <rect x="5" y="2" width="50" height="15" rx="3.5" fill="#050B07"/>
+            <rect x="50" y="-6" width="14" height="12" rx="2.5" fill="#050B07"/>
+            <circle cx="61" cy="-1" r="1.5" fill="#E0651F" opacity=".9"/>
+            <g stroke="#050B07" stroke-width="3.6" fill="none" stroke-linecap="round">
+              <path d="M45,17 L51,32 L45,49"/><path d="M11,17 L5,32 L11,49"/>
+            </g>
+          </g>
+        </g>
+      </g>
+
+      <!-- grain -->
+      <rect x="-200" y="-100" width="2000" height="1100" filter="url(#grain)" opacity=".06" style="mix-blend-mode:overlay"/>
+    </svg>
+    <div class="scene__vignette"></div>
+  </div>
+
+  <div class="hero__body">
+    <div class="panel" data-reveal>
+      <p class="eyebrow">Adversarial testing for learned robot policies</p>
+      <h1 class="display">The ground gives way somewhere.<br>We find <em>where</em>.</h1>
+      <p class="lede">A robot trained in simulation walks beautifully until the moss is wet, the slope is steeper, or a sensor answers late. We hunt those conditions on purpose — thousands of them — so the first failure happens in simulation, not in a warehouse.</p>
+      <div class="panel__foot">
+        <a class="link" href="#method">See the method</a>
+        <span class="rule"></span>
+        <span class="mono muted">Pre-product · Baku</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero__meta">
+    <span class="mono">EU Machinery Regulation 2023/1230</span>
+    <span class="mono hero__meta-right">Faultline © 2026</span>
+  </div>
+</section>
+
+<!-- ─────────────────────────── 2 · STATEMENT ─────────────────────────── -->
+<section class="band">
+  <p class="band__line" data-reveal>
+    Every learned policy holds until it doesn&rsquo;t.
+    <span class="band__sub">The question is only whether you found the edge first.</span>
+  </p>
+</section>
+
+<!-- ─────────────────────────── 3 · DEADLINE ─────────────────────────── -->
+<section class="deadline" id="deadline">
+  <div class="deadline__glow" aria-hidden="true"></div>
+  <div class="wrap deadline__grid">
+    <div class="deadline__left" data-reveal>
+      <p class="eyebrow">Why now</p>
+      <p class="date">20 January 2027</p>
+      <p class="cite mono">Regulation (EU) 2023/1230, Annex&nbsp;I Part&nbsp;A</p>
+    </div>
+    <div class="deadline__right" data-reveal>
+      <h2 class="display display--h2">Self-learning safety functions stop being self-certifiable.</h2>
+      <p>EU Machinery Regulation 2023/1230 replaces the Machinery Directive on that date — directly and identically in every member state. Machinery with fully or partially self-evolving behaviour falls under Annex I Part A, so a notified body must be involved even for a manufacturer following every harmonised standard.</p>
+      <p>And the delegated act defining what counts as adequate evidence isn&rsquo;t due until 2028. Assessment becomes mandatory roughly eighteen months before anyone agrees what passing looks like.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── 4 · METHOD ─────────────────────────── -->
+<section class="method" id="method">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <p class="eyebrow">Method</p>
+      <h2 class="display display--h2">Five stages, one question.</h2>
+    </div>
+
+    <ol class="stages">
+      <li class="stage" data-reveal>
+        <span class="stage__n mono">01</span>
+        <h3 class="stage__t">Ingest</h3>
+        <p class="stage__p">Your trained policy and robot model, loaded into deterministic simulation. Every run reproducible from its seed.</p>
+      </li>
+      <li class="stage" data-reveal>
+        <span class="stage__n mono">02</span>
+        <h3 class="stage__t">Perturb</h3>
+        <p class="stage__p">Each test is a point in a parameter space: push force, friction, slope, sensor delay, actuator degradation, payload. Ranges are yours.</p>
+      </li>
+      <li class="stage" data-reveal>
+        <span class="stage__n mono">03</span>
+        <h3 class="stage__t">Search</h3>
+        <p class="stage__p">Random sampling finds the obvious failures. A trained adversary finds the ones nobody thought to try.</p>
+      </li>
+      <li class="stage" data-reveal>
+        <span class="stage__n mono">04</span>
+        <h3 class="stage__t">Detect</h3>
+        <p class="stage__p">Violations are explicit rules over the trajectory: tilt past a limit, contact force above a threshold, leaving a safe region.</p>
+      </li>
+      <li class="stage" data-reveal>
+        <span class="stage__n mono">05</span>
+        <h3 class="stage__t">Report</h3>
+        <p class="stage__p">Failures clustered by mode, not listed by count. One document for engineers, one for the safety case.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ─────────────────────────── 5 · STATUS ─────────────────────────── -->
+<section class="status" id="status">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <p class="eyebrow">Where this stands</p>
+      <h2 class="display display--h2">What we can show, and what we can&rsquo;t.</h2>
+      <p class="head__lede">A testing company that overstates its evidence is worse than no testing company. So, plainly:</p>
+    </div>
+
+    <div class="panels" data-reveal>
+      <div class="pane pane--yes">
+        <p class="eyebrow">In progress</p>
+        <ul>
+          <li>Harness built against a quadruped policy trained with PPO</li>
+          <li>Search-method comparison — random versus directed</li>
+          <li>Reproducing a simulated failure on physical hardware</li>
+        </ul>
+      </div>
+      <div class="pane pane--no">
+        <p class="eyebrow">Not yet</p>
+        <ul>
+          <li>No customer results. No pilots completed.</li>
+          <li>No claim this output satisfies any notified body.</li>
+          <li>One robot class supported so far.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── 6 · CONTACT ─────────────────────────── -->
+<section class="contact" id="contact">
+  <div class="contact__scene" aria-hidden="true">
+    <svg viewBox="0 0 1600 480" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#050A07"/>
+          <stop offset="62%" stop-color="#0A1510"/>
+          <stop offset="100%" stop-color="#132419"/>
+        </linearGradient>
+      </defs>
+      <rect width="1600" height="480" fill="url(#dusk)"/>
+      <ellipse cx="800" cy="470" rx="900" ry="120" fill="#2A4936" opacity=".22" filter="url(#soft)"/>
+      <path fill="#070E0A" opacity=".9" d="M0,392 L180,376 L360,390 L540,368 L720,388 L900,364 L1080,386 L1260,366 L1440,388 L1600,374 L1600,480 L0,480 Z"/>
+    </svg>
+  </div>
+  <div class="wrap contact__in" data-reveal>
+    <p class="eyebrow">Talk to us</p>
+    <h2 class="display display--h2">If you ship a learned policy into Europe, we want to hear your plan.</h2>
+    <p class="contact__p">Not a demo request. We&rsquo;re trying to understand what evidence teams actually need before January 2027 — and if you already know, that&rsquo;s worth more to us than a signup.</p>
+    <!-- TODO: replace with your real address before publishing -->
+    <a class="cta mono" href="mailto:hello@faultline.dev">Start a conversation <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <span class="mono">Faultline — pre-product · Baku, Azerbaijan</span>
+    <span class="mono muted">The first failure should happen in simulation.</span>
+  </div>
+</footer>
+
+<script src="js/main.js" defer></script>
+</body>
+</html>
