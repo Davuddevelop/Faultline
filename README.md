@@ -1,42 +1,70 @@
 # Faultline
 
-Landing page. Static — no build step. Open `index.html`, or serve the folder.
+Landing page for Faultline — adversarial testing for learned robot policies.
+
+Static HTML and CSS. No build step, no framework, no external requests at
+runtime: fonts are self-hosted and every image is local.
 
 ```
-index.html          all markup, plus the inline SVG hero scene
-css/styles.css      design tokens + layout
-css/fonts.css       self-hosted Instrument Serif / IBM Plex Sans / IBM Plex Mono
-js/main.js          scroll reveal, hero parallax, sticky nav (all optional)
-assets/fonts/       woff2, so the page has no external dependencies
+python3 -m http.server 8000     # then open http://localhost:8000
 ```
 
-## Before publishing
+## The four pages
 
-- Replace `mailto:hello@faultline.dev` in `index.html` with the real address.
-- Verify both paragraphs in the deadline section against EUR-Lex.
+One shared content spec, four design directions. Copy, sections and section
+order are identical in all of them; only the design language differs.
+
+| Path | Direction | Hero |
+| --- | --- | --- |
+| `index.html` | **Scene** — no photography at all | Layered SVG landscape: ridges, mist, three quadrupeds, and the fissure drawn with light inside it, parallaxed on scroll |
+| `v1/index.html` | **Field** — light and editorial | The photograph, type set into its fog; one dark band (the deadline) breaks the paper |
+| `v2/index.html` | **Split** — studio card | One rounded card: image on the left half, type on the right; a second card later flips it |
+| `v3/index.html` | **Overlay** — cinematic | Full-bleed image, headline sitting at the bottom of it, centre nav pills, a full-bleed quote plate mid-page |
+
+`v1`–`v3` share `js/variant.js` and `css/fonts.css`. `index.html` has its own
+`js/main.js` because its hero is an SVG scene with its own parallax and a
+mobile reframe.
+
+## Images
+
+`assets/img/` holds three sources, each as WebP at 800 / 1280 / 2048 and a
+JPEG fallback, served through `<picture>` with `srcset`:
+
+- `fissure` — a robot at the edge of a break in the ground, light inside it
+- `moss-walk` — a quadruped crossing a mossy ridge in fog
+- `valley-line` — robots walking a line across a wide valley
+
+`manifest.json` records each image's dominant colour, which is painted behind
+it so there is no flash before it loads. Originals were 3.3 MB PNGs; the whole
+directory is now ~1.5 MB.
+
+To swap an image, drop the new file in and regenerate the sizes — nothing else
+references the filenames but the `<picture>` blocks.
+
+## Type
+
+Instrument Serif (display, italic for the accented word), IBM Plex Sans
+(body, 200–300), IBM Plex Mono (all numbers, labels and eyebrows).
+Self-hosted in `assets/fonts/`, declared in `css/fonts.css`.
 
 ## The amber rule
 
-`--amber` appears in exactly three places: the crack in the hero, the date
-20 January 2027, and the single button. A fourth use makes it decorative and
-it stops reading as a warning.
+`--amber` appears in three places only: the light inside the fissure, the date
+20 January 2027, and the single call to action. It reads as a warning exactly
+as long as it stays rare. Adding a fourth use makes it decorative and the
+visual argument collapses.
 
-## The hero scene
+## Before this goes live
 
-An inline SVG in `index.html` (`.scene`): layered ridges with atmospheric
-depth, drifting mist, three quadrupeds at three scales, and the fissure —
-tapering to a point at the horizon, opening toward the viewer, amber light
-inside it. Layers carry `data-depth` and parallax on scroll.
+- **The call to action points at `mailto:hello@faultline.dev`, a placeholder.**
+  Replace it in all four pages.
+- Verify both paragraphs of the deadline section against EUR-Lex. If a
+  notified body engineer corrects any of it, fix the page that day.
+- The status section stays. For a safety-evidence product, saying plainly
+  what you cannot yet show is the strongest trust signal on the page.
 
-The quadruped is one `<g id="quad">` in `<defs>`, reused via `<use>`. Each
-instance sets its own `--x`, `--y`, `--s` and takes its body colour from
-`color`, so moving one or adding a fourth is a one-line change.
+## Verified
 
-Below 900px `js/main.js` retargets the `viewBox` to `670 412 780 488` — a
-phone slices a narrow column out of a 1600-unit scene, which would crop the
-crack out entirely. The narrow framing puts the horizon above the text panel
-and lets the crack come out from underneath it.
-
-To swap in a photo or a looping video later, drop the file in `assets/` and
-replace the contents of `.scene`; the text panel and vignette sit above it
-and need no changes.
+All four pages, at 1440 / 768 / 390 and under `prefers-reduced-motion`:
+no console errors, no failed requests, no horizontal overflow, every image
+loading with alt text, and every reveal firing under normal scrolling.
