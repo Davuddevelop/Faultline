@@ -35,6 +35,23 @@
     });
   }
 
+  /* ── reframe the scene on narrow screens ────────────────────
+     A phone slices a narrow column out of a 1600-unit wide scene, which
+     would crop the crack and the robots clean out of frame. Below
+     900px we frame the horizon above the text panel and let the crack
+     come out from underneath it. */
+  var svg = document.querySelector('.scene__svg');
+  var narrow = window.matchMedia('(max-width: 900px)');
+
+  function reframe() {
+    if (!svg) return;
+    svg.setAttribute('viewBox', narrow.matches ? '670 412 780 488' : '0 0 1600 900');
+  }
+  reframe();
+  narrow.addEventListener
+    ? narrow.addEventListener('change', reframe)
+    : narrow.addListener(reframe);
+
   /* ── hero parallax ──────────────────────────────────────── */
   var layers = Array.prototype.slice.call(
     document.querySelectorAll('.scene [data-depth]')

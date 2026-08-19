@@ -8,16 +8,16 @@
 
 :root{
   --void:#050A07;
-  --moss:#0C1710;
-  --deep:#12261A;
-  --mid:#1E4630;
-  --sage:#7FA88A;
-  --mist:#C2D6C8;
+  --moss:#0E1D14;
+  --deep:#153020;
+  --mid:#265639;
+  --sage:#93C2A1;
+  --mist:#CFE6D6;
   --bone:#EDF2EE;
   --amber:#E0651F;
 
-  --hair:rgba(127,168,138,.22);
-  --hair-soft:rgba(127,168,138,.12);
+  --hair:rgba(147,194,161,.26);
+  --hair-soft:rgba(147,194,161,.15);
 
   --display:"Instrument Serif",Georgia,"Times New Roman",serif;
   --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
@@ -138,7 +138,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .scene__vignette{
   position:absolute;inset:0;pointer-events:none;
   background:
-    radial-gradient(120% 85% at 50% 46%,transparent 34%,rgba(5,10,7,.62) 100%),
+    radial-gradient(120% 85% at 62% 44%,transparent 26%,rgba(5,10,7,.74) 100%),
     linear-gradient(to bottom,rgba(5,10,7,.72) 0%,transparent 26%,transparent 62%,var(--void) 100%);
 }
 .scene [data-depth]{will-change:transform}
@@ -152,15 +152,23 @@ ul,ol{margin:0;padding:0;list-style:none}
 .hairline--core{animation-duration:4.4s}
 @keyframes seep{from{opacity:.62}to{opacity:1}}
 
-.bot{transform:translate(916px,592px);animation:sway 9s ease-in-out infinite alternate}
-@keyframes sway{from{transform:translate(916px,592px)}to{transform:translate(916px,588px)}}
+.bot{
+  transform:translate(var(--x),var(--y)) scale(var(--s));
+  animation:sway 9s ease-in-out infinite alternate;
+}
+.bot--mid{animation-duration:11s;animation-delay:-3s}
+.bot--far{animation-duration:13s;animation-delay:-6s}
+@keyframes sway{
+  from{transform:translate(var(--x),var(--y)) scale(var(--s))}
+  to  {transform:translate(var(--x),calc(var(--y) - 4px)) scale(var(--s))}
+}
 
 .hero__body{width:100%;max-width:var(--maxw);margin-inline:auto;padding-inline:var(--gutter)}
 .panel{
   max-width:720px;
   padding:clamp(26px,3.6vw,46px);
   border:1px solid var(--hair);
-  background:linear-gradient(150deg,rgba(8,15,11,.58),rgba(5,10,7,.34));
+  background:linear-gradient(150deg,rgba(7,14,10,.74),rgba(5,10,7,.54));
   backdrop-filter:blur(16px) saturate(1.05);
   -webkit-backdrop-filter:blur(16px) saturate(1.05);
 }
@@ -224,6 +232,12 @@ ul,ol{margin:0;padding:0;list-style:none}
   line-height:1.1;
 }
 .cite{color:var(--sage);opacity:.8;letter-spacing:.08em}
+/* a hairline dropping away under the date, echoing the crack */
+.deadline__left::after{
+  content:"";display:block;width:1px;height:clamp(60px,14vw,180px);
+  margin-top:32px;
+  background:linear-gradient(to bottom,var(--hair),transparent);
+}
 .deadline__right .display--h2{margin-bottom:30px}
 .deadline__right p+p{margin-top:20px}
 .deadline__right p{max-width:62ch;opacity:.92}
@@ -268,16 +282,21 @@ ul,ol{margin:0;padding:0;list-style:none}
 .pane li{
   position:relative;padding-left:26px;line-height:1.55;
 }
-.pane li::before{
-  content:"";position:absolute;left:0;top:.62em;
-  width:9px;height:9px;
-  border-left:1.2px solid currentColor;border-bottom:1.2px solid currentColor;
-  transform:rotate(-45deg) translateY(-1px);
+/* a real check for what exists; a plain rule for what doesn't */
+.pane--yes li::before{
+  content:"";position:absolute;left:2px;top:.42em;
+  width:5px;height:10px;
+  border-right:1.4px solid currentColor;border-bottom:1.4px solid currentColor;
+  transform:rotate(42deg);
+}
+.pane--no li::before{
+  content:"";position:absolute;left:0;top:.78em;
+  width:11px;height:1px;background:currentColor;
 }
 .pane--yes li{color:var(--bone)}
-.pane--yes li::before{color:var(--amber);opacity:.8}
+.pane--yes li::before{color:var(--amber);opacity:.85}
 .pane--no li{color:var(--mist);opacity:.8}
-.pane--no li::before{color:var(--sage);opacity:.6}
+.pane--no li::before{color:var(--sage);opacity:.65}
 
 /* ── 6 · contact ───────────────────────────────────────────── */
 .contact{
@@ -329,8 +348,8 @@ ul,ol{margin:0;padding:0;list-style:none}
   .stage{grid-template-columns:52px 1fr;row-gap:10px}
   .stage__p{grid-column:2}
   .panels{grid-template-columns:1fr}
-  .hero{min-height:auto;padding:132px 0 108px}
-  .scene{inset:-2% 0}
+  .hero{min-height:92svh;padding:120px 0 96px;align-items:center}
+  .scene{inset:0}
 }
 @media (max-width:560px){
   .hero__meta-right{display:none}
@@ -350,5 +369,5 @@ ul,ol{margin:0;padding:0;list-style:none}
 }
 @media (prefers-contrast:more){
   body{color:var(--bone)}
-  :root{--hair:rgba(127,168,138,.45);--hair-soft:rgba(127,168,138,.3)}
+  :root{--hair:rgba(147,194,161,.48);--hair-soft:rgba(147,194,161,.32)}
 }
