@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faultline — Adversarial testing for learned robot policies</title>
+<meta name="description" content="We hunt the conditions where a learned robot policy fails — thousands of them, on purpose — so the first failure happens in simulation, not in a warehouse.">
+<meta name="theme-color" content="#F4F6F1">
+<link rel="preload" href="../assets/fonts/jizBRFtNs2ka5fXjeivQ4LroWlx-6zsTjmbI.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<a class="skip" href="#hero">Skip to content</a>
+
+<header class="nav" id="nav">
+  <div class="nav__in">
+    <a class="mark" href="#hero"><span class="mark__glyph" aria-hidden="true"></span>Faultline</a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#deadline">Why now</a><a href="#method">Method</a><a href="#status">Status</a>
+    </nav>
+    <a class="nav__cta" href="#contact">Talk to us</a>
+  </div>
+</header>
+
+<main>
+
+<!-- ── hero ─────────────────────────────────────────────────── -->
+<section class="hero" id="hero" data-hero>
+  <div class="hero__media">
+    <picture>
+      <source type="image/webp" srcset="../assets/img/moss-walk-800.webp 800w, ../assets/img/moss-walk-1280.webp 1280w, ../assets/img/moss-walk-2048.webp 2048w" sizes="100vw">
+      <img src="../assets/img/moss-walk.jpg" alt="A four-legged robot walking across a moss-covered ridge in heavy fog." width="2048" height="1152" fetchpriority="high" data-fade>
+    </picture>
+  </div>
+
+  <div class="hero__in wrap">
+    <p class="eyebrow">Adversarial testing for learned robot policies</p>
+    <h1 class="display">The ground gives way somewhere.<br>We find <em>where</em>.</h1>
+    <p class="lede">A robot trained in simulation walks beautifully until the moss is wet, the slope is steeper, or a sensor answers late. We hunt those conditions on purpose — thousands of them — so the first failure happens in simulation, not in a warehouse.</p>
+    <div class="hero__act">
+      <a class="btn" href="#contact">Start a conversation <span aria-hidden="true">→</span></a>
+      <a class="ghost" href="#method">See the method</a>
+    </div>
+  </div>
+
+  <p class="hero__foot wrap"><span class="mono">Pre-product · Baku, Azerbaijan</span></p>
+</section>
+
+<!-- ── statement ────────────────────────────────────────────── -->
+<section class="band">
+  <p class="band__line wrap" data-reveal>Every learned policy holds until it doesn&rsquo;t. <span>The question is only whether you found the edge first.</span></p>
+</section>
+
+<!-- ── deadline: the one dark band on a light page ───────────── -->
+<section class="deadline" id="deadline">
+  <div class="wrap deadline__grid">
+    <div data-reveal>
+      <p class="eyebrow">Why now</p>
+      <p class="date">20 January 2027</p>
+      <p class="cite mono">Regulation (EU) 2023/1230, Annex&nbsp;I Part&nbsp;A</p>
+    </div>
+    <div data-reveal>
+      <h2 class="display display--h2">Self-learning safety functions stop being self-certifiable.</h2>
+      <p>EU Machinery Regulation 2023/1230 replaces the Machinery Directive on that date — directly and identically in every member state. Machinery with fully or partially self-evolving behaviour falls under Annex I Part A, so a notified body must be involved even for a manufacturer following every harmonised standard.</p>
+      <p>And the delegated act defining what counts as adequate evidence isn&rsquo;t due until 2028. Assessment becomes mandatory roughly eighteen months before anyone agrees what passing looks like.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── method ───────────────────────────────────────────────── -->
+<section class="method" id="method">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <p class="eyebrow">Method</p>
+      <h2 class="display display--h2">Five stages, one question.</h2>
+    </div>
+    <ol class="stages">
+      <li class="stage" data-reveal><span class="stage__n mono">01</span><h3>Ingest</h3><p>Your trained policy and robot model, loaded into deterministic simulation. Every run reproducible from its seed.</p></li>
+      <li class="stage" data-reveal><span class="stage__n mono">02</span><h3>Perturb</h3><p>Each test is a point in a parameter space: push force, friction, slope, sensor delay, actuator degradation, payload. Ranges are yours.</p></li>
+      <li class="stage" data-reveal><span class="stage__n mono">03</span><h3>Search</h3><p>Random sampling finds the obvious failures. A trained adversary finds the ones nobody thought to try.</p></li>
+      <li class="stage" data-reveal><span class="stage__n mono">04</span><h3>Detect</h3><p>Violations are explicit rules over the trajectory: tilt past a limit, contact force above a threshold, leaving a safe region.</p></li>
+      <li class="stage" data-reveal><span class="stage__n mono">05</span><h3>Report</h3><p>Failures clustered by mode, not listed by count. One document for engineers, one for the safety case.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ── a breath of image between the two dense sections ─────── -->
+<figure class="plate">
+  <picture>
+    <source type="image/webp" srcset="../assets/img/fissure-800.webp 800w, ../assets/img/fissure-1280.webp 1280w, ../assets/img/fissure-2048.webp 2048w" sizes="100vw">
+    <img src="../assets/img/fissure.jpg" alt="A robot standing at the edge of a fissure opening across a green meadow, light coming from inside it." width="2048" height="1152" loading="lazy" data-fade>
+  </picture>
+  <figcaption class="mono">The failure you can see is the one you already survived.</figcaption>
+</figure>
+
+<!-- ── status ───────────────────────────────────────────────── -->
+<section class="status" id="status">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <p class="eyebrow">Where this stands</p>
+      <h2 class="display display--h2">What we can show, and what we can&rsquo;t.</h2>
+      <p class="head__lede">A testing company that overstates its evidence is worse than no testing company. So, plainly:</p>
+    </div>
+    <div class="panels" data-reveal>
+      <div class="pane pane--yes">
+        <p class="eyebrow">In progress</p>
+        <ul>
+          <li>Harness built against a quadruped policy trained with PPO</li>
+          <li>Search-method comparison — random versus directed</li>
+          <li>Reproducing a simulated failure on physical hardware</li>
+        </ul>
+      </div>
+      <div class="pane pane--no">
+        <p class="eyebrow">Not yet</p>
+        <ul>
+          <li>No customer results. No pilots completed.</li>
+          <li>No claim this output satisfies any notified body.</li>
+          <li>One robot class supported so far.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── contact ──────────────────────────────────────────────── -->
+<section class="contact" id="contact">
+  <div class="contact__media">
+    <picture>
+      <source type="image/webp" srcset="../assets/img/valley-line-800.webp 800w, ../assets/img/valley-line-1280.webp 1280w, ../assets/img/valley-line-2048.webp 2048w" sizes="100vw">
+      <img src="../assets/img/valley-line.jpg" alt="Several robots walking in a line across a wide green valley." width="2048" height="1152" loading="lazy" data-fade>
+    </picture>
+  </div>
+  <div class="wrap contact__in" data-reveal>
+    <p class="eyebrow">Talk to us</p>
+    <h2 class="display display--h2">If you ship a learned policy into Europe, we want to hear your plan.</h2>
+    <p>Not a demo request. We&rsquo;re trying to understand what evidence teams actually need before January 2027 — and if you already know, that&rsquo;s worth more to us than a signup.</p>
+    <!-- TODO: replace with your real address before publishing -->
+    <a class="btn btn--lg" href="mailto:hello@faultline.dev">Start a conversation <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <span class="mono">Faultline — pre-product · Baku, Azerbaijan</span>
+    <span class="mono">The first failure should happen in simulation.</span>
+  </div>
+</footer>
+
+<script src="../js/variant.js" defer></script>
+</body>
+</html>
