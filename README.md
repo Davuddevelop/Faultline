@@ -19,11 +19,12 @@ contact screen; everything between them is a spec sheet.
 | Hero | The fissure image, full bleed, headline sitting in it |
 | The problem | Why a passing test suite proves less than it looks like it does |
 | Why now | Regulation (EU) 2023/1230 and the 20 January 2027 date |
-| How a run works | Five stages: ingest, perturb, search, detect, reduce |
+| How a run works | Five stages: ingest, perturb, search, detect, reduce — with the campaign config that drives them |
 | The search space | A real table of perturbation axes, units and illustrative ranges |
-| What counts as a failure | The violation predicates, written out |
+| What counts as a failure | The violation predicates, plus a schematic trace of one being crossed |
 | Hardware validation | Full-bleed plate, stating plainly that this is in progress |
 | Deliverables | The two documents and the run archive, with contents |
+| Interfaces | Simulators, model formats, policy formats, outputs |
 | To start | The three inputs needed from a customer |
 | Where this stands | What can be shown and what cannot |
 | Contact | One call to action |
@@ -61,8 +62,12 @@ there is no flash before it loads. The directory is ~1.5 MB in total.
 
 ## Type and colour
 
-Instrument Serif (display), IBM Plex Sans (body, 200–300), IBM Plex Mono
-(every number, label, unit and predicate). Self-hosted in `assets/fonts/`.
+Instrument Serif appears **only in the hero**, where it is doing brand work.
+Every section heading below it is IBM Plex Sans — the display serif running
+the length of the page is what made early drafts read like a research lab
+rather than a company that ships hardware. IBM Plex Mono carries every
+number, label, unit, predicate and config key. Self-hosted in
+`assets/fonts/`.
 
 Deep forest ground with a single **glacial blue** accent lifted from the sky
 in the illustration. It marks the italic word in the headline, the date, the
@@ -75,9 +80,16 @@ else. `v1` runs a chalk-and-pine variant of the same idea. `v2` and
 - **The call to action points at `mailto:hello@faultline.dev`, a placeholder.**
 - Verify both paragraphs of the "Why now" section against EUR-Lex. If a
   notified body engineer corrects any of it, fix the page that day.
-- The illustrative ranges in the search-space table are defaults for a
-  mid-size quadruped. Replace them with real ones before showing this to
-  anyone who builds robots.
+- The illustrative ranges in the search-space table, and the values in
+  `campaign.yaml`, are defaults for a mid-size quadruped. Replace them with
+  real ones before showing this to anyone who builds robots.
+- The trajectory trace is a schematic and says so. Swap it for a real run as
+  soon as you have one — a measured trace is worth more than everything else
+  on the page.
+- **The two illustrations are generated art.** The moss-walk photograph is the
+  only real image here, and it is the one that reads as a robotics company.
+  Replace the illustrations with footage of your own hardware when you have
+  it.
 - Keep "Where this stands". For a safety-evidence product, saying plainly what
   you cannot yet show is the strongest trust signal on the page.
 
