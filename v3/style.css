@@ -5,15 +5,18 @@
    ═══════════════════════════════════════════════════════════ */
 
 :root{
-  --void:#050A07;
-  --deep:#0B1610;
-  --panel:#101C15;
-  --bone:#EFF4F0;
-  --mist:#C3D5C9;
-  --sage:#8FB89C;
-  --amber:#E0651F;
-  --rule:rgba(143,184,156,.22);
-  --rule-soft:rgba(143,184,156,.12);
+  /* Sampled off the illustration: deep forest ground, a glacial blue lifted
+     from the sky as the single accent. Nothing warm. */
+  --void:#050B08;
+  --deep:#09130E;
+  --panel:#0E1A14;
+  --bone:#EEF4EF;
+  --mist:#BFD3C7;
+  --sage:#8CB49A;
+  --glacial:#A6CBD4;       /* the accent */
+  --glacial-dim:rgba(166,203,212,.42);
+  --rule:rgba(140,180,154,.22);
+  --rule-soft:rgba(140,180,154,.12);
 
   --display:"Instrument Serif",Georgia,"Times New Roman",serif;
   --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
@@ -40,7 +43,7 @@ blockquote{margin:0}
 
 .display{font-family:var(--display);font-size:clamp(40px,5.6vw,76px);line-height:1.04;letter-spacing:-.014em}
 .display--h2{font-size:clamp(29px,3.6vw,50px);line-height:1.1}
-.display em{font-style:italic;color:var(--amber)}
+.display em{font-style:italic;color:var(--glacial)}
 .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--sage)}
 .mono{font-family:var(--mono);font-size:11px;letter-spacing:.09em}
 
@@ -49,7 +52,7 @@ blockquote{margin:0}
 .nav.is-stuck{background:rgba(5,10,7,.76);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom-color:var(--rule-soft)}
 .nav__in{max-width:var(--maxw);margin-inline:auto;padding:18px var(--gutter);display:flex;align-items:center;gap:20px}
 .mark{display:inline-flex;align-items:center;gap:10px;font-family:var(--display);font-size:20px;color:var(--bone);text-decoration:none}
-.mark__glyph{width:9px;height:9px;background:var(--amber);transform:rotate(45deg)}
+.mark__glyph{width:9px;height:9px;background:var(--glacial);transform:rotate(45deg)}
 .pills{
   margin-inline:auto;display:flex;gap:4px;padding:4px;
   border:1px solid var(--rule-soft);border-radius:999px;
@@ -72,8 +75,8 @@ blockquote{margin:0}
 .hero__media::after{
   content:"";position:absolute;inset:0;
   background:
-    linear-gradient(to top,var(--void) 0%,rgba(5,10,7,.72) 14%,rgba(5,10,7,.30) 40%,rgba(5,10,7,.08) 68%,rgba(5,10,7,.38) 100%),
-    linear-gradient(to right,rgba(5,10,7,.62) 0%,rgba(5,10,7,.18) 42%,rgba(5,10,7,0) 62%);
+    linear-gradient(to top,var(--void) 0%,rgba(5,11,8,.62) 11%,rgba(5,11,8,.20) 34%,rgba(5,11,8,.02) 62%,rgba(5,11,8,.30) 100%),
+    linear-gradient(to right,rgba(5,11,8,.56) 0%,rgba(5,11,8,.12) 40%,rgba(5,11,8,0) 60%);
 }
 .hero__in{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.85fr);gap:clamp(28px,6vw,80px);align-items:end}
 .hero__lead .display{margin:22px 0 34px;max-width:15ch}
@@ -81,9 +84,16 @@ blockquote{margin:0}
 .hero__bar{display:flex;justify-content:space-between;gap:18px;margin-top:clamp(40px,7vw,84px);padding-top:22px;border-top:1px solid var(--rule-soft);color:var(--sage)}
 .hero__bar .mono{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
 
+/* With the scrim eased back, hero type now sits on bright grass in places.
+   A soft dark halo keeps it legible without putting the wash back. */
+.hero__in .eyebrow{color:#DCEBE1;text-shadow:0 1px 12px rgba(4,9,6,.85)}
+.hero__lead .display{text-shadow:0 2px 26px rgba(4,9,6,.55)}
+.hero__note{color:#DDEAE1;text-shadow:0 1px 14px rgba(4,9,6,.8)}
+.hero__bar .mono{color:#CFE0D5;text-shadow:0 1px 10px rgba(4,9,6,.8);opacity:.9}
+
 /* ── buttons ──────────────────────────────────────────────── */
-.btn{display:inline-flex;align-items:center;gap:11px;padding:15px 26px;border:1px solid rgba(224,101,31,.5);background:rgba(224,101,31,.08);color:var(--amber);font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .35s var(--ease),border-color .35s var(--ease),gap .35s var(--ease)}
-.btn:hover{background:rgba(224,101,31,.16);border-color:var(--amber);gap:17px}
+.btn{display:inline-flex;align-items:center;gap:11px;padding:15px 26px;border:1px solid var(--glacial-dim);background:rgba(166,203,212,.07);color:var(--glacial);font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .35s var(--ease),border-color .35s var(--ease),gap .35s var(--ease)}
+.btn:hover{background:rgba(166,203,212,.15);border-color:var(--glacial);gap:17px}
 .btn--lg{padding:18px 32px;font-size:11.5px}
 
 /* ── statement ────────────────────────────────────────────── */
@@ -93,9 +103,9 @@ blockquote{margin:0}
 
 /* ── deadline ─────────────────────────────────────────────── */
 .deadline{position:relative;overflow:hidden;padding:clamp(84px,12vw,158px) 0}
-.deadline__glow{position:absolute;top:-34%;right:-12%;width:min(860px,88vw);aspect-ratio:1;pointer-events:none;background:radial-gradient(circle,rgba(224,101,31,.22) 0%,rgba(224,101,31,.07) 40%,transparent 68%)}
+.deadline__glow{position:absolute;top:-34%;right:-12%;width:min(860px,88vw);aspect-ratio:1;pointer-events:none;background:radial-gradient(circle,rgba(166,203,212,.20) 0%,rgba(166,203,212,.06) 40%,transparent 68%)}
 .grid2{position:relative;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(34px,6vw,86px);align-items:start}
-.date{font-family:var(--mono);font-size:clamp(25px,3.2vw,40px);color:var(--amber);margin:18px 0 14px;line-height:1.1;letter-spacing:-.01em}
+.date{font-family:var(--mono);font-size:clamp(25px,3.2vw,40px);color:var(--glacial);margin:18px 0 14px;line-height:1.1;letter-spacing:-.01em}
 .cite{color:var(--sage);opacity:.8;letter-spacing:.08em}
 .grid2>div:last-child p{max-width:62ch;opacity:.92}
 .grid2>div:last-child p+p{margin-top:20px}
@@ -119,7 +129,7 @@ blockquote{margin:0}
 .quote__media{position:absolute;inset:-8% 0;z-index:-1;background:#94A38A;will-change:transform}
 .quote__media img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.2s var(--ease)}
 .quote__media img.is-loaded{opacity:1}
-.quote__media::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(5,10,7,.72) 0%,rgba(5,10,7,.30) 42%,rgba(5,10,7,.80) 100%)}
+.quote__media::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(5,11,8,.62) 0%,rgba(5,11,8,.18) 42%,rgba(5,11,8,.72) 100%)}
 .quote p{font-family:var(--display);font-size:clamp(27px,3.8vw,50px);line-height:1.16;color:#FFF;max-width:19ch;letter-spacing:-.012em;text-shadow:0 2px 30px rgba(4,9,6,.6)}
 .quote p span{display:block;color:var(--sage);margin-top:.2em}
 
@@ -130,7 +140,7 @@ blockquote{margin:0}
 .pane ul{margin-top:24px;display:grid;gap:15px}
 .pane li{position:relative;padding-left:26px;line-height:1.55}
 .pane--yes li{color:var(--bone)}
-.pane--yes li::before{content:"";position:absolute;left:2px;top:.42em;width:5px;height:10px;border-right:1.4px solid var(--amber);border-bottom:1.4px solid var(--amber);transform:rotate(42deg);opacity:.85}
+.pane--yes li::before{content:"";position:absolute;left:2px;top:.42em;width:5px;height:10px;border-right:1.4px solid var(--glacial);border-bottom:1.4px solid var(--glacial);transform:rotate(42deg);opacity:.9}
 .pane--no li{opacity:.82}
 .pane--no li::before{content:"";position:absolute;left:0;top:.78em;width:11px;height:1px;background:var(--sage);opacity:.7}
 

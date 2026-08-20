@@ -47,12 +47,20 @@ Instrument Serif (display, italic for the accented word), IBM Plex Sans
 (body, 200–300), IBM Plex Mono (all numbers, labels and eyebrows).
 Self-hosted in `assets/fonts/`, declared in `css/fonts.css`.
 
-## The amber rule
+## Palettes
 
-`--amber` appears in three places only: the light inside the fissure, the date
-20 January 2027, and the single call to action. It reads as a warning exactly
-as long as it stays rare. Adding a fourth use makes it decorative and the
-visual argument collapses.
+Each page carries its own palette, sampled off the image it is built on.
+
+- **`v1` Field** — chalk paper, near-black green ink, a deep **pine** accent
+  on light ground and a cold **glacial** blue on the one dark band.
+- **`v3` Overlay** — deep forest ground with a single **glacial blue** accent
+  lifted from the sky in the illustration.
+- **`index.html` and `v2`** still run the original amber accent from the
+  content spec.
+
+Whatever the accent, it stays rare — the italic word in the headline, the date
+20 January 2027, the tick marks, and the single call to action. It reads as
+emphasis exactly as long as it is scarce; a fifth use makes it decorative.
 
 ## Before this goes live
 
