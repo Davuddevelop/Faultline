@@ -9,70 +9,80 @@ runtime: fonts are self-hosted and every image is local.
 python3 -m http.server 8000     # then open http://localhost:8000
 ```
 
-## The four pages
+## The page
 
-One shared content spec, four design directions. Copy, sections and section
-order are identical in all of them; only the design language differs.
+`index.html` is the site. Imagery carries the hero, one mid-page plate and the
+contact screen; everything between them is a spec sheet.
 
-| Path | Direction | Hero |
-| --- | --- | --- |
-| `index.html` | **Scene** — no photography at all | Layered SVG landscape: ridges, mist, three quadrupeds, and the fissure drawn with light inside it, parallaxed on scroll |
-| `v1/index.html` | **Field** — light and editorial | The photograph, type set into its fog; one dark band (the deadline) breaks the paper |
-| `v2/index.html` | **Split** — studio card | One rounded card: image on the left half, type on the right; a second card later flips it |
-| `v3/index.html` | **Overlay** — cinematic | Full-bleed image, headline sitting at the bottom of it, centre nav pills, a full-bleed quote plate mid-page |
+| Section | What it does |
+| --- | --- |
+| Hero | The fissure image, full bleed, headline sitting in it |
+| The problem | Why a passing test suite proves less than it looks like it does |
+| Why now | Regulation (EU) 2023/1230 and the 20 January 2027 date |
+| How a run works | Five stages: ingest, perturb, search, detect, reduce |
+| The search space | A real table of perturbation axes, units and illustrative ranges |
+| What counts as a failure | The violation predicates, written out |
+| Hardware validation | Full-bleed plate, stating plainly that this is in progress |
+| Deliverables | The two documents and the run archive, with contents |
+| To start | The three inputs needed from a customer |
+| Where this stands | What can be shown and what cannot |
+| Contact | One call to action |
 
-`v1`–`v3` share `js/variant.js` and `css/fonts.css`. `index.html` has its own
-`js/main.js` because its hero is an SVG scene with its own parallax and a
-mobile reframe.
+### Why it reads this way
+
+The middle of the page is deliberately not atmospheric. For a company selling
+safety evidence, credibility comes from showing the machinery — the axes it
+searches, the predicates it checks, what lands in the report — not from
+adjectives about it. The photography sets the tone at the top and bottom; the
+part that has to be believed is a table.
+
+Nothing on the page claims a result. Ranges are labelled illustrative,
+predicates are labelled as supported forms, and the hardware plate says
+outright that there is nothing to show yet.
+
+## Design exploration
+
+`v1/`, `v2/` and `v3/` are the three directions built before this one; the
+page above is `v3` carried through. `archive/scene/` is an earlier version
+whose hero was a drawn SVG landscape rather than photography — no imagery at
+all, kept because it still stands on its own.
 
 ## Images
 
-`assets/img/` holds three sources, each as WebP at 800 / 1280 / 2048 and a
+`assets/img/` holds three sources, each as WebP at 800 / 1280 / 2048 with a
 JPEG fallback, served through `<picture>` with `srcset`:
 
-- `fissure` — a robot at the edge of a break in the ground, light inside it
+- `fissure` — a robot at the edge of a break in the ground
 - `moss-walk` — a quadruped crossing a mossy ridge in fog
 - `valley-line` — robots walking a line across a wide valley
 
-`manifest.json` records each image's dominant colour, which is painted behind
-it so there is no flash before it loads. Originals were 3.3 MB PNGs; the whole
-directory is now ~1.5 MB.
+`manifest.json` records each image's dominant colour, painted behind it so
+there is no flash before it loads. The directory is ~1.5 MB in total.
 
-To swap an image, drop the new file in and regenerate the sizes — nothing else
-references the filenames but the `<picture>` blocks.
+## Type and colour
 
-## Type
+Instrument Serif (display), IBM Plex Sans (body, 200–300), IBM Plex Mono
+(every number, label, unit and predicate). Self-hosted in `assets/fonts/`.
 
-Instrument Serif (display, italic for the accented word), IBM Plex Sans
-(body, 200–300), IBM Plex Mono (all numbers, labels and eyebrows).
-Self-hosted in `assets/fonts/`, declared in `css/fonts.css`.
-
-## Palettes
-
-Each page carries its own palette, sampled off the image it is built on.
-
-- **`v1` Field** — chalk paper, near-black green ink, a deep **pine** accent
-  on light ground and a cold **glacial** blue on the one dark band.
-- **`v3` Overlay** — deep forest ground with a single **glacial blue** accent
-  lifted from the sky in the illustration.
-- **`index.html` and `v2`** still run the original amber accent from the
-  content spec.
-
-Whatever the accent, it stays rare — the italic word in the headline, the date
-20 January 2027, the tick marks, and the single call to action. It reads as
-emphasis exactly as long as it is scarce; a fifth use makes it decorative.
+Deep forest ground with a single **glacial blue** accent lifted from the sky
+in the illustration. It marks the italic word in the headline, the date, the
+range column, the predicate rules and the one call to action — and nothing
+else. `v1` runs a chalk-and-pine variant of the same idea. `v2` and
+`archive/scene/` still carry the original amber from the content spec.
 
 ## Before this goes live
 
 - **The call to action points at `mailto:hello@faultline.dev`, a placeholder.**
-  Replace it in all four pages.
-- Verify both paragraphs of the deadline section against EUR-Lex. If a
+- Verify both paragraphs of the "Why now" section against EUR-Lex. If a
   notified body engineer corrects any of it, fix the page that day.
-- The status section stays. For a safety-evidence product, saying plainly
-  what you cannot yet show is the strongest trust signal on the page.
+- The illustrative ranges in the search-space table are defaults for a
+  mid-size quadruped. Replace them with real ones before showing this to
+  anyone who builds robots.
+- Keep "Where this stands". For a safety-evidence product, saying plainly what
+  you cannot yet show is the strongest trust signal on the page.
 
 ## Verified
 
-All four pages, at 1440 / 768 / 390 and under `prefers-reduced-motion`:
-no console errors, no failed requests, no horizontal overflow, every image
-loading with alt text, and every reveal firing under normal scrolling.
+Every page, at 1440 / 768 / 390 and under `prefers-reduced-motion`: no console
+errors, no failed requests, no horizontal overflow, every image loading with
+alt text, and every reveal firing under normal scrolling.
