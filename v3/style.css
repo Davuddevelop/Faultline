@@ -145,18 +145,29 @@ blockquote{margin:0}
 .pane--no li::before{content:"";position:absolute;left:0;top:.78em;width:11px;height:1px;background:var(--sage);opacity:.7}
 
 /* ── contact ──────────────────────────────────────────────── */
-.contact{position:relative;isolation:isolate;overflow:hidden;padding:clamp(100px,13vw,180px) 0}
+.contact{
+  position:relative;isolation:isolate;overflow:hidden;
+  min-height:100svh;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:clamp(120px,15vw,200px) 0 clamp(64px,8vw,96px);
+}
 .contact__media{position:absolute;inset:0;z-index:-1;background:#A9BE90}
-.contact__media img{width:100%;height:100%;object-fit:cover;object-position:50% 58%;opacity:0;transition:opacity 1.2s var(--ease)}
+.contact__media img{width:100%;height:100%;object-fit:cover;object-position:50% 62%;opacity:0;transition:opacity 1.2s var(--ease)}
 .contact__media img.is-loaded{opacity:1}
-.contact__media::after{content:"";position:absolute;inset:0;background:linear-gradient(to right,rgba(5,10,7,.92) 0%,rgba(5,10,7,.78) 44%,rgba(5,10,7,.32) 100%)}
+/* feathered rather than flat, and seated into the footer at the bottom */
+.contact__media::after{
+  content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(to top,var(--void) 0%,rgba(5,11,8,.62) 12%,rgba(5,11,8,.22) 36%,rgba(5,11,8,.04) 62%,rgba(5,11,8,.34) 100%),
+    linear-gradient(to right,rgba(5,11,8,.56) 0%,rgba(5,11,8,.12) 40%,rgba(5,11,8,0) 60%);
+}
 .contact__in{max-width:900px}
-.contact__in .display--h2{margin:20px 0 24px;max-width:19ch}
-.contact__in p{max-width:56ch;opacity:.92}
+.contact__in .display--h2{margin:20px 0 24px;max-width:19ch;text-shadow:0 2px 26px rgba(4,9,6,.6)}
+.contact__in p{max-width:56ch;color:#DDEAE1;text-shadow:0 1px 14px rgba(4,9,6,.85)}
 .contact .btn{margin-top:38px}
 
 /* ── footer ───────────────────────────────────────────────── */
-.foot{border-top:1px solid var(--rule-soft);padding:32px 0}
+.foot{border-top:1px solid var(--rule-soft);padding:32px 0;background:var(--void)}
 .foot__in{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;color:var(--sage)}
 .foot__in .mono{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;opacity:.72}
 
