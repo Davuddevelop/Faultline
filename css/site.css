@@ -154,6 +154,15 @@ blockquote{margin:0}
 .lead p+p{margin-top:20px}
 .lead .h2--lead+p{margin-top:28px}
 
+/* an inline call to action inside body copy */
+.inline-link{
+  color:var(--glacial);text-decoration:none;
+  border-bottom:1px solid var(--glacial-dim);padding-bottom:2px;
+  transition-property:border-color,color;transition-duration:.3s;
+  transition-timing-function:var(--ease);white-space:nowrap;
+}
+.inline-link:hover{border-bottom-color:var(--glacial)}
+
 /* ── run config ───────────────────────────────────────────── */
 .config{margin-top:clamp(34px,4.4vw,56px);border:1px solid var(--rule-soft);border-radius:2px;overflow:hidden;background:var(--panel)}
 .config__bar{

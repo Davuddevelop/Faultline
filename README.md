@@ -41,6 +41,36 @@ Nothing on the page claims a result. Ranges are labelled illustrative,
 predicates are labelled as supported forms, and the hardware plate says
 outright that there is nothing to show yet.
 
+## The sample report
+
+`report/` publishes a real campaign: failure modes, sample efficiency and
+coverage from 150 simulations against the stand-in quadruped. The deliverables
+section of the landing page links to it, so the page shows its output rather
+than only describing it.
+
+The page is **generated, not hand-written** — edit the generator, never
+`report/index.html`:
+
+```bash
+cd harness && python3 examples/report_one.py   # produce a fresh campaign
+python3 tools/build_report_page.py             # rebuild the page from it
+```
+
+It reads `assets/data/campaign.json`, so every number on the page is a number
+the harness printed.
+
+### The chart colours are not the brand colours
+
+The site's `--sage` and `--glacial` **fail** as a two-series pair: normal-vision
+ΔE 9.8, below the 15 floor, meaning full-colour readers cannot reliably tell
+the two series apart. The charts use `#2BA476` and `#6E89DC`, which pass all six
+checks of the dataviz validator against both the panel and page surfaces
+(normal ΔE 20.3, deutan 16.2). The reason is recorded at the top of
+`report/report.css` so it does not get "corrected" back.
+
+Series labels are direct-labelled in ink with a small coloured rule beside
+them, rather than coloured text, so identity survives colour-vision deficiency.
+
 ## Design exploration
 
 `v1/`, `v2/` and `v3/` are the three directions built before this one; the
