@@ -13,17 +13,84 @@ pytest tests/ -q
 
 ## What this is, and what it deliberately is not
 
-This is **stages 01–05** of the pipeline on the website: ingest, perturb,
-detect, the provenance that makes a result mean anything, and reduce.
+This is **stages 01, 02, 03, 04 and 05** of the pipeline on the website:
+ingest, perturb, search, detect, and reduce, with the provenance that makes a
+result mean anything.
 
-It is **not** the search or the report generator. Those are a loop and an
-aggregation over this, and building them first would have produced results
-nobody could reproduce.
+It is **not** the report generator. That is an aggregation over these.
 
 ```bash
 python examples/run_one.py       # one run, recorded, replayed
 python examples/reduce_one.py    # a five-axis failure, minimised
+python examples/search_one.py    # search a space, compare methods, reduce the worst
 ```
+
+## Search
+
+Declare a space; spend a budget of simulations inside it.
+
+```python
+space = SearchSpace({"push_impulse_ns": (0, 9), "slope_deg": (0, 10), ...})
+random_search(spec, policy, space, budget=150, seed=0)
+cem_search(spec, policy, space, budget=150, seed=0)
+```
+
+Every sample is checked to lie inside the declared bounds, both methods spend
+their budget exactly, and both are reproducible from a seed.
+
+### Random versus directed — measured
+
+5 seeds, 150 simulations each, on the space in `examples/search_one.py`:
+
+| method | failures per seed | median | hit rate |
+| --- | --- | --- | --- |
+| random | 6, 4, 7, 5, 7 | 6 | 29/750 = **3.9%** |
+| directed (CEM) | 51, 68, 63, 65, 61 | 63 | 308/750 = **41.1%** |
+
+Mean severity per CEM round on one seed, showing it concentrating rather than
+wandering: `-30.7 -> -25.7 -> -17.4 -> +14.1 -> +88.6 -> +106.6`.
+
+**Where directed search does *not* help: finding the first failure.** First
+violation landed at run 55, 4, 22, 4, 49 for random and 30, 4, 22, 4, 56 for
+CEM. CEM's opening round is uniform, so it has no head start; its advantage is
+in how much of the remaining budget lands on failures.
+
+Five seeds is a description, not a significance test, and `compare()` says so
+in its own summary rather than implying a winner.
+
+### The space is the experiment
+
+These numbers only mean something because the space was chosen by measurement.
+Sampling three candidate boxes first:
+
+| space | failure rate under uniform sampling |
+| --- | --- |
+| wide (push 0–40, slope 0–25 …) | 87% |
+| mid | 35% |
+| the one used above | 2.5% |
+
+In the wide box random sampling finds a failure almost immediately and every
+failure is a full topple, so severity carries no gradient and a comparison
+there would flatter whichever method was being sold. Report the space
+alongside any search result, or the result is unreadable.
+
+### Directed search here is CEM, not a trained adversary
+
+Cross-entropy method: fit a Gaussian to the most severe samples, resample,
+repeat. Black-box, no gradients, no training run, deterministic from a seed.
+The variance floor (`min_std_frac`) matters — without it the distribution
+collapses onto a point after a few rounds and exploration stops.
+
+The website says *"a trained adversary"*. This is not that. Either the copy
+changes or an RL adversary becomes a later feature.
+
+### The objective is margin, not pass/fail
+
+`severity(traj, predicate)` is the signed distance to the threshold: positive
+means fired, negative is remaining margin. A binary objective would give CEM
+nothing to climb. It saturates once the robot has fully toppled — every fallen
+run scores about the same — so it discriminates near the boundary rather than
+deep inside the failure region.
 
 ## Reduce
 
@@ -91,6 +158,10 @@ result says so in those words rather than leaving it to be argued about.
 | `Policy` | Anything with `reset(seed)` and `act(obs, t)` |
 | `RunRecord` | Verdict, violations, peaks, provenance |
 | `replay()` | Re-runs a record and reports whether it matched, and why not |
+| `SearchSpace` | The declared volume, per-axis bounds in physical units |
+| `random_search()` | Uniform coverage — the baseline |
+| `cem_search()` | Directed sampling that concentrates on severe regions |
+| `compare()` | Both methods across several seeds, reported per seed |
 | `reduce_failure()` | Relaxes a failing case to a locally minimal one |
 | `ReductionResult` | Per-axis before/after, what was eliminated, evaluations used |
 
@@ -151,6 +222,10 @@ before trusting a result.
   for the five-axis example above, against a default budget of 200.
 - With a stochastic policy the seed is held fixed, so reduction minimises
   against that one rollout, not against the policy's distribution.
+- Search is sequential. Every run is independent, so parallelism is available
+  whenever it is worth the complexity — 1500 simulations took 93 s here.
+- CEM finds *dense* failure regions, not necessarily *diverse* ones. Clustering
+  failures by mode is a separate feature and is not claimed here.
 - The torso contact force is the only contact signal; per-link forces and a
   centre-of-mass-outside-support-polygon predicate are not implemented.
 - `StandPolicy` is a PD hold, not a learned policy. It is a baseline: a

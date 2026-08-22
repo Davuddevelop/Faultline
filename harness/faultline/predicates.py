@@ -37,6 +37,26 @@ class Violation:
         }
 
 
+def severity(traj: Trajectory, pred: Predicate) -> float:
+    """How close this run came to breaking the rule, signed.
+
+    Positive means the predicate fired; negative is the remaining margin. A
+    search needs this rather than pass/fail: a binary objective gives a
+    directed method nothing to climb, whereas near-misses point at where the
+    boundary is.
+
+    Saturates once the robot has fully toppled — every fallen run scores about
+    the same — so it discriminates near the boundary, not deep inside the
+    failure region.
+    """
+    sig = traj.signal(pred.signal)
+    window = sig[traj.t >= pred.grace_s]
+    if window.size == 0:
+        return float("-inf")
+    return float(window.max() - pred.threshold) if pred.op == ">" \
+        else float(pred.threshold - window.min())
+
+
 def evaluate(traj: Trajectory, predicates: tuple[Predicate, ...]) -> list[Violation]:
     """Check the whole trajectory, not just its final state.
 
