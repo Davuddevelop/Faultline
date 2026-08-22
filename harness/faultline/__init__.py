@@ -7,6 +7,10 @@ built on top of this and are deliberately not part of it.
 from .policies import JitterPolicy, Policy, StandPolicy
 from .predicates import Violation, evaluate
 from .record import ReplayResult, RunRecord, execute, replay
+from .reduce import (
+    SEVERITY_AXES, Axis, AxisOutcome, ReductionError, ReductionResult,
+    reduce_failure,
+)
 from .runner import Trajectory, run, sim_environment
 from .spec import Perturbation, Predicate, RunSpec, Seeds
 
@@ -16,5 +20,7 @@ __all__ = [
     "Trajectory", "run", "sim_environment",
     "Violation", "evaluate",
     "RunRecord", "ReplayResult", "execute", "replay",
+    "reduce_failure", "ReductionResult", "ReductionError",
+    "Axis", "AxisOutcome", "SEVERITY_AXES",
 ]
 __version__ = "0.1.0"
