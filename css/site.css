@@ -82,7 +82,7 @@ blockquote{margin:0}
 
 /* ── hero ─────────────────────────────────────────────────── */
 .hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;padding:150px 0 78px;isolation:isolate;overflow:hidden}
-.hero__media{position:absolute;inset:-10% 0 0;z-index:-1;background:#97A67C;will-change:transform}
+.hero__media{position:absolute;inset:-10% 0 0;z-index:0;background:#97A67C;will-change:transform}
 .hero__media img{width:100%;height:100%;object-fit:cover;object-position:50% 36%;opacity:0;transition:opacity 1.2s var(--ease)}
 .hero__media img.is-loaded{opacity:1}
 .hero__media::after{
@@ -91,10 +91,10 @@ blockquote{margin:0}
     linear-gradient(to top,var(--void) 0%,rgba(5,11,8,.55) 18%,rgba(5,11,8,0) 55%),
     linear-gradient(to right,rgba(5,11,8,.55) 0%,rgba(5,11,8,0) 58%);
 }
-.hero__in{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.85fr);gap:clamp(28px,6vw,80px);align-items:end}
+.hero__in{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.85fr);gap:clamp(28px,6vw,80px);align-items:end}
 .hero__lead .display{margin:22px 0 34px;max-width:15ch}
 .hero__note{max-width:44ch;color:var(--mist);opacity:.9;padding-bottom:6px}
-.hero__bar{display:flex;justify-content:space-between;gap:18px;margin-top:clamp(40px,7vw,84px);padding-top:22px;border-top:1px solid var(--rule-soft);color:var(--sage)}
+.hero__bar{position:relative;z-index:1;display:flex;justify-content:space-between;gap:18px;margin-top:clamp(40px,7vw,84px);padding-top:22px;border-top:1px solid var(--rule-soft);color:var(--sage)}
 .hero__bar .mono{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
 
 /* With the scrim eased back, hero type now sits on bright grass in places.
@@ -130,7 +130,11 @@ blockquote{margin:0}
 
 /* ── method ───────────────────────────────────────────────── */
 .section{padding:clamp(68px,8.5vw,116px) 0}
-.section--alt{background:var(--deep);border-block:1px solid var(--rule-soft)}
+/* One ground, not alternating tints. The old --void/--deep alternation was
+   too close to read as a deliberate band and landed as an arbitrary
+   brightness step; sections are separated by a hairline instead, and the
+   image plates do the real breaking. */
+.section + .section{border-top:1px solid var(--rule-soft)}
 .head{margin-bottom:clamp(34px,4.4vw,56px)}
 .head .h2{margin-top:16px}
 .head__lede{margin-top:20px;max-width:54ch;opacity:.88}
@@ -234,8 +238,8 @@ blockquote{margin:0}
 /* This photograph is mostly empty fog with one small robot in it — that
    emptiness is the point, so the plate runs full height and the type sits
    up in the fog rather than fighting the composition. */
-.plate{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-start;min-height:100svh;padding:clamp(120px,16vw,210px) 0 clamp(56px,7vw,86px)}
-.plate__media{position:absolute;inset:-8% 0;z-index:-1;background:#94A38A;will-change:transform}
+.plate{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-start;min-height:clamp(440px,58vw,860px);padding:clamp(90px,11vw,150px) 0 clamp(48px,6vw,76px)}
+.plate__media{position:absolute;inset:-8% 0;z-index:0;background:#94A38A;will-change:transform}
 .plate__media img{
   width:100%;height:100%;object-fit:cover;object-position:50% 50%;
   opacity:0;transition:opacity 1.2s var(--ease);
@@ -244,6 +248,7 @@ blockquote{margin:0}
 /* A flat tint, not a ramp. The photograph keeps its own tonal structure and
    the plate ends on a hard edge, like a picture set on the page. */
 .plate__media::after{content:"";position:absolute;inset:0;background:rgba(5,11,8,.52)}
+.plate__in{position:relative;z-index:1}
 .plate__in .eyebrow{color:#DCEBE1;text-shadow:0 1px 12px rgba(4,9,6,.85)}
 .plate__line{
   font-family:var(--sans);font-weight:300;font-size:clamp(22px,2.7vw,34px);line-height:1.24;color:#FFF;
@@ -269,7 +274,7 @@ blockquote{margin:0}
   display:flex;flex-direction:column;justify-content:flex-end;
   padding:clamp(120px,15vw,200px) 0 clamp(64px,8vw,96px);
 }
-.contact__media{position:absolute;inset:0;z-index:-1;background:#A9BE90}
+.contact__media{position:absolute;inset:0;z-index:0;background:#A9BE90}
 .contact__media img{width:100%;height:100%;object-fit:cover;object-position:50% 62%;opacity:0;transition:opacity 1.2s var(--ease)}
 .contact__media img.is-loaded{opacity:1}
 /* feathered rather than flat, and seated into the footer at the bottom */
@@ -279,7 +284,7 @@ blockquote{margin:0}
     linear-gradient(to top,var(--void) 0%,rgba(5,11,8,.55) 18%,rgba(5,11,8,0) 55%),
     linear-gradient(to right,rgba(5,11,8,.55) 0%,rgba(5,11,8,0) 58%);
 }
-.contact__in{max-width:900px}
+.contact__in{position:relative;z-index:1;max-width:900px}
 .contact__in .h2{margin:20px 0 24px;max-width:26ch;text-shadow:0 2px 26px rgba(4,9,6,.6)}
 .contact__in p{max-width:56ch;color:#DDEAE1;text-shadow:0 1px 14px rgba(4,9,6,.85)}
 .contact .btn{margin-top:38px}
@@ -296,6 +301,8 @@ blockquote{margin:0}
 /* ── responsive ───────────────────────────────────────────── */
 @media (max-width:1080px){ .pills{display:none} }
 @media (max-width:900px){
+  .plate{min-height:clamp(380px,86vw,560px)}
+  .plate__media img{object-position:42% 50%}
   .cards{grid-template-columns:1fr}
   .stack{grid-template-columns:1fr}
   .hero__in{grid-template-columns:1fr;align-items:start;gap:28px}
