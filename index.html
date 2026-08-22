@@ -57,12 +57,9 @@
 
 <!-- ── the problem, stated plainly ──────────────────────────── -->
 <section class="section" id="problem">
-  <div class="wrap grid2">
-    <div data-reveal>
-      <p class="eyebrow">The problem</p>
-    </div>
-    <div data-reveal>
-      <h2 class="h2">A policy that passes your test suite has only passed your test suite.</h2>
+  <div class="wrap">
+    <div class="lead" data-reveal>
+      <h2 class="h2 h2--lead">A policy that passes your test suite has only passed your test suite.</h2>
       <p>Learned controllers fail on conditions nobody wrote a test for: a friction coefficient outside the training distribution, a payload two centimetres off centre, a depth sensor that answers late under load. The failures are rarely exotic. They are ordinary conditions that were never sampled.</p>
       <p>And the usual tools don't transfer. There is no branch to cover and no line to instrument, so coverage means nothing here. Passing a hundred scripted scenarios tells you about a hundred scenarios — it says nothing about the hundred and first.</p>
     </div>
@@ -90,8 +87,8 @@
 <section class="section section--alt" id="run">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">How a run works</p>
       <h2 class="h2">Five stages, one question.</h2>
+      <p class="head__lede">The question is where this policy fails. Every stage exists to answer it with something a stranger can re-run.</p>
     </div>
     <ol class="stages">
       <li class="stage" data-reveal><span class="stage__n mono">01</span><h3>Ingest</h3><p>Your policy checkpoint and robot model, loaded into deterministic simulation. Seed, simulator version and policy hash are recorded with every run.</p></li>
@@ -136,7 +133,6 @@
 <section class="section" id="space">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">The search space</p>
       <h2 class="h2">Every test is a point you can name.</h2>
       <p class="head__lede">You declare the axes and their bounds. We search the volume they enclose. These are the axes supported today; the numbers below are illustrative defaults for a mid-size quadruped, and yours replace them.</p>
     </div>
@@ -167,7 +163,6 @@
 <section class="section section--alt" id="predicates">
   <div class="wrap grid2">
     <div data-reveal>
-      <p class="eyebrow">What counts as a failure</p>
       <h2 class="h2">A failure is a rule you wrote, not a judgement we made.</h2>
       <p>Every violation is an explicit predicate over the trajectory. No learned classifier sits between the run and the verdict — when a run is flagged you can read the line that flagged it, and disagree with it.</p>
     </div>
@@ -228,22 +223,18 @@
 <section class="section" id="deliverables">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">Deliverables</p>
       <h2 class="h2">Two documents, and everything needed to re-run them.</h2>
     </div>
     <div class="cards" data-reveal>
       <article class="card">
-        <p class="card__n mono">01</p>
         <h3>Engineering report</h3>
         <p>Failures clustered by mode rather than listed by count, with the region of parameter space each cluster occupies, the minimal reproducing case for every one, and trajectory traces and video for each flagged run.</p>
       </article>
       <article class="card">
-        <p class="card__n mono">02</p>
         <h3>Safety-case appendix</h3>
         <p>Method, the declared parameter space and what was covered of it, every predicate definition, and the full run manifest. Written to be read by someone assessing the evidence rather than someone who built it.</p>
       </article>
       <article class="card">
-        <p class="card__n mono">03</p>
         <h3>Run archive</h3>
         <p>Seeds, simulator version, policy hash, and the exact configuration for every run in the campaign. Any result in either document can be reproduced bit for bit, by you or by an assessor.</p>
       </article>
@@ -255,7 +246,6 @@
 <section class="section" id="interfaces">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">Interfaces</p>
       <h2 class="h2">What it plugs into.</h2>
     </div>
     <div class="stack" data-reveal>
@@ -294,7 +284,6 @@
 <section class="section" id="status">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">Where this stands</p>
       <h2 class="h2">What we can show, and what we can&rsquo;t.</h2>
       <p class="head__lede">A testing company that overstates its evidence is worse than no testing company. So, plainly:</p>
     </div>
