@@ -16,6 +16,10 @@ from .search import (
     METHODS, CampaignResult, ComparisonResult, Sample,
     cem_search, compare, random_search,
 )
+from .report import (
+    Coverage, FailureMode, Report, build_report, engineering_report,
+    measure_coverage, safety_appendix, write_archive, write_deliverables,
+)
 from .space import SearchSpace
 from .spec import Perturbation, Predicate, RunSpec, Seeds
 
@@ -26,6 +30,9 @@ __all__ = [
     "Violation", "evaluate", "severity",
     "SearchSpace", "Sample", "CampaignResult", "ComparisonResult",
     "random_search", "cem_search", "compare", "METHODS",
+    "Report", "FailureMode", "Coverage", "build_report",
+    "measure_coverage", "engineering_report", "safety_appendix",
+    "write_archive", "write_deliverables",
     "RunRecord", "ReplayResult", "execute", "replay",
     "reduce_failure", "ReductionResult", "ReductionError",
     "Axis", "AxisOutcome", "SEVERITY_AXES",

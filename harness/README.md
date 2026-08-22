@@ -13,17 +13,73 @@ pytest tests/ -q
 
 ## What this is, and what it deliberately is not
 
-This is **stages 01, 02, 03, 04 and 05** of the pipeline on the website:
-ingest, perturb, search, detect, and reduce, with the provenance that makes a
-result mean anything.
-
-It is **not** the report generator. That is an aggregation over these.
+**All five stages** on the website — ingest, perturb, search, detect, reduce —
+plus the three deliverables they feed.
 
 ```bash
 python examples/run_one.py       # one run, recorded, replayed
 python examples/reduce_one.py    # a five-axis failure, minimised
 python examples/search_one.py    # search a space, compare methods, reduce the worst
+python examples/report_one.py    # a whole campaign into the three deliverables
 ```
+
+## Deliverables
+
+`build_report()` turns a campaign into failure modes, then
+`write_deliverables()` writes all three:
+
+```
+engineering-report.md      what broke, and the smallest condition that breaks it
+safety-appendix.md         method, predicates, coverage, reproducibility, limits
+archive/manifest.jsonl     one line per run: seeds, config hash, verdict
+archive/campaign.json      every sample
+archive/report.json        the modes and coverage as data
+archive/traces/mode-N.csv  trajectory for each mode's minimal case
+```
+
+### Failure modes: how failures are grouped
+
+Listing 49 failures by count tells a customer nothing and invites an argument
+about the number. They have to be grouped, and the grouping has to be
+explainable — the moment a black box decides what counts as the same failure,
+the evidence stops being checkable.
+
+**The signature is the reduced form**: which predicate fired, and which axes
+are genuinely required once everything irrelevant is relaxed away. On the
+example campaign:
+
+```
+3 failure modes from the 10 most severe of 49 failures:
+  1.  5 x  tilt_limit via push_impulse_ns + torque_loss_pct
+  2.  4 x  tilt_limit via push_impulse_ns
+  3.  1 x  tilt_limit via payload_kg + push_impulse_ns + torque_loss_pct
+```
+
+"Fails on a push alone" and "needs a push *and* degraded actuators" are
+different problems for whoever has to fix them. Two runs in one group fail for
+the same reason in that sense and no other, which the report says in those
+words.
+
+Only the `max_reduce` most severe failures are minimised — reduction costs a
+couple of dozen simulations each, and reducing all 49 would cost more than the
+campaign did. The report states how many were reduced so the grouping is never
+mistaken for exhaustive.
+
+### Coverage is reported bluntly
+
+Six axes at four bins each is 4096 cells. 120 simulations visited **101 of
+them — 2.47%**. The appendix says the campaign *sampled* the declared volume
+and did not sweep it, and that behaviour in unvisited regions is unsupported
+by the evidence. A coverage number that flattered the campaign would be worse
+than none.
+
+### What the documents refuse to say
+
+Neither document claims the policy is safe, asserts conformity with any
+regulation, or presents absence of a violation as evidence of safety. There is
+a test for the affirmative forms of each — `demonstrates safety`, `certifies`,
+`is compliant`, `verified safe` — because that is the one property of this
+output that must not regress.
 
 ## Search
 
@@ -163,6 +219,8 @@ result says so in those words rather than leaving it to be argued about.
 | `cem_search()` | Directed sampling that concentrates on severe regions |
 | `compare()` | Both methods across several seeds, reported per seed |
 | `reduce_failure()` | Relaxes a failing case to a locally minimal one |
+| `build_report()` | Groups failures into modes and measures coverage |
+| `write_deliverables()` | The two documents and the archive |
 | `ReductionResult` | Per-axis before/after, what was eliminated, evaluations used |
 
 ### Perturbation axes implemented
@@ -224,8 +282,12 @@ before trusting a result.
   against that one rollout, not against the policy's distribution.
 - Search is sequential. Every run is independent, so parallelism is available
   whenever it is worth the complexity — 1500 simulations took 93 s here.
-- CEM finds *dense* failure regions, not necessarily *diverse* ones. Clustering
-  failures by mode is a separate feature and is not claimed here.
+- CEM finds *dense* failure regions, not necessarily *diverse* ones. Modes are
+  grouped from what the search happened to find; a mode the search never
+  reached cannot appear in the report.
+- Documents are Markdown. PDF rendering is not implemented.
+- Trajectory traces are CSV per mode. Video per flagged run, which the website
+  mentions, is not implemented.
 - The torso contact force is the only contact signal; per-link forces and a
   centre-of-mass-outside-support-polygon predicate are not implemented.
 - `StandPolicy` is a PD hold, not a learned policy. It is a baseline: a
