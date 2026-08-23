@@ -1,0 +1,60 @@
+/* Get started — layout for the quickstart, on top of css/site.css.
+   Reuses .rep-head, .note and .inline-link from the report page's vocabulary
+   so the two secondary pages read as one family. */
+
+.rep-head{padding:clamp(120px,14vw,180px) 0 clamp(40px,5vw,64px)}
+.rep-head .display{font-size:clamp(30px,4.4vw,54px);margin:16px 0 24px;max-width:18ch}
+.rep-lede{max-width:60ch;opacity:.92;font-size:clamp(16px,1.7vw,18px)}
+.rep-head .note{margin-top:24px}
+
+/* ── the numbered steps ───────────────────────────────────────
+   Numbering is legitimate here: this is a real sequence, and doing 03 before
+   02 does not work. */
+.steps{display:grid;gap:clamp(40px,5vw,72px)}
+.step{display:grid;grid-template-columns:56px minmax(0,1fr);gap:clamp(14px,2.6vw,32px);
+      padding-top:clamp(28px,3.4vw,44px);border-top:1px solid var(--rule-soft)}
+.step:first-child{border-top:0;padding-top:0}
+.step__n{color:var(--sage);opacity:.75;font-size:12px;letter-spacing:.16em;padding-top:.5em}
+.step__body{min-width:0}
+.step__body .h2{margin-bottom:14px}
+.step__body p{max-width:64ch;opacity:.92}
+.step__body p + p{margin-top:16px}
+.step__body code{font-family:var(--mono);font-size:.92em;color:var(--bone)}
+.step__body .note{margin-top:14px}
+
+/* ── command blocks ───────────────────────────────────────── */
+.cmd{
+  margin:20px 0 0;padding:16px clamp(14px,2vw,20px);
+  border:1px solid var(--rule-soft);border-left:2px solid var(--glacial-dim);
+  border-radius:2px;background:var(--panel);
+  overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  color:var(--bone);text-wrap:auto;
+}
+.cmd code{font:inherit;color:inherit}
+.cmd--file,.cmd--out{border-left-color:var(--rule);color:var(--mist)}
+.cmd .k{color:var(--glacial)}
+.cmd .c{color:var(--sage);opacity:.65}
+.cmd .s{color:var(--bone)}
+
+/* ── output definition lists ──────────────────────────────── */
+.outputs{margin:22px 0 0;display:grid;gap:0}
+.outputs dt{
+  font-family:var(--mono);font-size:12.5px;color:var(--bone);
+  padding-top:18px;border-top:1px solid var(--rule-soft);letter-spacing:.03em;
+}
+.outputs dd{margin:8px 0 18px;opacity:.9;max-width:64ch}
+.outputs dd:last-of-type{margin-bottom:0}
+.outputs--wide dt{font-family:var(--sans);font-size:clamp(17px,1.8vw,20px);letter-spacing:-.01em}
+
+.foot__in a{color:inherit}
+.foot__in a:hover{color:var(--bone)}
+
+/* the site's contact block is a full-height image plate; there is no image here */
+.contact{min-height:auto;display:block;padding:clamp(80px,10vw,130px) 0;border-top:1px solid var(--rule-soft)}
+.contact__in{max-width:62ch}
+.contact__in .h2{margin:16px 0 20px}
+
+@media (max-width:640px){
+  .step{grid-template-columns:1fr;gap:6px}
+  .step__n{padding-top:0}
+}

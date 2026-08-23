@@ -25,7 +25,8 @@
     <nav class="pills" aria-label="Sections">
       <a href="#problem">Problem</a><a href="#deadline">Why now</a><a href="#run">How a run works</a><a href="#deliverables">Deliverables</a><a href="#interfaces">Interfaces</a><a href="#status">Status</a>
     </nav>
-    <a class="nav__cta" href="#contact">Talk to us</a>
+    <a class="nav__ghost" href="#contact">Talk to us</a>
+    <a class="nav__cta" href="start/">Get started</a>
   </div>
 </header>
 
@@ -44,7 +45,10 @@
     <div class="hero__lead">
       <p class="eyebrow">Adversarial testing for learned robot policies</p>
       <h1 class="display">The ground gives way somewhere. We find <em>where</em>.</h1>
-      <a class="btn" href="#contact">Start a conversation <span aria-hidden="true">→</span></a>
+      <div class="hero__act">
+        <a class="btn btn--solid" href="start/">Get started <span aria-hidden="true">→</span></a>
+        <a class="btn" href="#contact">Start a conversation <span aria-hidden="true">→</span></a>
+      </div>
     </div>
     <p class="hero__note">A robot trained in simulation walks beautifully until the moss is wet, the slope is steeper, or a sensor answers late. We hunt those conditions on purpose — thousands of them — so the first failure happens in simulation, not in a warehouse.</p>
   </div>
@@ -57,12 +61,9 @@
 
 <!-- ── the problem, stated plainly ──────────────────────────── -->
 <section class="section" id="problem">
-  <div class="wrap grid2">
-    <div data-reveal>
-      <p class="eyebrow">The problem</p>
-    </div>
-    <div data-reveal>
-      <h2 class="h2">A policy that passes your test suite has only passed your test suite.</h2>
+  <div class="wrap">
+    <div class="lead" data-reveal>
+      <h2 class="h2 h2--lead">A policy that passes your test suite has only passed your test suite.</h2>
       <p>Learned controllers fail on conditions nobody wrote a test for: a friction coefficient outside the training distribution, a payload two centimetres off centre, a depth sensor that answers late under load. The failures are rarely exotic. They are ordinary conditions that were never sampled.</p>
       <p>And the usual tools don't transfer. There is no branch to cover and no line to instrument, so coverage means nothing here. Passing a hundred scripted scenarios tells you about a hundred scenarios — it says nothing about the hundred and first.</p>
     </div>
@@ -70,8 +71,7 @@
 </section>
 
 <!-- ── deadline ─────────────────────────────────────────────── -->
-<section class="section section--glow" id="deadline">
-  <div class="glow" aria-hidden="true"></div>
+<section class="section" id="deadline">
   <div class="wrap grid2">
     <div data-reveal>
       <p class="eyebrow">Why now</p>
@@ -87,11 +87,11 @@
 </section>
 
 <!-- ── how a run works ──────────────────────────────────────── -->
-<section class="section section--alt" id="run">
+<section class="section" id="run">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">How a run works</p>
       <h2 class="h2">Five stages, one question.</h2>
+      <p class="head__lede">The question is where this policy fails. Every stage exists to answer it with something a stranger can re-run.</p>
     </div>
     <ol class="stages">
       <li class="stage" data-reveal><span class="stage__n mono">01</span><h3>Ingest</h3><p>Your policy checkpoint and robot model, loaded into deterministic simulation. Seed, simulator version and policy hash are recorded with every run.</p></li>
@@ -106,27 +106,31 @@
         <span class="mono">campaign.yaml</span>
         <span class="mono config__tag">example</span>
       </div>
-<pre class="config__body mono"><code><span class="k">robot</span>: quadruped_12dof.urdf
-<span class="k">policy</span>: ckpt/policy_ppo_41200.pt
-<span class="k">sim</span>: mujoco==3.1.6
-<span class="k">seed</span>: 0xA13F
-<span class="k">budget</span>: 40000
+<pre class="config__body mono"><code><span class="k">robot</span>: my_robot.urdf
+<span class="k">policy</span>: mypkg.policies:WalkPolicy
+<span class="k">duration_s</span>: 5.0
 
-<span class="k">axes</span>:
-  push_impulse:  [0, 40]      <span class="c"># N·s</span>
-  friction_mu:   [0.25, 1.10]
-  slope_deg:     [0, 25]
-  sensor_lag_ms: [0, 80]
+<span class="c"># Three seeds, not one: a single seed hides which</span>
+<span class="c"># component caused a divergence on replay.</span>
+<span class="k">seeds</span>:
+  sampler: 0xA13F
+  sim: 0
+  policy: 0
 
-<span class="k">predicates</span>:
-  - tilt_deg &gt; 35
-  - contact_force_n &gt; 900
-  - com_outside: support_polygon
+<span class="k">axes</span>:                        <span class="c"># the volume to search</span>
+  push_impulse_ns: [0, 40]   <span class="c"># N·s</span>
+  friction_mu:     [0.25, 1.10]
+  slope_deg:       [0, 25]
+  sensor_lag_ms:   [0, 80]
 
-<span class="k">search</span>: directed          <span class="c"># or: random</span>
-<span class="k">reduce</span>: true             <span class="c"># minimise every failing case</span>
+<span class="k">predicates</span>:                  <span class="c"># rules you wrote</span>
+  - {name: tilt_limit, signal: tilt_deg, op: "&gt;", threshold: 35.0, grace_s: 0.3}
+  - {name: fallen,     signal: height_m, op: "&lt;", threshold: 0.12, grace_s: 0.3}
+
+<span class="k">search</span>: {method: cem, budget: 150}   <span class="c"># or method: random</span>
+<span class="k">reduce</span>: {enabled: true, max: 10}    <span class="c"># minimise every failing case</span>
 </code></pre>
-      <p class="note mono">Every field is yours. The seed and the simulator version are what make a run re-runnable a year later.</p>
+      <p class="note mono">Every field is yours. Run it with <code>faultline run campaign.yaml</code>. The simulator version is not set here — it is recorded with every run rather than chosen.</p>
     </div>
   </div>
 </section>
@@ -136,7 +140,6 @@
 <section class="section" id="space">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">The search space</p>
       <h2 class="h2">Every test is a point you can name.</h2>
       <p class="head__lede">You declare the axes and their bounds. We search the volume they enclose. These are the axes supported today; the numbers below are illustrative defaults for a mid-size quadruped, and yours replace them.</p>
     </div>
@@ -164,10 +167,9 @@
 </section>
 
 <!-- ── predicates ───────────────────────────────────────────── -->
-<section class="section section--alt" id="predicates">
+<section class="section" id="predicates">
   <div class="wrap grid2">
     <div data-reveal>
-      <p class="eyebrow">What counts as a failure</p>
       <h2 class="h2">A failure is a rule you wrote, not a judgement we made.</h2>
       <p>Every violation is an explicit predicate over the trajectory. No learned classifier sits between the run and the verdict — when a run is flagged you can read the line that flagged it, and disagree with it.</p>
     </div>
@@ -228,22 +230,23 @@
 <section class="section" id="deliverables">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">Deliverables</p>
       <h2 class="h2">Two documents, and everything needed to re-run them.</h2>
     </div>
+    <p class="head__lede" data-reveal style="margin-bottom:clamp(28px,3.4vw,44px)">
+      A campaign against the stand-in quadruped — its failure modes, sample
+      efficiency and coverage — is published in full.
+      <a class="inline-link" href="report/">See a sample report &rarr;</a>
+    </p>
     <div class="cards" data-reveal>
       <article class="card">
-        <p class="card__n mono">01</p>
         <h3>Engineering report</h3>
         <p>Failures clustered by mode rather than listed by count, with the region of parameter space each cluster occupies, the minimal reproducing case for every one, and trajectory traces and video for each flagged run.</p>
       </article>
       <article class="card">
-        <p class="card__n mono">02</p>
         <h3>Safety-case appendix</h3>
         <p>Method, the declared parameter space and what was covered of it, every predicate definition, and the full run manifest. Written to be read by someone assessing the evidence rather than someone who built it.</p>
       </article>
       <article class="card">
-        <p class="card__n mono">03</p>
         <h3>Run archive</h3>
         <p>Seeds, simulator version, policy hash, and the exact configuration for every run in the campaign. Any result in either document can be reproduced bit for bit, by you or by an assessor.</p>
       </article>
@@ -255,7 +258,6 @@
 <section class="section" id="interfaces">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">Interfaces</p>
       <h2 class="h2">What it plugs into.</h2>
     </div>
     <div class="stack" data-reveal>
@@ -270,7 +272,7 @@
 </section>
 
 <!-- ── inputs ───────────────────────────────────────────────── -->
-<section class="section section--alt" id="start">
+<section class="section" id="start">
   <div class="wrap grid2">
     <div data-reveal>
       <p class="eyebrow">To start</p>
@@ -294,7 +296,6 @@
 <section class="section" id="status">
   <div class="wrap">
     <div class="head" data-reveal>
-      <p class="eyebrow">Where this stands</p>
       <h2 class="h2">What we can show, and what we can&rsquo;t.</h2>
       <p class="head__lede">A testing company that overstates its evidence is worse than no testing company. So, plainly:</p>
     </div>

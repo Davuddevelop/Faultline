@@ -1,0 +1,109 @@
+<mujoco model="quadruped_12dof">
+  <!-- A deliberately plain 12-DOF quadruped: abduction, hip and knee per leg.
+       This is a stand-in so the harness is runnable and testable on its own.
+       Swap in the customer's URDF/MJCF; nothing in the harness is specific
+       to this model beyond the names read from the model itself. -->
+
+  <compiler angle="radian" autolimits="true"/>
+
+  <!-- Fixed timestep and a pinned solver: determinism depends on both. -->
+  <option timestep="0.002" iterations="50" solver="Newton" integrator="implicitfast" cone="pyramidal">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <default>
+    <joint damping="0.35" armature="0.012" frictionloss="0.02"/>
+    <geom friction="0.9 0.02 0.001" density="900" rgba="0.55 0.6 0.56 1"/>
+    <position kp="28" forcerange="-18 18"/>
+    <default class="leg">
+      <geom type="capsule" size="0.016"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <light pos="0 0 2"/>
+    <geom name="floor" type="plane" size="12 12 0.1" friction="0.9 0.02 0.001" rgba="0.15 0.18 0.16 1"/>
+
+    <body name="torso" pos="0 0 0.30">
+      <freejoint name="root"/>
+      <geom name="torso" type="box" size="0.18 0.09 0.035" density="1100"/>
+      <site name="imu" pos="0 0 0" size="0.01"/>
+
+      <!-- fr: front-right, fl, hr, hl -->
+      <body name="fr_hip" pos="0.15 -0.08 0">
+        <joint name="fr_abd" axis="1 0 0" range="-0.7 0.7"/>
+        <geom class="leg" fromto="0 0 0 0 -0.035 0" size="0.02"/>
+        <body name="fr_thigh" pos="0 -0.035 0">
+          <joint name="fr_hip" axis="0 1 0" range="-1.6 1.6"/>
+          <geom class="leg" fromto="0 0 0 0 0 -0.115"/>
+          <body name="fr_calf" pos="0 0 -0.115">
+            <joint name="fr_knee" axis="0 1 0" range="-2.5 -0.2"/>
+            <geom class="leg" fromto="0 0 0 0 0 -0.115" size="0.013"/>
+            <geom name="fr_foot" type="sphere" size="0.019" pos="0 0 -0.115" friction="1.0 0.03 0.001"/>
+          </body>
+        </body>
+      </body>
+
+      <body name="fl_hip" pos="0.15 0.08 0">
+        <joint name="fl_abd" axis="1 0 0" range="-0.7 0.7"/>
+        <geom class="leg" fromto="0 0 0 0 0.035 0" size="0.02"/>
+        <body name="fl_thigh" pos="0 0.035 0">
+          <joint name="fl_hip" axis="0 1 0" range="-1.6 1.6"/>
+          <geom class="leg" fromto="0 0 0 0 0 -0.115"/>
+          <body name="fl_calf" pos="0 0 -0.115">
+            <joint name="fl_knee" axis="0 1 0" range="-2.5 -0.2"/>
+            <geom class="leg" fromto="0 0 0 0 0 -0.115" size="0.013"/>
+            <geom name="fl_foot" type="sphere" size="0.019" pos="0 0 -0.115" friction="1.0 0.03 0.001"/>
+          </body>
+        </body>
+      </body>
+
+      <body name="hr_hip" pos="-0.15 -0.08 0">
+        <joint name="hr_abd" axis="1 0 0" range="-0.7 0.7"/>
+        <geom class="leg" fromto="0 0 0 0 -0.035 0" size="0.02"/>
+        <body name="hr_thigh" pos="0 -0.035 0">
+          <joint name="hr_hip" axis="0 1 0" range="-1.6 1.6"/>
+          <geom class="leg" fromto="0 0 0 0 0 -0.115"/>
+          <body name="hr_calf" pos="0 0 -0.115">
+            <joint name="hr_knee" axis="0 1 0" range="-2.5 -0.2"/>
+            <geom class="leg" fromto="0 0 0 0 0 -0.115" size="0.013"/>
+            <geom name="hr_foot" type="sphere" size="0.019" pos="0 0 -0.115" friction="1.0 0.03 0.001"/>
+          </body>
+        </body>
+      </body>
+
+      <body name="hl_hip" pos="-0.15 0.08 0">
+        <joint name="hl_abd" axis="1 0 0" range="-0.7 0.7"/>
+        <geom class="leg" fromto="0 0 0 0 0.035 0" size="0.02"/>
+        <body name="hl_thigh" pos="0 0.035 0">
+          <joint name="hl_hip" axis="0 1 0" range="-1.6 1.6"/>
+          <geom class="leg" fromto="0 0 0 0 0 -0.115"/>
+          <body name="hl_calf" pos="0 0 -0.115">
+            <joint name="hl_knee" axis="0 1 0" range="-2.5 -0.2"/>
+            <geom class="leg" fromto="0 0 0 0 0 -0.115" size="0.013"/>
+            <geom name="hl_foot" type="sphere" size="0.019" pos="0 0 -0.115" friction="1.0 0.03 0.001"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="fr_abd" joint="fr_abd"/>  <position name="fr_hip" joint="fr_hip"/>  <position name="fr_knee" joint="fr_knee"/>
+    <position name="fl_abd" joint="fl_abd"/>  <position name="fl_hip" joint="fl_hip"/>  <position name="fl_knee" joint="fl_knee"/>
+    <position name="hr_abd" joint="hr_abd"/>  <position name="hr_hip" joint="hr_hip"/>  <position name="hr_knee" joint="hr_knee"/>
+    <position name="hl_abd" joint="hl_abd"/>  <position name="hl_hip" joint="hl_hip"/>  <position name="hl_knee" joint="hl_knee"/>
+  </actuator>
+
+  <sensor>
+    <framequat name="torso_quat" objtype="site" objname="imu"/>
+    <framepos  name="torso_pos"  objtype="site" objname="imu"/>
+  </sensor>
+
+  <keyframe>
+    <!-- nominal stance: knees folded, feet under the hips -->
+    <key name="stand"
+         qpos="0 0 0.232 1 0 0 0  0 0.75 -1.5  0 0.75 -1.5  0 0.75 -1.5  0 0.75 -1.5"
+         ctrl="0 0.75 -1.5  0 0.75 -1.5  0 0.75 -1.5  0 0.75 -1.5"/>
+  </keyframe>
+</mujoco>

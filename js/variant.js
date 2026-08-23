@@ -36,11 +36,28 @@
   var ticking = false;
 
   function frame() {
-    var y = window.scrollY;
+    var vh = window.innerHeight;
+
     layers.forEach(function (el) {
       var rate = parseFloat(el.getAttribute('data-parallax')) || 0.1;
-      el.style.transform = 'translate3d(0,' + (y * rate).toFixed(2) + 'px,0)';
+      var host = el.parentElement;
+      var r = host.getBoundingClientRect();
+
+      /* Progress through the viewport, not absolute scrollY: -1 as the host
+         enters from below, +1 as it leaves above. Using scrollY translated
+         layers far down the page by hundreds of pixels and slid them out of
+         frame entirely. */
+      var progress = (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2);
+      progress = Math.max(-1, Math.min(1, progress));
+
+      /* Never travel further than the overflow the layer actually has, or the
+         bottom of the image lifts off the bottom of its container. */
+      var slack = Math.max(0, el.offsetHeight - host.offsetHeight) / 2;
+      var shift = -progress * Math.min(slack, vh * rate);
+
+      el.style.transform = 'translate3d(0,' + shift.toFixed(2) + 'px,0)';
     });
+
     onScroll();
     ticking = false;
   }
