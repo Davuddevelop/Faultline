@@ -4,6 +4,8 @@ One run, reproducible from its record. Search, minimisation and reporting are
 built on top of this and are deliberately not part of it.
 """
 
+from .config import Campaign, ConfigError, load_policy
+from .config import load as load_campaign
 from .policies import JitterPolicy, Policy, StandPolicy
 from .predicates import Violation, evaluate, severity
 from .record import ReplayResult, RunRecord, execute, replay
@@ -25,6 +27,7 @@ from .spec import Perturbation, Predicate, RunSpec, Seeds
 
 __all__ = [
     "Perturbation", "Predicate", "RunSpec", "Seeds",
+    "Campaign", "ConfigError", "load_campaign", "load_policy",
     "Policy", "StandPolicy", "JitterPolicy",
     "Trajectory", "run", "sim_environment",
     "Violation", "evaluate", "severity",
@@ -37,4 +40,4 @@ __all__ = [
     "reduce_failure", "ReductionResult", "ReductionError",
     "Axis", "AxisOutcome", "SEVERITY_AXES",
 ]
-__version__ = "0.1.0"
+__version__ = "0.2.0"

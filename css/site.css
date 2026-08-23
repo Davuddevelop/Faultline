@@ -110,6 +110,21 @@ blockquote{margin:0}
 .btn:active{transform:scale(.985)}
 .btn--lg{padding:18px 32px;font-size:11.5px}
 
+/* two actions in the hero: the primary is filled, the secondary outlined */
+.hero__act{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.btn--solid{background:var(--glacial);border-color:var(--glacial);color:#08130E}
+.btn--solid:hover{background:#BEDBE2;border-color:#BEDBE2}
+.nav__ghost{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mist);text-decoration:none;opacity:.78;padding:10px 4px;
+  display:inline-flex;align-items:center;min-height:40px;
+  transition:opacity .3s var(--ease),color .3s var(--ease);
+}
+.nav__ghost:hover{opacity:1;color:var(--bone)}
+/* it sits on bright sky over the hero, like the wordmark */
+.nav__ghost{text-shadow:0 1px 12px rgba(4,9,6,.8)}
+.nav.is-stuck .nav__ghost{text-shadow:none}
+
 /* ── statement ────────────────────────────────────────────── */
 .band{background:var(--deep);border-block:1px solid var(--rule-soft);padding:clamp(74px,11vw,148px) 0}
 .band__line{font-family:var(--display);font-size:clamp(26px,3.8vw,48px);line-height:1.2;color:var(--bone);letter-spacing:-.01em}
@@ -302,6 +317,12 @@ blockquote{margin:0}
 .foot{border-top:1px solid var(--rule-soft);padding:32px 0;background:var(--void)}
 .foot__in{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;color:var(--sage)}
 .foot__in .mono{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;opacity:.85}
+
+/* Standalone links get a real target. WCAG 2.2 exempts links inside a
+   sentence — the one in the deliverables paragraph is genuinely inline — but
+   a link alone on its line is not covered by that exception. */
+.foot__in a{display:inline-flex;align-items:center;min-height:40px}
+.inline-link--block{display:inline-flex;align-items:center;min-height:40px}
 
 /* ── reveal ───────────────────────────────────────────────── */
 [data-reveal]{opacity:0;transform:translateY(20px);transition:opacity .95s var(--ease),transform .95s var(--ease)}

@@ -6,7 +6,34 @@ One run in, one record out. The record is enough for someone who does not
 trust you to reproduce the run.
 
 ```bash
-pip install -r requirements.txt
+pip install -e .              # or: pip install git+<repo>#subdirectory=harness
+faultline init campaign.yaml
+faultline run campaign.yaml
+```
+
+`faultline run` exits **1** when violations were found and **0** when none
+were, so it drops into CI without a wrapper.
+
+| command | what it does |
+| --- | --- |
+| `faultline init [path]` | write a commented starter `campaign.yaml` |
+| `faultline run <config>` | search, reduce, write the three deliverables |
+| `faultline replay <record>` | re-execute a recorded run and report whether it matched |
+| `faultline version` | every version that affects a result |
+
+The config is the one shown on the landing page — literally: a test loads that
+page's `<pre>` block and fails if it stops being a valid campaign, so the site
+cannot drift into advertising a schema the code does not accept.
+
+Two things the page's earlier mock-up got wrong and the real format fixes: it
+showed a single `seed:` where the harness keeps three separate seeds on
+purpose, and it listed `sim: mujoco==3.1.6` as an input when the simulator
+version is *recorded* rather than chosen.
+
+To work on the harness itself:
+
+```bash
+pip install -e '.[dev]'
 python examples/run_one.py
 pytest tests/ -q
 ```

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get started — Faultline</title>
+<meta name="description" content="Install the Faultline harness and run an adversarial campaign against your own robot policy. Runs locally; no account, no hosted service.">
+<meta name="theme-color" content="#050B08">
+<link rel="preload" href="../assets/fonts/jizBRFtNs2ka5fXjeivQ4LroWlx-6zsTjmbI.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/site.css">
+<link rel="stylesheet" href="start.css">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav is-stuck" id="nav">
+  <div class="nav__in">
+    <a class="mark" href="../index.html"><span class="mark__glyph" aria-hidden="true"></span>Faultline</a>
+    <a class="nav__cta" href="../report/">Sample report</a>
+  </div>
+</header>
+
+<main id="main">
+<section class="rep-head">
+  <div class="wrap">
+    <p class="eyebrow">Get started</p>
+    <h1 class="display">Run it against your own policy.</h1>
+    <p class="rep-lede">The harness is a Python package that runs on your machine.
+      There is no account, no upload and no hosted service — your policy and your
+      robot model never leave your hardware.</p>
+    <p class="note mono">Requires Python 3.10+ · installs MuJoCo · about two minutes</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap steps">
+
+    <article class="step">
+      <p class="step__n mono">01</p>
+      <div class="step__body">
+        <h2 class="h2">Install</h2>
+        <p>One package, with its simulator pinned exactly. A campaign that cannot
+          be re-run on the same physics is not evidence, so the version is not
+          left floating.</p>
+        <pre class="cmd"><code>pip install git+https://github.com/davuddevelop/faultline.git#subdirectory=harness</code></pre>
+        <p class="note mono">Check it landed: <code>faultline version</code></p>
+      </div>
+    </article>
+
+    <article class="step">
+      <p class="step__n mono">02</p>
+      <div class="step__body">
+        <h2 class="h2">Write a campaign</h2>
+        <p>Scaffold a commented config. It comes pointed at a stand-in quadruped
+          and a baseline stance controller, so it runs before you have written
+          anything of your own.</p>
+        <pre class="cmd"><code>faultline init campaign.yaml</code></pre>
+        <p>Every field is yours. The axes are the volume to search, in physical
+          units. The predicates are what counts as a failure — rules you wrote,
+          checked over the whole trajectory, never a learned classifier.</p>
+<pre class="cmd cmd--file"><code><span class="c"># campaign.yaml</span>
+<span class="k">robot</span>: my_robot.urdf
+<span class="k">policy</span>: mypkg.policies:WalkPolicy
+
+<span class="k">seeds</span>:                  <span class="c"># three, not one: a single seed hides</span>
+  sampler: 0xA13F      <span class="c"># which component caused a divergence</span>
+  sim: 0
+  policy: 0
+
+<span class="k">axes</span>:
+  push_impulse_ns: [0, 40]
+  slope_deg:       [0, 25]
+  sensor_lag_ms:   [0, 80]
+
+<span class="k">predicates</span>:
+  - {name: tilt_limit, signal: tilt_deg, op: <span class="s">"&gt;"</span>, threshold: 35.0}
+
+<span class="k">search</span>: {method: cem, budget: 150}
+<span class="k">reduce</span>: {enabled: true, max: 10}</code></pre>
+      </div>
+    </article>
+
+    <article class="step">
+      <p class="step__n mono">03</p>
+      <div class="step__body">
+        <h2 class="h2">Run it</h2>
+        <p>Search the space, minimise every failure worth reporting, write the
+          deliverables. Exit code is 1 when violations were found and 0 when they
+          were not, so it drops into CI without a wrapper.</p>
+        <pre class="cmd"><code>faultline run campaign.yaml</code></pre>
+<pre class="cmd cmd--out"><code>cem      seed=41279  failures  20/40  first at    8
+
+2 failure mode(s) from the 10 most severe of 20:
+  1.  9 x  tilt_limit via push_impulse_ns + torque_loss_pct
+  2.  1 x  tilt_limit via push_impulse_ns
+
+coverage  16/1024 cells (1.56%) at 4 bins per axis</code></pre>
+      </div>
+    </article>
+
+    <article class="step">
+      <p class="step__n mono">04</p>
+      <div class="step__body">
+        <h2 class="h2">Read what came out</h2>
+        <p>Three things, in <code>deliverables/</code>.</p>
+        <dl class="outputs">
+          <dt>engineering-report.md</dt>
+          <dd>Failures grouped by what they actually need, each with the smallest
+            condition that still breaks the policy.</dd>
+          <dt>safety-appendix.md</dt>
+          <dd>Method, every predicate definition, what fraction of the declared
+            space was covered, and the limits of the evidence. Written for someone
+            assessing it rather than someone who built it.</dd>
+          <dt>archive/</dt>
+          <dd>Seeds, config hash, model hash and verdict for every run, plus a
+            trajectory trace per failure mode. Any result can be re-executed with
+            <code>faultline replay</code>.</dd>
+        </dl>
+        <p class="note mono"><a class="inline-link inline-link--block" href="../report/">See what a real report looks like &rarr;</a></p>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="head"><h2 class="h2">Pointing it at your robot.</h2></div>
+    <dl class="outputs outputs--wide">
+      <dt>The model</dt>
+      <dd>URDF or MJCF. A URDF carries no contact parameters and no actuator
+        dynamics worth trusting, so after any conversion check friction, joint
+        damping and gear ratios before believing a result.</dd>
+      <dt>The policy</dt>
+      <dd>Anything with <code>reset(seed)</code> and <code>act(obs, t)</code>.
+        A PyTorch checkpoint wraps its forward pass in those two methods. Give it
+        an <code>id</code> that identifies the checkpoint by content — paths get
+        overwritten.</dd>
+      <dt>The limits</dt>
+      <dd>Your thresholds, on your machine. Supported signals are
+        <code>tilt_deg</code>, <code>height_m</code>, <code>contact_force_n</code>
+        and <code>joint_vel_rads</code>.</dd>
+    </dl>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="head"><h2 class="h2">What this is not.</h2></div>
+    <ul class="rules mono">
+      <li>Not a hosted service. There is no account and nothing is uploaded.</li>
+      <li>Not a proof of safety. It finds failures; it cannot show their absence.</li>
+      <li>One robot class exercised so far, and no completed customer pilots.</li>
+      <li>Reproducible within one simulator build and CPU architecture, not across them.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="contact" id="contact">
+  <div class="wrap contact__in">
+    <p class="eyebrow">Talk to us</p>
+    <h2 class="h2">Run into something, or want it run against your fleet?</h2>
+    <p>We are looking for design partners rather than users. If you ship a learned
+      policy into Europe, your plan is worth more to us than a signup.</p>
+    <!-- TODO: replace with your real address before publishing -->
+    <a class="btn btn--lg" href="mailto:hello@faultline.dev">Start a conversation <span aria-hidden="true">&rarr;</span></a>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <span class="mono">Faultline — pre-product · Baku, Azerbaijan</span>
+    <span class="mono"><a href="../index.html">Back to the site</a></span>
+  </div>
+</footer>
+</body>
+</html>

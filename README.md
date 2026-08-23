@@ -41,6 +41,23 @@ Nothing on the page claims a result. Ranges are labelled illustrative,
 predicates are labelled as supported forms, and the hardware plate says
 outright that there is nothing to show yet.
 
+## Using it
+
+`start/` is the quickstart, linked from **Get started** in the nav and the
+hero. It is the honest answer to "how do I use this": install the package, run
+a campaign locally. There is no account and nothing is uploaded, because there
+is no hosted service.
+
+```bash
+pip install git+<repo>#subdirectory=harness
+faultline init campaign.yaml
+faultline run campaign.yaml
+```
+
+The `campaign.yaml` block on the landing page is the real schema — a test in
+`harness/tests/test_cli.py` loads it straight out of `index.html` and fails if
+the page and the parser disagree.
+
 ## The sample report
 
 `report/` publishes a real campaign: failure modes, sample efficiency and
