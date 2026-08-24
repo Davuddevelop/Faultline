@@ -90,6 +90,7 @@
 <section class="section" id="run">
   <div class="wrap">
     <div class="head" data-reveal>
+      <p class="micro">How a run works</p>
       <h2 class="h2">Five stages, one question.</h2>
       <p class="head__lede">The question is where this policy fails. Every stage exists to answer it with something a stranger can re-run.</p>
     </div>
@@ -141,28 +142,53 @@
 <section class="section" id="space">
   <div class="wrap">
     <div class="head" data-reveal>
+      <p class="micro">Search space</p>
       <h2 class="h2">Every test is a point you can name.</h2>
-      <p class="head__lede">You declare the axes and their bounds. We search the volume they enclose. These are the axes supported today; the numbers below are illustrative defaults for a mid-size quadruped, and yours replace them.</p>
+      <p class="head__lede">You declare the axes and their bounds. We search the volume they enclose. These are the seven the harness perturbs today, with the field name you would write in a config. The ranges are illustrative for a mid-size quadruped; yours replace them.</p>
     </div>
 
-    <div class="tablewrap" data-reveal>
-      <table class="spec">
-        <caption class="visually-hidden">Perturbation axes, their units, and illustrative default ranges</caption>
-        <thead>
-          <tr><th scope="col">Axis</th><th scope="col">Unit</th><th scope="col">Illustrative range</th></tr>
-        </thead>
-        <tbody>
-          <tr><th scope="row">Push impulse</th><td>N·s</td><td>0 – 40</td></tr>
-          <tr><th scope="row">Ground friction µ</th><td>—</td><td>0.25 – 1.10</td></tr>
-          <tr><th scope="row">Slope</th><td>deg</td><td>0 – 25</td></tr>
-          <tr><th scope="row">Terrain roughness</th><td>cm RMS</td><td>0 – 6</td></tr>
-          <tr><th scope="row">Sensor latency</th><td>ms</td><td>0 – 80</td></tr>
-          <tr><th scope="row">Actuator torque loss</th><td>%</td><td>0 – 30</td></tr>
-          <tr><th scope="row">Payload mass</th><td>kg</td><td>0 – 8</td></tr>
-          <tr><th scope="row">Payload offset</th><td>cm</td><td>0 – 15</td></tr>
-        </tbody>
-      </table>
+    <div class="spacegrid">
+      <div class="tablewrap" data-reveal>
+        <table class="spec-table">
+          <caption class="visually-hidden">Perturbation axes, field names, units and illustrative ranges</caption>
+          <thead>
+            <tr><th scope="col">Axis</th><th scope="col">Field</th><th scope="col">Unit</th><th scope="col">Range</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">A shove to the torso</th><td class="mono f">push_impulse_ns</td><td class="u">N&middot;s</td><td class="n">0 &ndash; 16</td></tr>
+            <tr><th scope="row">Ground incline</th><td class="mono f">slope_deg</td><td class="u">deg</td><td class="n">0 &ndash; 12</td></tr>
+            <tr><th scope="row">Sensor delay</th><td class="mono f">sensor_lag_ms</td><td class="u">ms</td><td class="n">0 &ndash; 50</td></tr>
+            <tr><th scope="row">Actuator weakness</th><td class="mono f">torque_loss_pct</td><td class="u">%</td><td class="n">0 &ndash; 45</td></tr>
+            <tr><th scope="row">Extra mass</th><td class="mono f">payload_kg</td><td class="u">kg</td><td class="n">0 &ndash; 3</td></tr>
+            <tr><th scope="row">Load offset</th><td class="mono f">payload_offset_m</td><td class="u">m</td><td class="n">0 &ndash; 0.15</td></tr>
+            <tr><th scope="row">Floor friction</th><td class="mono f">friction_mu</td><td class="u">&mdash;</td><td class="n">0.3 &ndash; 1.0</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure class="finding" data-reveal>
+        <p class="micro">One axis, from a real campaign</p>
+        <div class="tscale" style="--from:60.5%;--span:36.3%;--at:49.7%">
+          <div class="tscale__head">
+            <span class="tscale__name mono">push_impulse_ns</span>
+            <span class="tscale__unit">N&middot;s</span>
+          </div>
+          <div class="tscale__track">
+            <span class="tscale__band"></span>
+            <span class="tscale__min"></span>
+          </div>
+          <div class="tscale__foot"><span>0</span><span>16</span></div>
+        </div>
+        <dl class="tkey">
+          <dt><span class="tkey__band" aria-hidden="true"></span>Failures sampled</dt>
+          <dd class="mono">9.68 &ndash; 15.49</dd>
+          <dt><span class="tkey__min" aria-hidden="true"></span>Smallest that still fails</dt>
+          <dd class="mono">7.96</dd>
+        </dl>
+        <figcaption>The search found failures from 9.68&nbsp;N&middot;s upward. Reduction then proved the policy topples at <strong>7.96</strong> &mdash; below anything the search had sampled. That gap is the difference between a test suite and an adversary.</figcaption>
+      </figure>
     </div>
+
     <p class="note mono" data-reveal>Axes combine. The interesting failures are almost never on one axis alone.</p>
   </div>
 </section>
@@ -231,6 +257,7 @@
 <section class="section" id="deliverables">
   <div class="wrap">
     <div class="head" data-reveal>
+      <p class="micro">Deliverables</p>
       <h2 class="h2">Two documents, and everything needed to re-run them.</h2>
     </div>
     <p class="head__lede" data-reveal style="margin-bottom:clamp(28px,3.4vw,44px)">
@@ -259,6 +286,7 @@
 <section class="section" id="interfaces">
   <div class="wrap">
     <div class="head" data-reveal>
+      <p class="micro">Interfaces</p>
       <h2 class="h2">What it plugs into.</h2>
     </div>
     <div class="stack" data-reveal>
@@ -297,12 +325,13 @@
 <section class="section" id="status">
   <div class="wrap">
     <div class="head" data-reveal>
+      <p class="micro">Status</p>
       <h2 class="h2">What we can show, and what we can&rsquo;t.</h2>
       <p class="head__lede">A testing company that overstates its evidence is worse than no testing company. So, plainly:</p>
     </div>
     <div class="panels" data-reveal>
       <div class="pane pane--yes">
-        <p class="eyebrow">In progress</p>
+        <p class="pane__tag"><span class="pill pill--ok">In progress</span></p>
         <ul>
           <li>Harness built against a quadruped policy trained with PPO</li>
           <li>Search-method comparison — random versus directed</li>
@@ -310,7 +339,7 @@
         </ul>
       </div>
       <div class="pane pane--no">
-        <p class="eyebrow">Not yet</p>
+        <p class="pane__tag"><span class="pill pill--bad">Not yet</span></p>
         <ul>
           <li>No customer results. No pilots completed.</li>
           <li>No claim this output satisfies any notified body.</li>

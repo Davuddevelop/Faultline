@@ -25,7 +25,7 @@
 .chart figcaption em{font-style:italic;color:var(--bone)}
 
 /* recessive grid and axes; the data is the only thing that should assert itself */
-.grid{stroke:rgba(140,180,154,.13);stroke-width:1}
+.grid{stroke:rgba(152,170,162,.13);stroke-width:1}
 .axis{stroke:rgba(140,180,154,.32);stroke-width:1}
 .tick,.axname{font-family:var(--mono);font-size:10px;fill:var(--sage);opacity:.75;font-variant-numeric:tabular-nums}
 .axname{font-size:10.5px;letter-spacing:.08em}

@@ -33,7 +33,7 @@
 .cmd code{font:inherit;color:inherit}
 .cmd--file,.cmd--out{border-left-color:var(--rule);color:var(--mist)}
 .cmd .k{color:var(--glacial)}
-.cmd .c{color:var(--sage);opacity:.65}
+.cmd .c{color:var(--sage);opacity:.88}
 .cmd .s{color:var(--bone)}
 
 /* ── output definition lists ──────────────────────────────── */
