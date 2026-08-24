@@ -400,6 +400,12 @@ def write_archive(report: Report, policy: Policy, directory: str | Path,
     if traces_for_modes:
         traces = directory / "traces"
         traces.mkdir(exist_ok=True)
+        # A previous campaign with more modes leaves mode-N.csv files behind.
+        # Left in place they describe modes this report does not contain, and an
+        # archive whose contents disagree with its own report.json is worse than
+        # no archive. Only the files this function writes are removed.
+        for stale in traces.glob("mode-*.csv"):
+            stale.unlink()
         for i, m in enumerate(report.modes, 1):
             traj = run(m.exemplar.minimal_spec, policy)
             rows = ["t,tilt_deg,height_m,contact_force_n,joint_vel_rads"]

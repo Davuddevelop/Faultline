@@ -207,6 +207,24 @@ def test_archive_writes_a_trajectory_trace_per_mode(report, policy, tmp_path):
     assert len(rows[0].split(",")) == 5
 
 
+def test_rerunning_into_a_directory_leaves_no_trace_from_the_previous_campaign(
+    report, policy, tmp_path
+):
+    """An archive whose traces disagree with its own report.json is worse than
+    no archive: an assessor finds evidence belonging to nothing they can see."""
+    out = write_deliverables(report, policy, tmp_path / "deliverables")
+    traces = out / "archive" / "traces"
+
+    # a campaign with more modes ran here before
+    (traces / "mode-9.csv").write_text("stale,from,an,earlier,campaign\n")
+
+    write_deliverables(report, policy, tmp_path / "deliverables")
+
+    remaining = sorted(p.name for p in traces.glob("*.csv"))
+    assert remaining == [f"mode-{i}.csv" for i in range(1, len(report.modes) + 1)]
+    assert "mode-9.csv" not in remaining
+
+
 def test_all_three_deliverables_are_written(report, policy, tmp_path):
     out = write_deliverables(report, policy, tmp_path / "deliverables")
     assert (out / "engineering-report.md").stat().st_size > 200

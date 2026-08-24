@@ -54,6 +54,24 @@ faultline init campaign.yaml
 faultline run campaign.yaml
 ```
 
+`configure/` is the campaign builder — the easy path to that config file. Drop
+in a URDF or MJCF and it parses the model in the browser, reports the joints,
+actuators and floor friction it found, and writes a `campaign.yaml` the CLI
+accepts. It runs nothing: the simulator is native code, so the campaign still
+runs on your machine. Nothing is uploaded.
+
+It also refuses CAD with an explanation rather than accepting a file it would
+fail on later — STEP and SolidWorks geometry carries no joints, masses or
+inertias, so it cannot be simulated without a URDF export first.
+
+Three artifacts now describe the same schema: the config block on `index.html`,
+the builder in `configure/configure.js`, and the parser in
+`harness/faultline/config.py`. Two tests keep them from drifting —
+`test_cli.py::test_the_config_shown_on_the_landing_page_is_a_real_campaign` and
+`harness/tests/test_configure_page.py`, which reads the JavaScript's own axis,
+signal and key lists and compares them against `SEVERITY_AXES`, `Trajectory`
+and `config.py`.
+
 The `campaign.yaml` block on the landing page is the real schema — a test in
 `harness/tests/test_cli.py` loads it straight out of `index.html` and fails if
 the page and the parser disagree.

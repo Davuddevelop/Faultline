@@ -96,7 +96,7 @@
     <ol class="stages">
       <li class="stage" data-reveal><span class="stage__n mono">01</span><h3>Ingest</h3><p>Your policy checkpoint and robot model, loaded into deterministic simulation. Seed, simulator version and policy hash are recorded with every run.</p></li>
       <li class="stage" data-reveal><span class="stage__n mono">02</span><h3>Perturb</h3><p>Each test is one point in the parameter space you declared — a specific friction, slope, latency, payload and disturbance, applied together.</p></li>
-      <li class="stage" data-reveal><span class="stage__n mono">03</span><h3>Search</h3><p>Random sampling covers the volume and finds the obvious failures. A trained adversary concentrates its budget where violations are dense, and finds the ones nobody thought to try.</p></li>
+      <li class="stage" data-reveal><span class="stage__n mono">03</span><h3>Search</h3><p>Random sampling covers the volume and finds the obvious failures. Directed search fits a distribution to the most severe results so far and resamples, concentrating budget where violations are dense — 41% of directed samples fail against 3.9% of random ones on our published campaign.</p></li>
       <li class="stage" data-reveal><span class="stage__n mono">04</span><h3>Detect</h3><p>Each trajectory is checked against your predicates. A run is flagged only when a rule you wrote evaluates true.</p></li>
       <li class="stage" data-reveal><span class="stage__n mono">05</span><h3>Reduce</h3><p>Every flagged run is minimised — perturbations are relaxed until the failure disappears — so what you get is the smallest condition that still breaks the policy.</p></li>
     </ol>
@@ -131,6 +131,7 @@
 <span class="k">reduce</span>: {enabled: true, max: 10}    <span class="c"># minimise every failing case</span>
 </code></pre>
       <p class="note mono">Every field is yours. Run it with <code>faultline run campaign.yaml</code>. The simulator version is not set here — it is recorded with every run rather than chosen.</p>
+      <p class="note mono"><a class="inline-link inline-link--block" href="configure/">Build one from your own robot file &rarr;</a></p>
     </div>
   </div>
 </section>

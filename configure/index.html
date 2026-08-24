@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build a campaign — Faultline</title>
+<meta name="description" content="Build a Faultline campaign config from your own robot model. Reads URDF and MJCF in your browser; nothing is uploaded.">
+<meta name="theme-color" content="#050B08">
+<link rel="preload" href="../assets/fonts/jizBRFtNs2ka5fXjeivQ4LroWlx-6zsTjmbI.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/site.css">
+<link rel="stylesheet" href="configure.css">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav is-stuck" id="nav">
+  <div class="nav__in">
+    <a class="mark" href="../index.html"><span class="mark__glyph" aria-hidden="true"></span>Faultline</a>
+    <a class="nav__cta" href="../start/">Get started</a>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="rep-head">
+  <div class="wrap">
+    <p class="eyebrow">Campaign builder</p>
+    <h1 class="display">Describe your robot. Get a config that runs.</h1>
+    <p class="rep-lede">Drop in your robot model and this reads it — joints, actuators,
+      floor friction — then writes the <code>campaign.yaml</code> the harness expects.
+      Everything happens in this browser tab.</p>
+    <p class="note mono">Nothing is uploaded · no account · works offline once loaded</p>
+  </div>
+</section>
+
+<div class="wrap">
+<div class="builder">
+
+  <!-- ── form ─────────────────────────────────────────────── -->
+  <form class="build" id="build" novalidate>
+
+    <!-- 1 ── robot -->
+    <fieldset class="stepf">
+      <legend><span class="stepf__n mono">01</span> Your robot</legend>
+      <p class="stepf__lede">A URDF or MJCF file — the physics description of your
+        machine. Not CAD: a simulator needs joints, masses and inertias, which
+        geometry alone does not carry.</p>
+
+      <div class="drop" id="drop">
+        <input type="file" id="robot-file" accept=".urdf,.xml,.mjcf,.mjb"
+               class="drop__input" aria-describedby="drop-help"
+               aria-label="Robot model file — URDF or MJCF">
+        <span class="drop__main">Drop a model here, or <span class="drop__link">choose a file</span></span>
+        <span class="drop__sub mono" id="drop-help">.urdf · .xml · .mjcf</span>
+      </div>
+
+      <div class="readout" id="robot-readout" aria-live="polite"></div>
+
+      <label class="field">
+        <span class="field__label">Path on the machine that runs the campaign</span>
+        <input type="text" id="robot-path" class="input mono" value="my_robot.urdf"
+               spellcheck="false" autocomplete="off">
+        <span class="field__hint">A browser only learns the file's name, not where it
+          lives. Set the path the harness should open.</span>
+      </label>
+    </fieldset>
+
+    <!-- 2 ── policy -->
+    <fieldset class="stepf">
+      <legend><span class="stepf__n mono">02</span> Your policy</legend>
+      <p class="stepf__lede">The controller under test — the thing that reads sensors
+        and drives the motors.</p>
+
+      <div class="choices" role="radiogroup" aria-label="Policy source">
+        <label class="choice">
+          <input type="radio" name="policy-mode" value="stand" checked>
+          <span class="choice__body">
+            <span class="choice__name">Built-in baseline</span>
+            <span class="choice__note">A plain stance controller. Runs immediately,
+              so you can see the whole pipeline before wiring up your own.</span>
+          </span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="policy-mode" value="module">
+          <span class="choice__body">
+            <span class="choice__name">Your own</span>
+            <span class="choice__note">Any Python object with <code>reset(seed)</code>
+              and <code>act(obs, t)</code>.</span>
+          </span>
+        </label>
+      </div>
+
+      <label class="field" id="policy-ref-field" hidden>
+        <span class="field__label">Import path</span>
+        <input type="text" id="policy-ref" class="input mono"
+               placeholder="mypkg.policies:WalkPolicy" spellcheck="false" autocomplete="off">
+        <span class="field__hint"><code>module:Attr</code> — the module to import, then
+          the class or object inside it.</span>
+      </label>
+
+      <p class="inline-note" id="policy-warn" hidden></p>
+    </fieldset>
+
+    <!-- 3 ── axes -->
+    <fieldset class="stepf">
+      <legend><span class="stepf__n mono">03</span> What to vary</legend>
+      <p class="stepf__lede">The conditions to search through, in real physical units.
+        Turn on what is plausible for your machine — a wider space needs a bigger
+        budget to cover.</p>
+      <div class="axes" id="axes"></div>
+    </fieldset>
+
+    <!-- 4 ── predicates -->
+    <fieldset class="stepf">
+      <legend><span class="stepf__n mono">04</span> What counts as failure</legend>
+      <p class="stepf__lede">Explicit rules you write, checked at every step of every
+        run. Never a learned judgement — an assessor has to be able to check them
+        by hand.</p>
+      <div class="preds" id="preds"></div>
+      <button type="button" class="btn-ghost" id="add-pred">Add a rule</button>
+    </fieldset>
+
+    <!-- 5 ── search -->
+    <fieldset class="stepf">
+      <legend><span class="stepf__n mono">05</span> How hard to look</legend>
+
+      <div class="row">
+        <label class="field">
+          <span class="field__label">Method</span>
+          <select id="method" class="input mono">
+            <option value="cem" selected>cem — directed</option>
+            <option value="random">random — uniform</option>
+          </select>
+          <span class="field__hint">Directed search concentrates budget where failures
+            are dense. Random covers the volume evenly.</span>
+        </label>
+        <label class="field">
+          <span class="field__label">Budget</span>
+          <input type="number" id="budget" class="input mono" value="150" min="1" step="10">
+          <span class="field__hint" id="budget-hint">simulations</span>
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="field">
+          <span class="field__label">Run length</span>
+          <input type="number" id="duration" class="input mono" value="5" min="0.1" step="0.5">
+          <span class="field__hint">seconds of simulated time per run</span>
+        </label>
+        <label class="field">
+          <span class="field__label">Sampler seed</span>
+          <input type="number" id="seed-sampler" class="input mono" value="41279" step="1">
+          <span class="field__hint">Three seeds are kept apart — sampler, sim, policy —
+            so a divergence can be attributed to one of them.</span>
+        </label>
+      </div>
+    </fieldset>
+
+  </form>
+
+  <!-- ── preview ──────────────────────────────────────────── -->
+  <aside class="preview" aria-label="Generated configuration">
+    <div class="preview__in">
+      <div class="preview__head">
+        <h2 class="preview__title mono">campaign.yaml</h2>
+        <span class="badge" id="status" aria-live="polite"></span>
+      </div>
+
+      <pre class="preview__code mono" id="yaml" tabindex="0"></pre>
+
+      <div class="problems" id="problems" aria-live="polite"></div>
+
+      <div class="preview__act">
+        <button type="button" class="btn" id="download">Download campaign.yaml</button>
+        <button type="button" class="btn-ghost" id="copy">Copy</button>
+      </div>
+
+      <p class="preview__then mono">Then, next to the file:</p>
+      <pre class="cmd mono"><code>faultline run campaign.yaml</code></pre>
+      <p class="preview__note">Not installed yet? <a class="inline-link" href="../start/">Two-minute setup &rarr;</a></p>
+    </div>
+  </aside>
+
+</div>
+</div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="head"><h2 class="h2">What this page does not do.</h2></div>
+    <ul class="rules mono">
+      <li>It does not run anything. The simulator is native code; your machine runs it.</li>
+      <li>It does not upload. Your model is read in this tab and never sent anywhere.</li>
+      <li>It does not convert CAD. STEP and SolidWorks files carry no joints or inertias.</li>
+      <li>It cannot check your model loads in MuJoCo — only that it parses as XML.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <span class="mono">Faultline — pre-product · Baku, Azerbaijan</span>
+    <span class="mono"><a href="../index.html">Back to the site</a></span>
+  </div>
+</footer>
+
+<script src="configure.js"></script>
+</body>
+</html>
