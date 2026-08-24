@@ -6,18 +6,32 @@
    ═══════════════════════════════════════════════════════════ */
 
 :root{
-  /* Sampled off the illustration: deep forest ground, a glacial blue lifted
-     from the sky as the single accent. Nothing warm. */
-  --void:#050B08;
-  --deep:#09130E;
-  --panel:#0E1A14;
-  --bone:#EEF4EF;
-  --mist:#BFD3C7;
-  --sage:#8CB49A;
-  --glacial:#A6CBD4;       /* the accent */
+  /* Chroma lives in the accents, not the surfaces. The grounds are near
+     neutral so that a sage pill or a glacial link reads as information
+     rather than as theme. Measured off the console mockups. */
+  --ground:#08090A;        /* page */
+  --surface:#0E1113;       /* cards */
+  --raised:#14181A;        /* inputs, inset wells */
+  --line:#1F2427;          /* hairline */
+
+  --ink:#E7EBE9;           /* primary text */
+  --ink-dim:#A9B3AE;       /* body copy */
+  --ink-faint:#7C8681;     /* micro-labels, metadata */
+
+  --glacial:#A6CBD4;       /* interactive: links, focus, primary action */
+  --sage:#8BA893;          /* state: pass, ok */
+  --brick:#C4706A;         /* state: fail */
+  --amber:#C9A05C;         /* state: caution */
   --glacial-dim:rgba(166,203,212,.42);
-  --rule:rgba(140,180,154,.22);
-  --rule-soft:rgba(140,180,154,.12);
+
+  /* names the existing pages already use, repointed to the neutral stack */
+  --void:#08090A;
+  --deep:#0B0E0F;
+  --panel:#0E1113;
+  --bone:#E7EBE9;
+  --mist:#A9B3AE;
+  --rule:rgba(152,170,162,.20);
+  --rule-soft:rgba(152,170,162,.10);
 
   --display:"Instrument Serif",Georgia,"Times New Roman",serif;
   --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
@@ -60,14 +74,14 @@ blockquote{margin:0}
 
 /* ── nav, with the centre pill group ──────────────────────── */
 .nav{position:fixed;inset:0 0 auto 0;z-index:50;border-bottom:1px solid transparent;transition:background .5s var(--ease),border-color .5s var(--ease)}
-.nav.is-stuck{background:rgba(5,10,7,.76);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom-color:var(--rule-soft)}
+.nav.is-stuck{background:rgba(8,9,10,.78);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom-color:var(--rule-soft)}
 .nav__in{max-width:var(--maxw);margin-inline:auto;padding:18px var(--gutter);display:flex;align-items:center;gap:20px}
 .mark{display:inline-flex;align-items:center;min-height:40px;gap:10px;font-family:var(--display);font-size:20px;color:var(--bone);text-decoration:none;text-shadow:0 1px 12px rgba(4,9,6,.7)}
 .mark__glyph{width:9px;height:9px;background:var(--glacial);transform:rotate(45deg)}
 .pills{
   margin-inline:auto;display:flex;gap:2px;padding:4px;
   border:1px solid var(--rule-soft);border-radius:999px;
-  background:rgba(5,11,8,.52);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  background:rgba(8,9,10,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
 }
 .pills a{
   font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
@@ -76,7 +90,7 @@ blockquote{margin:0}
 }
 .pills a:hover{background:rgba(239,244,240,.09);color:var(--bone)}
 .pills a:active{background:rgba(239,244,240,.14)}
-.nav__cta{display:inline-flex;align-items:center;min-height:40px;background:rgba(5,11,8,.52);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--bone);text-decoration:none;border:1px solid var(--rule);border-radius:999px;padding:10px 18px;transition:border-color .3s var(--ease),background .3s var(--ease)}
+.nav__cta{display:inline-flex;align-items:center;min-height:40px;background:rgba(8,9,10,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--bone);text-decoration:none;border:1px solid var(--rule);border-radius:999px;padding:10px 18px;transition:border-color .3s var(--ease),background .3s var(--ease)}
 .nav__cta:hover{border-color:var(--sage);background:rgba(239,244,240,.06)}
 .nav__cta:active{background:rgba(239,244,240,.11)}
 
@@ -105,14 +119,14 @@ blockquote{margin:0}
 .hero__bar .mono{color:#CFE0D5;text-shadow:0 1px 10px rgba(4,9,6,.8);opacity:.9}
 
 /* ── buttons ──────────────────────────────────────────────── */
-.btn{display:inline-flex;align-items:center;gap:11px;padding:16px 26px;min-height:44px;border:1px solid var(--glacial-dim);background:rgba(166,203,212,.07);color:var(--glacial);font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition-property:background-color,border-color,gap,transform;transition-duration:.35s;transition-timing-function:var(--ease)}
-.btn:hover{background:rgba(166,203,212,.15);border-color:var(--glacial);gap:17px}
+.btn{display:inline-flex;align-items:center;gap:11px;padding:16px 26px;min-height:44px;border:1px solid var(--glacial-dim);background:transparent;color:var(--glacial);font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;transition-property:background-color,border-color,gap,transform;transition-duration:.35s;transition-timing-function:var(--ease)}
+.btn:hover{background:rgba(166,203,212,.10);border-color:var(--glacial);gap:17px}
 .btn:active{transform:scale(.985)}
 .btn--lg{padding:18px 32px;font-size:11.5px}
 
 /* two actions in the hero: the primary is filled, the secondary outlined */
 .hero__act{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.btn--solid{background:var(--glacial);border-color:var(--glacial);color:#08130E}
+.btn--solid{background:var(--glacial);border-color:var(--glacial);color:var(--ground)}
 .btn--solid:hover{background:#BEDBE2;border-color:#BEDBE2}
 .nav__ghost{
   font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
@@ -133,27 +147,27 @@ blockquote{margin:0}
 /* ── deadline ─────────────────────────────────────────────── */
 
 
-.grid2{position:relative;display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:clamp(34px,6vw,86px);align-items:start}
+.grid2{position:relative;display:grid;grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr);gap:clamp(28px,4vw,58px);align-items:start}
 .grid2>div>p+p{margin-top:20px}
 .grid2>div>p{max-width:64ch;opacity:.92}
-.grid2 .h2+p{margin-top:26px}
+.grid2 .h2+p{margin-top:18px}
 .date{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(25px,3.2vw,40px);color:var(--glacial);margin:18px 0 14px;line-height:1.1;letter-spacing:-.01em}
 .cite{color:var(--sage);opacity:.8;letter-spacing:.08em}
 .grid2>div:last-child p{max-width:62ch;opacity:.92}
 .grid2>div:last-child p+p{margin-top:20px}
-.grid2 .h2{margin-bottom:26px}
+.grid2 .h2{margin-bottom:18px}
 
 /* ── method ───────────────────────────────────────────────── */
-.section{padding:clamp(68px,8.5vw,116px) 0}
+.section{padding:clamp(46px,5.4vw,74px) 0}
 /* One ground, not alternating tints. The old --void/--deep alternation was
    too close to read as a deliberate band and landed as an arbitrary
    brightness step; sections are separated by a hairline instead, and the
    image plates do the real breaking. */
 .section + .section{border-top:1px solid var(--rule-soft)}
-.head{margin-bottom:clamp(34px,4.4vw,56px)}
+.head{margin-bottom:clamp(24px,2.8vw,36px)}
 .head .h2{margin-top:16px}
-.head__lede{margin-top:20px;max-width:54ch;opacity:.88}
-.stage{display:grid;grid-template-columns:70px minmax(140px,.4fr) minmax(0,1fr);gap:clamp(14px,3vw,42px);align-items:baseline;padding:clamp(24px,3vw,34px) 0;border-top:1px solid var(--rule-soft);position:relative}
+.head__lede{margin-top:14px;max-width:56ch;opacity:.88}
+.stage{display:grid;grid-template-columns:56px minmax(130px,.36fr) minmax(0,1fr);gap:clamp(12px,2.2vw,30px);align-items:baseline;padding:clamp(16px,1.9vw,22px) 0;border-top:1px solid var(--rule-soft);position:relative}
 .stage:last-child{border-bottom:1px solid var(--rule-soft)}
 .stage::before{content:"";position:absolute;left:0;top:-1px;height:1px;width:0;background:var(--sage);opacity:.6;transition:width .6s var(--ease)}
 .stage:hover::before{width:100%}
@@ -179,30 +193,30 @@ blockquote{margin:0}
 .inline-link:hover{border-bottom-color:var(--glacial)}
 
 /* ── run config ───────────────────────────────────────────── */
-.config{margin-top:clamp(34px,4.4vw,56px);border:1px solid var(--rule-soft);border-radius:2px;overflow:hidden;background:var(--panel)}
+.config{margin-top:clamp(22px,2.6vw,32px);max-width:760px;border:1px solid var(--rule-soft);border-radius:2px;overflow:hidden;background:var(--surface)}
 .config__bar{
   display:flex;justify-content:space-between;align-items:center;gap:14px;
   padding:11px clamp(14px,2vw,20px);border-bottom:1px solid var(--rule-soft);
-  background:rgba(140,180,154,.05);
+  background:var(--raised);
 }
-.config__bar .mono{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage)}
-.config__tag{border:1px solid var(--rule-soft);padding:3px 9px;border-radius:999px;opacity:.7}
+.config__bar .mono{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.config__tag{border:1px solid var(--rule);padding:3px 9px;border-radius:2px;color:var(--ink-faint)}
 .config__body{
   margin:0;padding:clamp(16px,2.4vw,26px);overflow-x:auto;
-  font-size:12.5px;line-height:1.75;color:var(--mist);letter-spacing:.01em;
+  font-size:12px;line-height:1.62;color:var(--ink-dim);letter-spacing:.01em;
 }
 .config__body .k{color:var(--glacial)}
-.config__body .c{color:var(--sage);opacity:.6}
+.config__body .c{color:var(--sage);opacity:.85}
 .config .note{padding:0 clamp(16px,2.4vw,26px) clamp(16px,2.2vw,22px);margin-top:0}
 
 /* ── trajectory trace ─────────────────────────────────────── */
 .trace{margin:28px 0 0;border:1px solid var(--rule-soft);border-radius:2px;background:var(--panel);padding:clamp(14px,2vw,20px)}
 .trace svg{width:100%;height:auto;overflow:visible}
-.trace__grid line{stroke:rgba(140,180,154,.13);stroke-width:1}
-.trace__axis line{stroke:rgba(140,180,154,.34);stroke-width:1}
+.trace__grid line{stroke:rgba(152,170,162,.13);stroke-width:1}
+.trace__axis line{stroke:rgba(152,170,162,.32);stroke-width:1}
 .trace__tick text{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:9.5px;fill:var(--sage);opacity:.72}
 .trace__limit{stroke:var(--glacial);stroke-width:1;stroke-dasharray:4 4;opacity:.75}
-.trace__event{stroke:rgba(140,180,154,.4);stroke-width:1;stroke-dasharray:2 4}
+.trace__event{stroke:rgba(152,170,162,.38);stroke-width:1;stroke-dasharray:2 4}
 .trace__line{fill:none;stroke:var(--bone);stroke-width:1.5;stroke-linejoin:round}
 .trace__hit{fill:var(--glacial)}
 .trace__label{font-family:var(--mono);font-size:10px;fill:var(--glacial);letter-spacing:.06em}
@@ -219,25 +233,13 @@ blockquote{margin:0}
 /* ── spec table ───────────────────────────────────────────── */
 .visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .tablewrap{overflow-x:auto;border:1px solid var(--rule-soft);border-radius:2px}
-.spec{width:100%;border-collapse:collapse;min-width:520px}
-.spec th,.spec td{text-align:left;padding:15px clamp(16px,2.4vw,30px);border-bottom:1px solid var(--rule-soft)}
-.spec thead th{
-  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--sage);font-weight:400;background:rgba(140,180,154,.05);
-}
-.spec tbody th{font-weight:400;color:var(--bone);font-size:clamp(15px,1.6vw,17px)}
-.spec tbody td{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;letter-spacing:.04em;color:var(--mist);white-space:nowrap}
-.spec tbody td:last-child{color:var(--glacial);opacity:.9}
-.spec tbody tr:last-child th,.spec tbody tr:last-child td{border-bottom:0}
-.spec tbody tr{transition:background .3s var(--ease)}
-.spec tbody tr:hover{background:rgba(140,180,154,.045)}
 .note{color:var(--sage);opacity:.86;margin-top:18px;letter-spacing:.06em}
 
 /* ── predicates ───────────────────────────────────────────── */
 .rules{margin:28px 0 0;display:grid;gap:11px}
 .rules li{
   padding:13px 16px;border:1px solid var(--rule-soft);border-left:2px solid var(--glacial-dim);
-  background:rgba(140,180,154,.035);color:var(--mist);
+  background:rgba(152,170,162,.04);color:var(--mist);
   font-size:12.5px;letter-spacing:.03em;line-height:1.45;
 }
 .rules li span{color:var(--bone)}
@@ -271,7 +273,7 @@ blockquote{margin:0}
 .plate__media img.is-loaded{opacity:1}
 /* A flat tint, not a ramp. The photograph keeps its own tonal structure and
    the plate ends on a hard edge, like a picture set on the page. */
-.plate__media::after{content:"";position:absolute;inset:0;background:rgba(5,11,8,.52)}
+.plate__media::after{content:"";position:absolute;inset:0;background:rgba(8,9,10,.55)}
 .plate__in{position:relative;z-index:1}
 .plate__in .eyebrow{color:#DCEBE1;text-shadow:0 1px 12px rgba(4,9,6,.85)}
 .plate__line{
@@ -355,3 +357,133 @@ blockquote{margin:0}
   [data-reveal]{opacity:1;transform:none}
   [data-parallax]{transform:none!important}
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Console layer — the vocabulary shared by every page.
+   Hairlines instead of shadows, mono for every measured value,
+   a micro-label above each group. Nothing here is decorative:
+   if a device carries no information it is not in this file.
+   ═══════════════════════════════════════════════════════════ */
+
+/* micro-label: names the group beneath it, never repeats the heading */
+.micro{
+  font-family:var(--mono);font-size:10.5px;line-height:1.4;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-faint);margin:0 0 10px;
+}
+
+/* surfaces — .card is already the deliverables tile, so this is .panelbox */
+.panelbox{
+  background:var(--surface);border:1px solid var(--rule-soft);
+  border-radius:2px;padding:clamp(16px,2.2vw,22px);
+}
+.panelbox--inset{background:var(--raised)}
+
+/* key/value specification list — the primary content unit */
+.spec{display:grid;grid-template-columns:auto 1fr;gap:7px 20px;margin:0;
+      font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+.spec dt{color:var(--ink-faint);white-space:nowrap}
+.spec dd{margin:0;color:var(--ink)}
+
+/* state pills — bordered, desaturated, never filled blocks of colour */
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  padding:3px 8px;border-radius:2px;border:1px solid currentColor;
+  line-height:1.5;
+}
+.pill--ok{color:var(--sage)}
+.pill--bad{color:var(--brick)}
+.pill--warn{color:var(--amber)}
+.pill--flat{color:var(--ink-faint)}
+
+/* ── the threshold rule ──────────────────────────────────────
+   The signature element. A declared range drawn as a scale, with
+   the band where the policy actually failed marked on it. The gap
+   between the two is the whole product in one line: we searched
+   this volume, it broke in this part of it.
+
+   Positions come from inline custom properties set per instance, so
+   every rule on the page is real measured data rather than a mood. */
+.tscale{display:grid;gap:6px;margin:0}
+.tscale__head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+.tscale__name{color:var(--ink)}
+.tscale__unit{color:var(--ink-faint);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.tscale__track{
+  position:relative;height:18px;
+  border-bottom:1px solid var(--rule);
+}
+/* tick marks along the declared range */
+.tscale__track::before{
+  content:"";position:absolute;inset:auto 0 0 0;height:5px;
+  background-image:repeating-linear-gradient(to right,
+    var(--rule) 0 1px, transparent 1px 12.5%);
+  opacity:1;
+}
+/* the band where failures were found */
+.tscale__band{
+  position:absolute;bottom:0;height:9px;
+  left:var(--from);width:var(--span);
+  background:var(--brick);opacity:.5;
+}
+/* the smallest condition that still fails */
+.tscale__min{
+  position:absolute;bottom:-3px;left:var(--at);width:1px;height:15px;
+  background:var(--ink);
+}
+.tscale__min::after{
+  content:"";position:absolute;top:-3px;left:-2px;
+  width:5px;height:5px;border-radius:50%;background:var(--ink);
+}
+.tscale__foot{display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);
+  font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){
+  .tscale__band{transition:none}
+}
+
+/* ── search space: spec table beside the finding ─────────────── */
+.spacegrid{display:grid;gap:clamp(22px,3vw,40px);align-items:start}
+@media (min-width:900px){.spacegrid{grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr)}}
+
+.spec-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.spec-table th,.spec-table td{text-align:left;padding:9px 14px 9px 0;border-bottom:1px solid var(--rule-soft);vertical-align:baseline}
+.spec-table thead th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-faint);font-weight:400;border-bottom:1px solid var(--rule);padding-bottom:8px;
+}
+.spec-table tbody th{font-weight:400;color:var(--ink)}
+.spec-table .f{font-size:11.5px;color:var(--glacial);letter-spacing:0}
+.spec-table .u{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+.spec-table .n{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);
+  font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;padding-right:0}
+.spec-table tbody tr:last-child th,.spec-table tbody tr:last-child td{border-bottom:0}
+
+/* the finding — where the threshold rule lives */
+.finding{margin:0;background:var(--surface);border:1px solid var(--rule-soft);
+         border-radius:2px;padding:clamp(16px,2.2vw,22px)}
+.finding .tscale{margin-top:4px}
+.tkey{display:grid;grid-template-columns:1fr auto;gap:6px 16px;margin:16px 0 0;
+      font-size:12px;align-items:center}
+.tkey dt{display:flex;align-items:center;gap:9px;color:var(--ink-dim)}
+.tkey dd{margin:0;color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
+.tkey__band{width:16px;height:8px;background:var(--brick);opacity:.5;flex:none}
+.tkey__min{width:16px;height:8px;flex:none;position:relative}
+.tkey__min::before{content:"";position:absolute;left:7px;top:-2px;width:1px;height:12px;background:var(--ink)}
+.finding figcaption{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule-soft);
+  font-size:13px;line-height:1.6;color:var(--ink-dim)}
+.finding figcaption strong{color:var(--ink);font-weight:500;font-family:var(--mono);font-size:.95em}
+
+/* Section heads read as two columns above 900px: the claim on the left, the
+   qualification beside it. Denser than stacking, and the lede stops wrapping
+   into a narrow ribbon with half the row empty. */
+@media (min-width:900px){
+  .head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.82fr);
+        gap:clamp(24px,4vw,64px);align-items:end}
+  .head .micro{grid-column:1/-1;margin-bottom:0}
+  .head__lede{margin-top:0;max-width:52ch;padding-bottom:4px}
+}
+.spec-table thead th:last-child{text-align:right}
+.pane__tag{margin:0 0 14px}

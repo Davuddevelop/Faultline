@@ -4,9 +4,9 @@
 
 :root{
   /* semantic only — deliberately separate from --glacial, which is the accent */
-  --ok:#8CB49A;
-  --warn:#D2A24C;
-  --err:#D4735E;
+  --ok:var(--sage);
+  --warn:var(--amber);
+  --err:var(--brick);
 }
 
 .rep-head{padding:clamp(110px,13vw,160px) 0 clamp(28px,4vw,44px)}
@@ -38,7 +38,7 @@
   letter-spacing:-.01em;color:var(--bone);margin-bottom:12px;
 }
 /* numbering is real here: 03 cannot precede 01 */
-.stepf__n{color:var(--sage);opacity:.7;font-size:12px;letter-spacing:.16em}
+.stepf__n{color:var(--sage);opacity:.9;font-size:12px;letter-spacing:.16em}
 .stepf__lede{max-width:62ch;opacity:.88;margin:0 0 20px;font-size:15px;line-height:1.65}
 
 /* ── fields ───────────────────────────────────────────────── */
@@ -47,7 +47,7 @@
 [hidden]{display:none !important}
 .field{display:block;margin-top:18px}
 .field__label{display:block;font-size:13px;color:var(--mist);margin-bottom:7px}
-.field__hint{display:block;font-size:12.5px;opacity:.65;margin-top:7px;line-height:1.55;max-width:56ch}
+.field__hint{display:block;font-size:12.5px;opacity:.8;margin-top:7px;line-height:1.55;max-width:56ch}
 .row{display:grid;gap:18px}
 @media (min-width:600px){.row{grid-template-columns:1fr 1fr}}
 
@@ -66,7 +66,7 @@
 select.input{appearance:none;background-image:none;cursor:pointer}
 
 .mini{display:grid;gap:5px;min-width:0}
-.mini > span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.6}
+.mini > span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.82}
 .mini--grow{flex:1 1 130px}
 
 /* ── drop zone ────────────────────────────────────────────── */
@@ -136,7 +136,7 @@ select.input{appearance:none;background-image:none;cursor:pointer}
 .axis__head input:focus-visible{outline:2px solid var(--glacial);outline-offset:2px}
 .axis__name{color:var(--bone);font-size:14.5px}
 .axis__key{font-size:11.5px;opacity:.72;letter-spacing:.02em}
-.axis__hint{margin:5px 0 0 26px;font-size:12.5px;opacity:.65;line-height:1.5;max-width:52ch}
+.axis__hint{margin:5px 0 0 26px;font-size:12.5px;opacity:.8;line-height:1.5;max-width:52ch}
 .axis__range{display:flex;align-items:flex-end;gap:10px;margin:10px 0 0 26px;flex-wrap:wrap}
 .axis__range .mini{width:104px}
 .axis__unit{font-size:11.5px;opacity:.72;padding-bottom:11px}
