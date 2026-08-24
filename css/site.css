@@ -487,3 +487,17 @@ blockquote{margin:0}
 }
 .spec-table thead th:last-child{text-align:right}
 .pane__tag{margin:0 0 14px}
+
+/* [hidden] is only a UA display:none, so any class setting display beats it on
+   specificity and the hidden element stays on screen. Two pages have now hit
+   this, so it is restated once here rather than per page. */
+[hidden]{display:none !important}
+
+/* A real action gets a target, not a sentence. */
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:clamp(18px,2.2vw,26px)}
+@media (max-width:560px){.actions .btn{flex:1 1 auto;justify-content:center}}
+
+/* Footer links were styled per page, so a new page inherited the UA's default
+   blue at 1.78:1 on a near-black ground. Defined once, here. */
+.foot__in a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.foot__in a:hover{color:var(--ink)}

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your workspace — Faultline</title>
+<meta name="description" content="Set up a Faultline workspace: answer five questions and get a campaign config tuned to your robot. Runs in your browser; nothing is uploaded.">
+<meta name="theme-color" content="#08090A">
+<link rel="preload" href="../assets/fonts/jizBRFtNs2ka5fXjeivQ4LroWlx-6zsTjmbI.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/site.css">
+<link rel="stylesheet" href="app.css">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav is-stuck" id="nav">
+  <div class="nav__in">
+    <a class="mark" href="../index.html"><span class="mark__glyph" aria-hidden="true"></span>Faultline</a>
+    <a class="nav__ghost" href="../start/">Docs</a>
+  </div>
+</header>
+
+<main id="main" class="app">
+
+<!-- ── create workspace ──────────────────────────────────────── -->
+<section class="view" id="view-auth">
+  <div class="pane">
+    <p class="micro">Get started</p>
+    <h1 class="ph1">Set up your workspace.</h1>
+    <p class="plede">Five questions. You get a campaign config tuned to your robot and a
+      clear first step — no waiting, no sales call.</p>
+
+    <div class="returning" id="returning" hidden>
+      <p>You already have a workspace here as <strong id="returning-name"></strong>.</p>
+      <div class="rowbtns">
+        <button type="button" class="btn btn--solid" id="returning-go">Continue</button>
+        <button type="button" class="btn-ghost" id="returning-new">Start a new one</button>
+      </div>
+    </div>
+
+    <form id="auth-form" novalidate>
+      <label class="field">
+        <span class="field__label">Your name <span class="opt-tag">optional</span></span>
+        <input type="text" id="f-name" class="input" autocomplete="name" placeholder="Davud">
+      </label>
+      <label class="field">
+        <span class="field__label">Email</span>
+        <input type="email" id="f-email" class="input" autocomplete="email" placeholder="you@company.com" required>
+      </label>
+      <p class="err" id="auth-err" hidden></p>
+      <button type="submit" class="btn btn--solid btn--wide">Create workspace <span aria-hidden="true">&rarr;</span></button>
+    </form>
+
+    <p class="fineprint">No password, because there is nothing to log into. This workspace
+      is stored in this browser only — your details are not sent anywhere, and clearing
+      your site data removes it.</p>
+  </div>
+</section>
+
+<!-- ── questions ─────────────────────────────────────────────── -->
+<section class="view" id="view-quiz" hidden>
+  <div class="pane">
+    <div class="quizhead">
+      <p class="micro">Setup</p>
+      <p class="micro" id="quiz-progress">1 of 5</p>
+    </div>
+    <div class="bar" id="quiz-bar" aria-hidden="true"><span></span></div>
+
+    <h1 class="ph1" id="quiz-q"></h1>
+    <p class="plede" id="quiz-help"></p>
+
+    <div class="opts" id="quiz-opts" role="group" aria-labelledby="quiz-q"></div>
+
+    <button type="button" class="btn-ghost" id="quiz-back" hidden>&larr; Back</button>
+  </div>
+</section>
+
+<!-- ── dashboard ─────────────────────────────────────────────── -->
+<section class="view view--wide" id="view-dash" hidden>
+
+  <header class="dashhead">
+    <div>
+      <p class="micro">Your workspace</p>
+      <h1 class="ph1">Ready when you are, <span id="hello"></span>.</h1>
+      <p class="plede" id="urgency"></p>
+    </div>
+    <div class="rowbtns">
+      <button type="button" class="btn-ghost" id="dash-edit">Change answers</button>
+      <button type="button" class="btn-ghost" id="dash-reset">Delete workspace</button>
+    </div>
+  </header>
+
+  <div class="dashgrid">
+
+    <!-- primary action -->
+    <section class="tile tile--do">
+      <p class="micro">Start here</p>
+      <h2 class="th2">Run your first campaign.</h2>
+      <ol class="dosteps">
+        <li>
+          <span class="dostep__n mono">1</span>
+          <div>
+            <p class="dostep__t">Install the harness</p>
+            <pre class="cmd mono"><code>pip install git+https://github.com/davuddevelop/faultline.git#subdirectory=harness</code></pre>
+          </div>
+        </li>
+        <li>
+          <span class="dostep__n mono">2</span>
+          <div>
+            <p class="dostep__t">Save the config below as <code>campaign.yaml</code></p>
+            <p class="dostep__s">Already tuned to your robot. Point <code>robot:</code> at your own model file.</p>
+          </div>
+        </li>
+        <li>
+          <span class="dostep__n mono">3</span>
+          <div>
+            <p class="dostep__t">Run it</p>
+            <pre class="cmd mono"><code>faultline run campaign.yaml</code></pre>
+          </div>
+        </li>
+      </ol>
+      <div class="rowbtns rowbtns--pad">
+        <a class="btn btn--solid" href="../configure/">Build a config visually <span aria-hidden="true">&rarr;</span></a>
+        <a class="btn" href="../report/">See a finished report <span aria-hidden="true">&rarr;</span></a>
+      </div>
+    </section>
+
+    <!-- their config -->
+    <section class="tile">
+      <div class="tilehead">
+        <p class="micro">campaign.yaml — tuned to your answers</p>
+        <div class="rowbtns rowbtns--tight">
+          <button type="button" class="btn-ghost btn-ghost--sm" id="copy-yaml">Copy</button>
+          <button type="button" class="btn-ghost btn-ghost--sm" id="dl-yaml">Download</button>
+        </div>
+      </div>
+      <pre class="yamlbox mono" id="yaml" tabindex="0"></pre>
+      <p class="tilenote" id="why"></p>
+    </section>
+
+    <!-- setup summary -->
+    <section class="tile">
+      <p class="micro">What you told us</p>
+      <dl class="spec" id="setup"></dl>
+      <p class="tilenote" id="fmt-note"></p>
+      <p class="flagline" id="fmt-flag" hidden>
+        <span class="pill pill--warn">Not built yet</span>
+        Direct loading for this format is on the roadmap, not shipped.
+      </p>
+    </section>
+
+    <!-- regulation, only when it applies -->
+    <section class="tile tile--eu" id="eu-panel" hidden>
+      <p class="micro">Why the date matters</p>
+      <p class="bignum mono"><span id="eu-days"></span> <span class="bignum__u">days</span></p>
+      <p class="tilenote" id="eu-lede"></p>
+      <p class="tilenote">Until 20 January 2027, when a learned policy performing a safety
+        function stops being self-certifiable and a notified body has to sign it.</p>
+    </section>
+
+  </div>
+
+  <p class="fineprint fineprint--wide">This workspace is stored in your browser. Faultline
+    runs no servers: your robot model, your policy and your results stay on your machine.</p>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <span class="mono">Faultline — pre-product · Baku, Azerbaijan</span>
+    <span class="mono"><a href="../index.html">Back to the site</a></span>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

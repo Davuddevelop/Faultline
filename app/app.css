@@ -1,0 +1,141 @@
+/* Workspace — sign-up, questions, dashboard.
+   Buttons are buttons here. The complaint that started this page was that the
+   real features were hidden inside sentences, so every action that does
+   something is a target you can see, and the primary one is filled. */
+
+.app{max-width:1180px;margin:0 auto;padding:clamp(96px,12vw,140px) var(--gutter) clamp(60px,8vw,96px)}
+
+/* ── single-column views ─────────────────────────────────────── */
+.view{display:block}
+.pane{max-width:520px;margin:0 auto}
+.view--wide{max-width:none}
+
+.ph1{font-family:var(--sans);font-weight:400;font-size:clamp(26px,3.4vw,38px);
+     line-height:1.14;letter-spacing:-.018em;color:var(--ink);margin:10px 0 0;text-wrap:balance}
+.plede{margin:14px 0 0;color:var(--ink-dim);font-size:15.5px;line-height:1.6;max-width:52ch;text-wrap:pretty}
+
+/* ── form ────────────────────────────────────────────────────── */
+#auth-form{margin-top:clamp(24px,3vw,34px);display:grid;gap:16px}
+.field{display:block}
+.field__label{display:block;font-size:13px;color:var(--ink-dim);margin-bottom:7px}
+.opt-tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+         color:var(--ink-faint);margin-left:6px}
+.input{
+  width:100%;min-height:46px;padding:11px 13px;
+  background:var(--raised);color:var(--ink);
+  border:1px solid var(--rule);border-radius:2px;
+  font-family:var(--sans);font-size:15px;
+  transition-property:border-color;transition-duration:.14s;
+}
+.input:hover{border-color:var(--glacial-dim)}
+.input:focus-visible{outline:2px solid var(--glacial);outline-offset:1px;border-color:transparent}
+.err{margin:0;color:var(--brick);font-size:13px}
+
+.btn--wide{width:100%;justify-content:center}
+.btn--lg{padding:18px 30px}
+.fineprint{margin:22px 0 0;font-size:12.5px;line-height:1.6;color:var(--ink-faint);max-width:52ch}
+.fineprint--wide{max-width:none;text-align:center;margin-top:clamp(30px,4vw,48px)}
+
+.returning{margin:24px 0 0;padding:16px 18px;border:1px solid var(--rule);
+           border-radius:2px;background:var(--surface)}
+.returning p{margin:0 0 14px;font-size:14px;color:var(--ink-dim)}
+.returning strong{color:var(--ink);font-weight:500}
+
+.rowbtns{display:flex;flex-wrap:wrap;gap:10px}
+.rowbtns--pad{margin-top:20px}
+.rowbtns--tight{gap:8px}
+
+.btn-ghost{
+  min-height:44px;padding:0 18px;background:transparent;color:var(--ink);
+  border:1px solid var(--rule);border-radius:2px;cursor:pointer;font:inherit;font-size:13.5px;
+  display:inline-flex;align-items:center;
+  transition-property:border-color,color;transition-duration:.14s;
+}
+.btn-ghost:hover{border-color:var(--glacial);color:var(--glacial)}
+.btn-ghost:focus-visible{outline:2px solid var(--glacial);outline-offset:2px}
+.btn-ghost:active{transform:translateY(1px)}
+.btn-ghost--sm{min-height:40px;padding:0 14px;font-size:12px}
+
+/* ── questions ───────────────────────────────────────────────── */
+.quizhead{display:flex;justify-content:space-between;align-items:baseline}
+.quizhead .micro{margin:0}
+.bar{height:2px;background:var(--rule);margin:14px 0 clamp(22px,3vw,32px);position:relative;overflow:hidden}
+.bar span{position:absolute;inset:0 auto 0 0;width:var(--pct,0%);background:var(--glacial);
+          transition:width .32s var(--ease)}
+
+.opts{display:grid;gap:9px;margin-top:clamp(22px,3vw,30px)}
+.opt{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  width:100%;min-height:56px;padding:14px 18px;text-align:left;
+  background:var(--surface);border:1px solid var(--rule);border-radius:2px;
+  color:var(--ink);font:inherit;font-size:15px;cursor:pointer;
+  transition-property:border-color,background-color;transition-duration:.14s;
+}
+.opt:hover{border-color:var(--glacial);background:var(--raised)}
+.opt:focus-visible{outline:2px solid var(--glacial);outline-offset:2px}
+.opt:active{transform:translateY(1px)}
+.opt.is-on{border-color:var(--glacial)}
+.opt__tick{width:16px;height:16px;border:1px solid var(--rule);border-radius:50%;flex:none;position:relative}
+.opt.is-on .opt__tick{border-color:var(--glacial)}
+.opt.is-on .opt__tick::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--glacial)}
+#quiz-back{margin-top:22px}
+
+/* ── dashboard ───────────────────────────────────────────────── */
+.dashhead{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;
+          align-items:flex-end;margin-bottom:clamp(24px,3vw,34px);
+          padding-bottom:clamp(20px,2.6vw,28px);border-bottom:1px solid var(--rule)}
+
+.dashgrid{display:grid;gap:14px}
+@media (min-width:880px){
+  /* tiles size to their content; spanning rows left the first one padded with
+     dead space to match the column beside it */
+  .dashgrid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+}
+
+.tile{background:var(--surface);border:1px solid var(--rule);border-radius:2px;
+      padding:clamp(18px,2.2vw,24px)}
+.tile--do{border-color:var(--glacial-dim)}
+.tile--eu{border-color:var(--rule)}
+.th2{font-family:var(--sans);font-weight:400;font-size:19px;line-height:1.2;
+     letter-spacing:-.012em;color:var(--ink);margin:8px 0 0}
+.tilehead{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.tilehead .micro{margin:0}
+.tilenote{margin:14px 0 0;font-size:13px;line-height:1.6;color:var(--ink-dim)}
+.tilenote code{font-family:var(--mono);font-size:.92em;color:var(--ink)}
+
+.dosteps{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:18px}
+.dosteps li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:12px;align-items:start}
+.dostep__n{width:22px;height:22px;border:1px solid var(--rule);border-radius:50%;
+           display:grid;place-items:center;font-size:11px;color:var(--ink-faint)}
+.dostep__t{margin:2px 0 0;font-size:14.5px;color:var(--ink)}
+.dostep__t code{font-family:var(--mono);font-size:.9em;color:var(--glacial)}
+.dostep__s{margin:6px 0 0;font-size:12.5px;color:var(--ink-faint);line-height:1.55}
+.dostep__s code{font-family:var(--mono);color:var(--ink-dim)}
+
+.cmd{margin:9px 0 0;padding:11px 13px;background:var(--raised);
+     border:1px solid var(--rule-soft);border-left:2px solid var(--glacial-dim);
+     border-radius:2px;font-size:11.5px;line-height:1.6;color:var(--ink-dim);
+     overflow-x:auto;white-space:pre}
+.cmd code{font:inherit;color:inherit}
+
+.yamlbox{margin:12px 0 0;padding:14px;background:var(--ground);
+         border:1px solid var(--rule-soft);border-radius:2px;
+         font-size:11.5px;line-height:1.7;color:var(--ink-dim);
+         overflow-x:auto;white-space:pre;max-height:340px;overflow-y:auto}
+.yamlbox:focus-visible{outline:2px solid var(--glacial);outline-offset:1px}
+
+.flagline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+          margin:14px 0 0;font-size:12.5px;color:var(--ink-dim)}
+
+.bignum{margin:10px 0 0;font-size:clamp(34px,4.6vw,48px);line-height:1;
+        color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.bignum__u{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+
+@media (prefers-reduced-motion:reduce){
+  .bar span{transition:none}
+  .opt:active,.btn-ghost:active{transform:none}
+}
+@media (max-width:520px){
+  .dashhead{align-items:flex-start}
+  .rowbtns .btn,.rowbtns .btn-ghost{flex:1 1 auto;justify-content:center}
+}
