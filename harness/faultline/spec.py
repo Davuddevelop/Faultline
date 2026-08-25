@@ -23,7 +23,7 @@ class Perturbation:
     ``slope=0.72``.
     """
 
-    push_impulse_ns: float = 0.0      # N.s, applied to the torso
+    push_impulse_ns: float = 0.0      # N.s, applied to the base body
     push_time_s: float = 1.0          # when the push lands
     push_yaw_deg: float = 0.0         # direction in the horizontal plane
     friction_mu: float | None = None  # None = leave the model's own value
@@ -31,7 +31,7 @@ class Perturbation:
     slope_yaw_deg: float = 0.0        # downhill direction
     sensor_lag_ms: float = 0.0        # observation delay seen by the policy
     torque_loss_pct: float = 0.0      # actuator strength lost, 0-100
-    payload_kg: float = 0.0           # extra mass on the torso
+    payload_kg: float = 0.0           # extra mass on the base body
     payload_offset_m: float = 0.0     # how far off centre that mass sits
 
     def as_dict(self) -> dict[str, Any]:
@@ -88,6 +88,13 @@ class RunSpec:
     seeds: Seeds = field(default_factory=Seeds)
     duration_s: float = 6.0
     control_hz: float = 50.0
+    # Which body carries the robot. None means resolve it from the model —
+    # the floating base if there is one, else the first child of the world.
+    base_body: str | None = None
+    # The layout the policy is fed, as a list of term mappings. Kept as plain
+    # data so a spec stays JSON round-trippable; ObservationSpec.from_list
+    # turns it into terms. Empty means the historical [qpos, qvel].
+    observation: tuple[Any, ...] = ()
 
     # ---- provenance -------------------------------------------------
     def model_hash(self) -> str:
@@ -103,6 +110,10 @@ class RunSpec:
             "seeds": self.seeds.as_dict(),
             "duration_s": self.duration_s,
             "control_hz": self.control_hz,
+            "base_body": self.base_body,
+            # part of the hash on purpose: change what the policy sees and it
+            # is a different experiment, not the same one re-run
+            "observation": list(self.observation),
         }
 
     def config_hash(self) -> str:
@@ -125,4 +136,6 @@ class RunSpec:
             seeds=Seeds(**d["seeds"]),
             duration_s=d["duration_s"],
             control_hz=d["control_hz"],
+            base_body=d.get("base_body"),
+            observation=tuple(d.get("observation", ())),
         )

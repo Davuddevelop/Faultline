@@ -21,7 +21,7 @@ import numpy as np
 
 from .policies import Policy
 from .predicates import Violation, evaluate, severity
-from .runner import run, sim_environment
+from .runner import SimulationDiverged, run, sim_environment
 from .space import SearchSpace
 from .spec import Predicate, RunSpec
 
@@ -36,6 +36,8 @@ class Sample:
     failed: bool
     violation: Violation | None = None
     iteration: int = 0               # which directed round produced it
+    invalid: str | None = None       # set when the solver diverged: neither
+                                     # a pass nor a failure, an unusable run
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -44,6 +46,7 @@ class Sample:
             "perturbation": {k: round(v, 6) for k, v in self.perturbation.items()},
             "severity": round(self.severity, 6),
             "failed": self.failed,
+            "invalid": self.invalid,
             "violation": self.violation.as_dict() if self.violation else None,
         }
 
@@ -66,6 +69,17 @@ class CampaignResult:
     @property
     def failures(self) -> list[Sample]:
         return [s for s in self.samples if s.failed]
+
+    @property
+    def invalid(self) -> list[Sample]:
+        """Runs where the solver diverged. Reported separately and never
+        counted as failures — an unusable measurement is not evidence."""
+        return [s for s in self.samples if s.invalid]
+
+    @property
+    def valid_budget(self) -> int:
+        """Simulations that actually produced a measurement."""
+        return len(self.samples) - len(self.invalid)
 
     @property
     def first_failure_index(self) -> int | None:
@@ -102,9 +116,12 @@ class CampaignResult:
 
     def summary(self) -> str:
         first = self.first_failure_index
+        # invalid runs are named only when there are any: a clean campaign
+        # should not carry a column of zeroes
+        bad = f"  invalid {len(self.invalid)}" if self.invalid else ""
         return (
             f"{self.method:<8} seed={self.seed}  "
-            f"failures {len(self.failures):>3}/{self.budget}  "
+            f"failures {len(self.failures):>3}/{self.valid_budget}{bad}  "
             f"first at {'-' if first is None else first:>4}  "
             f"best severity {self.worst.severity if self.worst else float('nan'):+7.1f}  "
             f"{self.elapsed_s:5.1f}s"
@@ -131,7 +148,15 @@ def _evaluate_point(
     full RunRecord for every sample is wasted work at hundreds of runs, and
     records are built later only for the failures worth keeping."""
     candidate = spec.with_perturbation(**kwargs)
-    traj = run(candidate, policy)
+    try:
+        traj = run(candidate, policy)
+    except SimulationDiverged as exc:
+        # Not a failure. Severity is -inf so directed search moves away from
+        # this region rather than treating instability as a promising signal.
+        return Sample(
+            index=index, perturbation=kwargs, severity=float("-inf"),
+            failed=False, violation=None, iteration=iteration, invalid=str(exc),
+        )
     hit = next((v for v in evaluate(traj, candidate.predicates) if v.predicate == pred.name), None)
     return Sample(
         index=index,
@@ -225,10 +250,16 @@ def cem_search(
         samples.extend(round_samples)
 
         # refit to the elite of this round
-        k = max(2, int(round(len(round_samples) * elite_frac)))
+        # Refit only to runs that produced a measurement. A diverged run has
+        # severity -inf, so it sorts last anyway, but if a whole round diverges
+        # the elite would be all -inf and the fit would become nan.
+        usable = [s for s in round_samples if not s.invalid]
+        if not usable:
+            continue                      # keep the previous distribution
+        k = max(2, int(round(len(usable) * elite_frac)))
         elite = np.array(
             [[s.perturbation[a] for a in space.axes]
-             for s in sorted(round_samples, key=lambda s: s.severity, reverse=True)[:k]]
+             for s in sorted(usable, key=lambda s: s.severity, reverse=True)[:k]]
         )
         mean = elite.mean(axis=0)
         std = np.maximum(elite.std(axis=0), floor)

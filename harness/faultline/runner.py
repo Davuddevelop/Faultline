@@ -15,6 +15,8 @@ from dataclasses import dataclass
 import mujoco
 import numpy as np
 
+from .model import RobotModel, load as load_model
+from .observe import ObservationSpec
 from .policies import Policy
 from .spec import RunSpec
 
@@ -62,7 +64,7 @@ def sim_environment() -> dict[str, str]:
     }
 
 
-def _apply_perturbation(model: mujoco.MjModel, spec: RunSpec) -> None:
+def _apply_perturbation(model: mujoco.MjModel, spec: RunSpec, base_id: int) -> None:
     """Everything that changes the world before the first step."""
     p = spec.perturbation
 
@@ -89,9 +91,7 @@ def _apply_perturbation(model: mujoco.MjModel, spec: RunSpec) -> None:
         model.actuator_gainprm[:, 0] *= 1.0 - p.torque_loss_pct / 100.0
 
     if p.payload_kg:
-        torso = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "torso")
-        if torso < 0:
-            raise ValueError("payload requested but the model has no body named 'torso'")
+        torso = base_id
         m0 = float(model.body_mass[torso])
         m1 = m0 + p.payload_kg
         # shift the centre of mass toward the payload
@@ -102,22 +102,56 @@ def _apply_perturbation(model: mujoco.MjModel, spec: RunSpec) -> None:
         model.body_inertia[torso] *= m1 / m0
 
 
-def _torso_signals(model: mujoco.MjModel, data: mujoco.MjData,
+def _base_signals(model: mujoco.MjModel, data: mujoco.MjData,
                    torso_id: int) -> tuple[float, float, float]:
     R = data.xmat[torso_id].reshape(3, 3)
-    # angle between the torso's own up axis and world up
+    # angle between the base body's own up axis and world up
     tilt = float(np.degrees(np.arccos(np.clip(R[2, 2], -1.0, 1.0))))
     height = float(data.xpos[torso_id][2])
-    # external contact force magnitude on the torso; feet are excluded by
-    # construction because we only read the torso body
+    # external contact force magnitude on the base body; feet are excluded by
+    # construction because we only read that one body
     force = float(np.linalg.norm(data.cfrc_ext[torso_id][3:6]))
     return tilt, height, force
 
 
+class SimulationDiverged(RuntimeError):
+    """The solver blew up, so this run is not evidence of anything.
+
+    A diverged simulation is neither a pass nor a failure — it is an invalid
+    measurement. Recording it as a policy failure is the worst error this
+    harness could make: it would report a fault the robot does not have, and
+    the minimal case would reduce to "fails under no perturbation at all",
+    which is exactly what a diverged run looks like after reduction.
+    """
+
+
+def _diverged(model: mujoco.MjModel, data: mujoco.MjData) -> str | None:
+    """MuJoCo signals instability through its warning counters; it does not
+    raise. Anything non-finite in the state is the same problem caught later."""
+    # BADCTRL matters as much as the others and is easier to miss: MuJoCo
+    # responds to a bad control by silently resetting it to zero, so the run
+    # stays numerically perfect and reports a clean pass while the policy's
+    # actual output never reached the robot.
+    for w in (mujoco.mjtWarning.mjWARN_BADQACC,
+              mujoco.mjtWarning.mjWARN_BADQVEL,
+              mujoco.mjtWarning.mjWARN_BADQPOS,
+              mujoco.mjtWarning.mjWARN_BADCTRL):
+        if data.warning[w].number:
+            return mujoco.mjtWarning(w).name
+    if not (np.all(np.isfinite(data.qpos)) and np.all(np.isfinite(data.qvel))):
+        return "NON_FINITE_STATE"
+    return None
+
+
 def run(spec: RunSpec, policy: Policy) -> Trajectory:
     """Execute one run. No search, no retries, no hidden state."""
-    model = mujoco.MjModel.from_xml_path(spec.model_path)
-    _apply_perturbation(model, spec)
+    robot = load_model(spec.model_path, base_body=spec.base_body)
+    model = robot.model
+    _apply_perturbation(model, spec, robot.base_body_id)
+
+    obs_spec = (ObservationSpec.from_list(list(spec.observation))
+                if spec.observation else ObservationSpec.raw())
+    obs_spec.validate(robot)
 
     data = mujoco.MjData(model)
     if model.nkey > 0:
@@ -127,9 +161,7 @@ def run(spec: RunSpec, policy: Policy) -> Trajectory:
 
     policy.reset(spec.seeds.policy)
 
-    torso_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "torso")
-    if torso_id < 0:
-        raise ValueError("model has no body named 'torso'")
+    torso_id = robot.base_body_id
 
     dt = model.opt.timestep
     steps_per_ctrl = max(1, round((1.0 / spec.control_hz) / dt))
@@ -138,6 +170,7 @@ def run(spec: RunSpec, policy: Policy) -> Trajectory:
     # Sensor lag is a ring of past observations; the policy sees a stale one.
     lag_steps = max(0, round((spec.perturbation.sensor_lag_ms / 1000.0) * spec.control_hz))
     obs_history: list[np.ndarray] = []
+    prev_action = np.zeros(model.nu)
 
     p = spec.perturbation
     push_force = np.zeros(6)
@@ -156,11 +189,25 @@ def run(spec: RunSpec, policy: Policy) -> Trajectory:
     for k in range(n_ctrl):
         t = k / spec.control_hz
 
-        obs = np.concatenate([data.qpos, data.qvel])
+        obs = obs_spec.build(robot, data, prev_action)
         obs_history.append(obs)
         seen = obs_history[max(0, len(obs_history) - 1 - lag_steps)]
 
-        data.ctrl[:] = policy.act(seen, t)
+        action = np.asarray(policy.act(seen, t), dtype=float)
+        if not np.all(np.isfinite(action)):
+            raise SimulationDiverged(
+                f"the policy returned a non-finite action at t={t:.3f}s. This run is "
+                "not a policy failure and is not reported as one — MuJoCo would "
+                "silently zero such a control and the run would look like a pass."
+            )
+        if action.shape != (model.nu,):
+            raise SimulationDiverged(
+                f"the policy returned {action.shape[0]} value(s) at t={t:.3f}s but "
+                f"this model has {model.nu} actuator(s). Check the action layout "
+                "against the model before trusting any result."
+            )
+        data.ctrl[:] = action
+        prev_action = action
 
         in_push = p.push_impulse_ns and (p.push_time_s <= t < p.push_time_s + push_window)
         data.xfrc_applied[torso_id] = push_force if in_push else 0.0
@@ -168,12 +215,24 @@ def run(spec: RunSpec, policy: Policy) -> Trajectory:
         for _ in range(steps_per_ctrl):
             mujoco.mj_step(model, data)
 
+        why = _diverged(model, data)
+        if why is not None:
+            raise SimulationDiverged(
+                f"solver diverged at t={t:.3f}s ({why}). This run is not a policy "
+                "failure and is not reported as one. Usual causes: a control gain "
+                "too high for the model, a timestep too large, or a perturbation "
+                "outside what the model can represent."
+            )
+
         mujoco.mj_rnePostConstraint(model, data)   # populates cfrc_ext
-        tilt, height, force = _torso_signals(model, data, torso_id)
+        tilt, height, force = _base_signals(model, data, torso_id)
         t_arr[k] = t
         tilt_arr[k] = tilt
         height_arr[k] = height
         force_arr[k] = force
-        jvel_arr[k] = float(np.abs(data.qvel[6:]).max()) if data.qvel.size > 6 else 0.0
+        # dof_adr skips the free joint when there is one and starts at zero
+        # when there is not; the old qvel[6:] silently dropped the first six
+        # joints of every fixed-base robot
+        jvel_arr[k] = float(np.abs(data.qvel[robot.dof_adr]).max())
 
     return Trajectory(t_arr, tilt_arr, height_arr, force_arr, jvel_arr)
