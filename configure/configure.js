@@ -37,8 +37,9 @@ const METHODS = ['random', 'cem'];
 
 // key sets in harness/faultline/config.py
 const TOP_LEVEL   = ['robot', 'policy', 'duration_s', 'control_hz', 'seeds',
-                     'axes', 'predicates', 'search', 'reduce', 'report'];
-const SEARCH_KEYS = ['method', 'budget', 'target'];
+                     'axes', 'predicates', 'search', 'reduce', 'report',
+                     'base_body', 'observation'];
+const SEARCH_KEYS = ['method', 'budget', 'target', 'workers'];
 const REDUCE_KEYS = ['enabled', 'max', 'budget'];
 const REPORT_KEYS = ['out', 'bins'];
 

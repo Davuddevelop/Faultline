@@ -22,8 +22,9 @@ from .spec import Predicate, RunSpec, Seeds
 TOP_LEVEL = {
     "robot", "policy", "duration_s", "control_hz", "seeds",
     "axes", "predicates", "search", "reduce", "report",
+    "base_body", "observation",
 }
-SEARCH_KEYS = {"method", "budget", "target"}
+SEARCH_KEYS = {"method", "budget", "target", "workers"}
 REDUCE_KEYS = {"enabled", "max", "budget"}
 REPORT_KEYS = {"out", "bins"}
 
@@ -51,19 +52,36 @@ def _check_keys(got: Any, allowed: set[str], where: str, path: Path) -> dict:
 
 
 def load_policy(ref: str, model_path: str) -> Policy:
-    """``module:Attr``, or ``stand`` for the built-in baseline.
+    """``stand``, ``onnx:path``, ``torchscript:path``, or ``module:Attr``.
 
     The baseline exists so the quickstart runs before the reader has written
-    any code of their own.
+    any code of their own. The file loaders exist so a customer never has to
+    write Python at all.
     """
     if ref == "stand":
         import mujoco
 
         return StandPolicy(mujoco.MjModel.from_xml_path(model_path).key_ctrl[0])
 
+    if ref.startswith(("onnx:", "torchscript:")):
+        from .adapters import OnnxPolicy, PolicyLoadError, TorchScriptPolicy
+        from .model import load as load_model
+
+        kind, _, path = ref.partition(":")
+        # the model knows how many actuators there are, so a mismatched policy
+        # is caught at load rather than by MuJoCo mid-campaign
+        n_actions = load_model(model_path).n_actuators
+        try:
+            if kind == "onnx":
+                return OnnxPolicy(path, n_actions=n_actions)
+            return TorchScriptPolicy(path, n_actions=n_actions)
+        except PolicyLoadError as exc:
+            raise ConfigError(str(exc)) from exc
+
     if ":" not in ref:
         raise ConfigError(
-            f"policy {ref!r} must be 'module:Attr' (or 'stand' for the baseline)"
+            f"policy {ref!r} must be 'module:Attr', 'onnx:path', "
+            "'torchscript:path', or 'stand' for the baseline"
         )
     module_name, attr = ref.split(":", 1)
     try:
@@ -91,6 +109,7 @@ class Campaign:
     policy_ref: str
     method: str
     budget: int
+    workers: int
     target: str | None
     reduce_enabled: bool
     reduce_max: int
@@ -174,6 +193,8 @@ def load(path: str | Path) -> Campaign:
         seeds=seeds,
         duration_s=float(doc.get("duration_s", 5.0)),
         control_hz=float(doc.get("control_hz", 50.0)),
+        base_body=doc.get("base_body"),
+        observation=tuple(doc.get("observation", ())),
     )
 
     out = Path(report_cfg.get("out", "deliverables"))
@@ -183,6 +204,7 @@ def load(path: str | Path) -> Campaign:
     return Campaign(
         spec=spec, space=space, policy_ref=str(doc["policy"]),
         method=method, budget=budget, target=target,
+        workers=int(search.get("workers", 1)),
         reduce_enabled=bool(reduce_cfg.get("enabled", True)),
         reduce_max=int(reduce_cfg.get("max", 10)),
         reduce_budget=int(reduce_cfg.get("budget", 200)),

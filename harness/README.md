@@ -276,27 +276,114 @@ field that nothing reads is decoration.
 
 ## Plugging in a real policy
 
-```python
-class MyPPOPolicy:
-    id = "ppo:go2:41200:<sha>"          # goes in the record
+Three ways, in order of how little work they need.
 
-    def reset(self, seed: int) -> None:
-        torch.manual_seed(seed)
+**An exported checkpoint.** No Python required:
 
-    def act(self, obs: np.ndarray, t: float) -> np.ndarray:
-        return self.net(torch.from_numpy(obs)).detach().numpy()
+```yaml
+policy: onnx:checkpoints/walk-v41.onnx      # or torchscript:walk-v41.pt
 ```
 
-The `id` should identify the checkpoint by content, not by path — paths get
-overwritten.
+The runtimes are extras, so installing the harness does not drag in PyTorch
+for someone testing an ONNX policy:
+
+```bash
+pip install 'faultline-harness[onnx]'       # or [torch]
+```
+
+Three things are checked at load rather than discovered mid-campaign:
+
+- **Identity is the file's content.** `policy_id` becomes `walk-v41@9c82cb0a7ab3`,
+  a hash of the bytes. Paths get overwritten, and then a run history is a lie
+  about which network produced which result.
+- **The network must be deterministic.** Loading runs the same observation
+  twice and refuses a policy that answers differently. Dropout left enabled on
+  export makes every reproducibility claim downstream false, and nothing else
+  in the pipeline would notice.
+- **Widths must line up** against the model's actuator count.
+
+A recurrent policy exported with hidden-state inputs is refused rather than run
+with stale state.
+
+**Your own class.** Anything with `reset(seed)` and `act(obs, t)`:
+
+```python
+class MyPPOPolicy:
+    id = "ppo:go2:41200:<sha>"          # content, not path
+    def reset(self, seed: int) -> None: ...
+    def act(self, obs: np.ndarray, t: float) -> np.ndarray: ...
+```
+
+## What the policy sees
+
+A policy is a function of a specific vector in a specific order. Feeding it a
+different layout does not raise — it produces confident, wrong actions, and the
+campaign then reports failures belonging to the harness rather than the robot.
+So the layout is declared:
+
+```yaml
+observation:
+  - {term: projected_gravity}
+  - {term: base_ang_vel}
+  - {term: joint_pos, relative: true}     # offset from the default pose
+  - {term: joint_vel, scale: 0.05}
+```
+
+Available terms: `joint_pos`, `joint_vel`, `base_quat`, `base_lin_vel`,
+`base_ang_vel`, `projected_gravity`, `prev_action`, raw `qpos` / `qvel`, and
+`constant` for command inputs. Names follow Isaac Lab and legged_gym, because
+that is what most locomotion policies are trained against.
+
+`ObservationSpec.describe()` prints the layout index by index — diff it against
+your training code before spending an afternoon on a mismapped campaign.
+Requesting base motion on a fixed base is refused rather than answered with
+zeros, and the layout is part of `config_hash()`: change what the policy sees
+and it is a different experiment, not the same one re-run.
 
 ## The model
 
 `models/quadruped.xml` is a plain 12-DOF quadruped, present so the harness is
-testable without a customer's asset. Nothing in the harness is specific to it
-beyond requiring a body named `torso`. Swap in a real URDF or MJCF; after any
-conversion, check contact parameters, joint damping and actuator gear ratios
-before trusting a result.
+testable without a customer's asset. **Nothing in the harness is specific to
+it.** The base body is resolved from the model — the floating base if there is
+one, else the first child of the world, or whatever `base_body:` names — and
+joint indices come from the model too.
+
+Loading refuses, with the detail named, a model with no actuators (what a
+straight URDF conversion usually produces), no drivable joints, or a base name
+that is not there. After any conversion, check contact parameters, joint
+damping and actuator gear ratios before trusting a result.
+
+## Runs that are not measurements
+
+A diverged solver is neither a pass nor a failure. Recording one as a policy
+failure would be the worst mistake this harness could make: it reports a fault
+the robot does not have, and after reduction it reads as "fails under no
+perturbation at all".
+
+Such runs are marked **invalid** — never counted as failures, excluded from the
+directed-search fit so instability is not mistaken for a promising region, and
+surfaced in the summary. Four things trigger it: solver divergence, a control
+MuJoCo rejects (past roughly 1e12 it silently zeroes the control, so the run
+would otherwise finish numerically perfect and look like a clean pass), a
+non-finite action, and an action of the wrong width.
+
+## Running it faster
+
+```yaml
+search: {method: cem, budget: 5000, workers: -1}     # -1 = one per core
+```
+
+or `faultline run campaign.yaml --workers 8`.
+
+**A parallel campaign is bit-identical to a serial one** — not similar, identical,
+and there is a test asserting it. A result that changed with the worker count
+would make every replay claim in the archive meaningless. Points are drawn up
+front, results are collected in index order, and directed rounds stay
+sequential because the fit depends on the whole round.
+
+An ONNX session cannot be pickled to a worker, so each worker rebuilds the
+policy from its reference. The CLI passes this automatically; calling the
+search functions directly, pass `policy_ref=`.
 
 ## Known limits
 
@@ -307,8 +394,7 @@ before trusting a result.
   for the five-axis example above, against a default budget of 200.
 - With a stochastic policy the seed is held fixed, so reduction minimises
   against that one rollout, not against the policy's distribution.
-- Search is sequential. Every run is independent, so parallelism is available
-  whenever it is worth the complexity — 1500 simulations took 93 s here.
+- Reduction is still sequential, though search is not.
 - CEM finds *dense* failure regions, not necessarily *diverse* ones. Modes are
   grouped from what the search happened to find; a mode the search never
   reached cannot appear in the report.
