@@ -21,6 +21,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+# Loading an exported checkpoint needs its runtime. Neither is a hard
+# dependency: someone testing an ONNX policy should not be made to install
+# PyTorch, and 'pip install faultline-harness' should stay small.
+onnx = ["onnxruntime>=1.17"]
+torch = ["torch>=2.2"]
 
 [project.scripts]
 faultline = "faultline.cli:main"

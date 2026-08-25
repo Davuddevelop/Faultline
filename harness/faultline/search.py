@@ -10,11 +10,14 @@ significance test.
 from __future__ import annotations
 
 import json
+import os
+import pickle
 import statistics
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor
 from typing import Any, Callable
 
 import numpy as np
@@ -168,9 +171,70 @@ def _evaluate_point(
     )
 
 
+# One policy per worker process, built once in the initialiser. An ONNX
+# session and a TorchScript module are both unpicklable, so the object cannot
+# be shipped to a worker — the reference that produced it can.
+_WORKER: dict[str, Any] = {}
+
+
+def _init_worker(policy_ref: str | None, blob: bytes | None, model_path: str) -> None:
+    if policy_ref is not None:
+        from .config import load_policy
+        _WORKER["policy"] = load_policy(policy_ref, model_path)
+    else:
+        _WORKER["policy"] = pickle.loads(blob)
+
+
+def _eval_in_worker(task: tuple) -> Sample:
+    spec, pred, kwargs, index, iteration = task
+    return _evaluate_point(spec, _WORKER["policy"], pred, kwargs, index, iteration)
+
+
+def _resolve_workers(workers: int) -> int:
+    if workers < 0:
+        return max(1, (os.cpu_count() or 1))
+    return max(1, workers)
+
+
+def _worker_payload(policy: Policy, policy_ref: str | None) -> tuple:
+    """Either a reference the worker can rebuild from, or a picklable object."""
+    if policy_ref is not None:
+        return policy_ref, None
+    try:
+        return None, pickle.dumps(policy)
+    except Exception as exc:
+        raise ValueError(
+            "this policy cannot be sent to a worker process "
+            f"({type(policy).__name__}: {exc}). Pass policy_ref='onnx:...' (or the "
+            "reference your config uses) so each worker can load its own copy, "
+            "or run with workers=1."
+        ) from exc
+
+
+def _map_points(
+    spec: RunSpec, policy: Policy, pred: Predicate, space: SearchSpace,
+    points, start_index: int, iteration: int, workers: int, policy_ref: str | None,
+) -> list[Sample]:
+    """Evaluate a batch. Results come back in index order regardless of the
+    order they finish in, so a parallel campaign is identical to a serial one."""
+    tasks = [
+        (spec, pred, space.to_kwargs(row), start_index + k, iteration)
+        for k, row in enumerate(points)
+    ]
+    if workers == 1:
+        return [_evaluate_point(spec, policy, pred, t[2], t[3], t[4]) for t in tasks]
+
+    ref, blob = _worker_payload(policy, policy_ref)
+    with ProcessPoolExecutor(
+        max_workers=workers, initializer=_init_worker,
+        initargs=(ref, blob, spec.model_path),
+    ) as pool:
+        return list(pool.map(_eval_in_worker, tasks, chunksize=1))
+
+
 def random_search(
     spec: RunSpec, policy: Policy, space: SearchSpace, *, budget: int = 150, seed: int = 0,
-    target_predicate: str | None = None,
+    target_predicate: str | None = None, workers: int = 1, policy_ref: str | None = None,
 ) -> CampaignResult:
     """Uniform coverage of the declared volume. The baseline every directed
     method has to beat to justify its complexity."""
@@ -180,10 +244,13 @@ def random_search(
     rng = np.random.default_rng(seed)
 
     t0 = time.perf_counter()
-    samples = [
-        _evaluate_point(spec, policy, pred, space.sample(rng), i)
-        for i in range(budget)
-    ]
+    # points are drawn up front so the sampler sequence is identical whatever
+    # the worker count
+    points = np.array([[space.sample(rng)[a] for a in space.axes] for _ in range(budget)])
+    samples = _map_points(
+        spec, policy, pred, space, points, 0, 0,
+        _resolve_workers(workers), policy_ref,
+    )
     return CampaignResult(
         method="random", space=space, seed=seed, budget=budget,
         target_predicate=pred.name, samples=samples,
@@ -196,6 +263,7 @@ def cem_search(
     spec: RunSpec, policy: Policy, space: SearchSpace, *, budget: int = 150, seed: int = 0,
     target_predicate: str | None = None, elite_frac: float = 0.25,
     iterations: int = 6, min_std_frac: float = 0.08,
+    workers: int = 1, policy_ref: str | None = None,
 ) -> CampaignResult:
     """Cross-entropy method: fit a Gaussian to the most severe samples and
     resample from it, so budget concentrates where violations are dense.
@@ -222,6 +290,7 @@ def cem_search(
     mean = (lo + hi) / 2.0
     std = span / 4.0
     floor = span * min_std_frac
+    n_workers = _resolve_workers(workers)
 
     per_round = max(1, budget // iterations)
     samples: list[Sample] = []
@@ -241,12 +310,13 @@ def cem_search(
         else:
             points = space.clip(rng.normal(mean, std, size=(n, space.dims)))
 
-        round_samples = []
-        for row in points:
-            round_samples.append(
-                _evaluate_point(spec, policy, pred, space.to_kwargs(row), index, iteration=it)
-            )
-            index += 1
+        # A round is evaluated in parallel; the fit that follows depends on the
+        # whole round, so rounds themselves stay sequential. That is also what
+        # keeps the result identical to a serial run.
+        round_samples = _map_points(
+            spec, policy, pred, space, points, index, it, n_workers, policy_ref,
+        )
+        index += len(round_samples)
         samples.extend(round_samples)
 
         # refit to the elite of this round

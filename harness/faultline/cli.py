@@ -96,10 +96,14 @@ def _run_campaign(c: Campaign, quiet: bool = False) -> tuple[int, Path | None]:
         print(f"  robot     {c.spec.model_path}")
         print(f"  policy    {c.policy_ref}")
         print(f"  space     {c.space.dims} axes")
-        print(f"  search    {c.method}, {c.budget} simulations")
+        par = "" if c.workers == 1 else f", {c.workers} workers"
+        print(f"  search    {c.method}, {c.budget} simulations{par}")
 
+    # policy_ref lets each worker build its own policy: an ONNX session and a
+    # TorchScript module cannot be pickled across to one
     campaign = search(c.spec, policy, c.space, budget=c.budget,
-                      seed=c.spec.seeds.sampler, target_predicate=c.target)
+                      seed=c.spec.seeds.sampler, target_predicate=c.target,
+                      workers=c.workers, policy_ref=c.policy_ref)
     if not quiet:
         print(f"\n{campaign.summary()}")
 
@@ -134,6 +138,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     campaign = load(args.config)
     if args.budget:
         campaign.budget = args.budget
+    if getattr(args, "workers", None):
+        campaign.workers = args.workers
     if args.out:
         campaign.out_dir = Path(args.out)
     code, _ = _run_campaign(campaign, quiet=args.quiet)
