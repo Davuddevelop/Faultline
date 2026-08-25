@@ -46,8 +46,6 @@
 .outputs dd:last-of-type{margin-bottom:0}
 .outputs--wide dt{font-family:var(--sans);font-size:clamp(17px,1.8vw,20px);letter-spacing:-.01em}
 
-.foot__in a{color:inherit}
-.foot__in a:hover{color:var(--bone)}
 
 /* the site's contact block is a full-height image plate; there is no image here */
 .contact{min-height:auto;display:block;padding:clamp(80px,10vw,130px) 0;border-top:1px solid var(--rule-soft)}

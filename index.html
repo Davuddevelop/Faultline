@@ -26,7 +26,7 @@
       <a href="#problem">Problem</a><a href="#deadline">Why now</a><a href="#run">How a run works</a><a href="#deliverables">Deliverables</a><a href="#interfaces">Interfaces</a><a href="#status">Status</a>
     </nav>
     <a class="nav__ghost" href="#contact">Talk to us</a>
-    <a class="nav__cta" href="start/">Get started</a>
+    <a class="nav__cta" href="app/">Get started</a>
   </div>
 </header>
 
@@ -46,7 +46,7 @@
       <p class="eyebrow">Adversarial testing for learned robot policies</p>
       <h1 class="display">The ground gives way somewhere. We find <em>where</em>.</h1>
       <div class="hero__act">
-        <a class="btn btn--solid" href="start/">Get started <span aria-hidden="true">→</span></a>
+        <a class="btn btn--solid" href="app/">Get started <span aria-hidden="true">→</span></a>
         <a class="btn" href="#contact">Start a conversation <span aria-hidden="true">→</span></a>
       </div>
     </div>
@@ -132,7 +132,10 @@
 <span class="k">reduce</span>: {enabled: true, max: 10}    <span class="c"># minimise every failing case</span>
 </code></pre>
       <p class="note mono">Every field is yours. Run it with <code>faultline run campaign.yaml</code>. The simulator version is not set here — it is recorded with every run rather than chosen.</p>
-      <p class="note mono"><a class="inline-link inline-link--block" href="configure/">Build one from your own robot file &rarr;</a></p>
+      <div class="actions">
+        <a class="btn btn--solid" href="configure/">Build one from your robot file <span aria-hidden="true">&rarr;</span></a>
+        <a class="btn" href="start/">Read the setup guide <span aria-hidden="true">&rarr;</span></a>
+      </div>
     </div>
   </div>
 </section>
@@ -260,11 +263,13 @@
       <p class="micro">Deliverables</p>
       <h2 class="h2">Two documents, and everything needed to re-run them.</h2>
     </div>
-    <p class="head__lede" data-reveal style="margin-bottom:clamp(28px,3.4vw,44px)">
+    <p class="head__lede" data-reveal style="margin-bottom:20px">
       A campaign against the stand-in quadruped — its failure modes, sample
       efficiency and coverage — is published in full.
-      <a class="inline-link" href="report/">See a sample report &rarr;</a>
     </p>
+    <div class="actions" data-reveal style="margin-bottom:clamp(26px,3.2vw,40px)">
+      <a class="btn btn--solid" href="report/">See a real report <span aria-hidden="true">&rarr;</span></a>
+    </div>
     <div class="cards" data-reveal>
       <article class="card">
         <h3>Engineering report</h3>

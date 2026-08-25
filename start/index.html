@@ -18,7 +18,7 @@
 <header class="nav is-stuck" id="nav">
   <div class="nav__in">
     <a class="mark" href="../index.html"><span class="mark__glyph" aria-hidden="true"></span>Faultline</a>
-    <a class="nav__cta" href="../report/">Sample report</a>
+    <a class="nav__cta" href="../app/">Get started</a>
   </div>
 </header>
 
@@ -57,8 +57,11 @@
           and a baseline stance controller, so it runs before you have written
           anything of your own.</p>
         <pre class="cmd"><code>faultline init campaign.yaml</code></pre>
-        <p class="note mono">Or <a class="inline-link" href="../configure/">build one from your own robot file</a> — it reads your
-          URDF or MJCF in the browser and writes the config for you.</p>
+        <p>Or let the builder write it: drop in your URDF or MJCF and it reads the
+          model in your browser and fills the config out for you.</p>
+        <div class="actions">
+          <a class="btn" href="../configure/">Open the campaign builder <span aria-hidden="true">&rarr;</span></a>
+        </div>
         <p>Every field is yours. The axes are the volume to search, in physical
           units. The predicates are what counts as a failure — rules you wrote,
           checked over the whole trajectory, never a learned classifier.</p>
@@ -120,7 +123,7 @@ coverage  16/1024 cells (1.56%) at 4 bins per axis</code></pre>
             trajectory trace per failure mode. Any result can be re-executed with
             <code>faultline replay</code>.</dd>
         </dl>
-        <p class="note mono"><a class="inline-link inline-link--block" href="../report/">See what a real report looks like &rarr;</a></p>
+        <div class="actions"><a class="btn" href="../report/">See what a real report looks like <span aria-hidden="true">&rarr;</span></a></div>
       </div>
     </article>
 
