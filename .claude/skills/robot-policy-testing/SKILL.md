@@ -50,9 +50,20 @@ Each test is one point in a declared parameter space. Keep axes physical and
 named in units, never normalised to 0–1 in the interface — a reviewer needs to
 read `slope: 18 deg`, not `slope: 0.72`.
 
-Axes worth supporting: push impulse (N·s), ground friction µ, slope (deg),
-terrain roughness (cm RMS), sensor latency (ms), actuator torque loss (%),
-payload mass (kg) and offset (cm), and observation noise.
+**Implemented today — seven, and only these.** The authority is
+`_AXIS_BY_NAME` in `harness/faultline/space.py`; check it before writing an
+axis list anywhere:
+
+push impulse (N·s), ground friction µ, slope (deg), sensor latency (ms),
+actuator torque loss (%), payload mass (kg), payload offset (m).
+
+Push yaw, slope yaw and push time exist on the spec but are not searchable —
+they say *which way* and *when*, not *how much*.
+
+Plausible future axes — terrain roughness and observation noise — are **not
+implemented**. Do not list them as though they were. An earlier version of this
+file did, and the claim propagated to the landing page and from there into
+design mockups before anyone checked it against the code.
 
 **Axes combine.** Single-axis sweeps find the failures the customer already
 knows about. The interesting violations sit in corners — moderate slope *and*

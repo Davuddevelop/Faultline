@@ -6,16 +6,40 @@ so the standing cost is the descriptions (~1k tokens), not the content.
 
 ## Where these came from
 
+**25 skills installed.** Counted from `metadata.origin` in each `SKILL.md`, so
+these numbers can be re-derived rather than trusted:
+
 | Source | Licence | Skills |
 | --- | --- | --- |
-| [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) | MIT (see `LICENSE-everything-claude-code`) | 14 |
-| [`anthropics/skills`](https://github.com/anthropics/skills) | see upstream | `frontend-design` |
-| Written for this repo | — | `robot-policy-testing` |
+| [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code), tagged `ECC` | MIT (see `LICENSE-everything-claude-code`) | 12 |
+| Tagged `community` | see upstream | 3 |
+| Written for this repo | — | 7 (the domain set, below) |
+| Untagged — `benchmark-methodology`, `frontend-design`, `motion-foundations` | see each file | 3 |
 
-ECC ships 286 skills. 14 are installed. The rest are for stacks this project
-does not use (Laravel, Django, healthcare, DeFi, logistics) and installing them
-would cost context on every turn and widen the surface of instructions Claude
-follows for no return.
+`frontend-design` is Anthropic's, from [`anthropics/skills`](https://github.com/anthropics/skills).
+The other two untagged ones predate this accounting and should get an `origin`
+when someone next touches them.
+
+ECC ships 286 skills. Most are for stacks this project does not use (Laravel,
+Django, healthcare, DeFi, logistics); installing them would cost context on
+every turn and widen the surface of instructions Claude follows for no return.
+
+## Why the domain skills were written rather than installed
+
+Searched, 2026-09-04, for existing skills covering maths, physics, control
+theory and RL fundamentals. Nothing usable exists:
+
+| Source | Result |
+| --- | --- |
+| claude.ai skill library | empty |
+| Plugin marketplace | Unity (game-engine collision) and DataRobot (AutoML) only |
+| ECC, 286 skills | nothing on maths, physics, control or RL theory |
+| [`arpitg1304/robotics-agent-skills`](https://github.com/arpitg1304/robotics-agent-skills) | 10 skills, all ROS1/ROS2 plumbing; explicitly no control theory, kinematics or dynamics — and this project does not use ROS |
+| [`NVIDIA/skills`](https://github.com/nvidia/skills), 500+ | no Isaac Lab, Isaac Sim, MuJoCo, locomotion or sim-to-real; its `nemo-rl-*` skills are RLHF for language models, a different subject |
+
+The published ecosystem is vendor product skills and ROS boilerplate. The
+fundamentals are unwritten, so the seven below were written against this repo's
+code, with every claim traced to a file and line or to a measured number.
 
 ## What is installed, and why
 
@@ -42,8 +66,25 @@ follows for no return.
 - `benchmark-methodology` — comparing methods without fooling yourself
 - `error-handling` — typed errors, retries, circuit breakers
 
+**The domain — written for this repo, grounded in its code**
+- `robot-policy-testing` — reproducibility, predicates, reduction, sim-to-real,
+  the regulatory framing
+- `spatial-maths-and-frames` — rotations, SO(3), quaternion ordering, world vs
+  body frame, where `arccos` loses precision
+- `rigid-body-dynamics` — `qpos`/`qvel` and why they differ in length, joint
+  types and DOF addressing, inertia, contact and friction, how a run diverges
+- `control-theory` — control rate vs physics rate, actuators, sensor latency,
+  and the quantisation that makes a requested impulse differ from the delivered
+  one
+- `rl-for-robot-policies` — MDPs, PPO, the observation layout as a contract,
+  domain randomisation vs test-time perturbation, why coverage means nothing
+  for a network
+- `optimisation-and-search` — severity as a signed objective, the Cross-Entropy
+  Method, variance collapse, why a directed hit rate is not a failure rate
+- `uncertainty-and-evidence` — binomial intervals, the rule of three, coverage
+  vs confidence, prediction-powered inference, the claims ladder
+
 **Machines**
-- `robot-policy-testing` — this project's domain conventions
 - `latency-critical-systems` — realtime and streaming constraints
 - `cpp-coding-standards` — C++ Core Guidelines
 - `python-patterns` — idioms, typing, PEP 8
