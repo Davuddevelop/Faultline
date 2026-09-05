@@ -184,7 +184,7 @@ def build() -> Path:
 
 <header class="nav is-stuck" id="nav">
   <div class="nav__in">
-    <a class="mark" href="../index.html"><span class="mark__glyph" aria-hidden="true"></span>Faultline</a>
+    <a class="mark" href="../index.html"><svg class="mark__glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3.5" width="13" height="4.6" fill="currentColor"/><rect x="2.5" y="8.9" width="10" height="4.6" fill="currentColor"/><rect x="2.5" y="14.3" width="16.5" height="4.6" fill="currentColor"/></svg>Faultline</a>
     <a class="nav__cta" href="../index.html#contact">Talk to us</a>
   </div>
 </header>
