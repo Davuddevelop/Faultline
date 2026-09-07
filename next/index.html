@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faultline — adversarial testing for learned robot policies</title>
+<meta name="description" content="Faultline searches a declared space of physical conditions for the ones that make a trained robot policy fail, and returns evidence anyone can re-run.">
+<meta name="theme-color" content="#111315">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Rokkitt:wght@300;400;500;600&display=swap">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap nav__in">
+    <a class="lock" href="#top" aria-label="Faultline home">
+      <svg class="mk" viewBox="0 0 24 24" aria-hidden="true">
+        <polygon points="2,2 15,2 7,22 2,22"/><polygon points="18,2 22,2 22,22 10,22"/>
+      </svg>
+      <span>Faultline</span>
+    </a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#problem">Problem</a><a href="#space">The space</a>
+      <a href="#rules">Rules</a><a href="#output">Output</a><a href="#status">Status</a>
+    </nav>
+    <a class="btn btn--sm" href="#contact">Talk to us</a>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero" id="top">
+  <div class="hero__media"><img src="assets/hero.jpg" alt="A four-legged robot at the edge of a fissure opening across a meadow" width="1600" height="900" fetchpriority="high"></div>
+  <div class="wrap hero__in">
+    <h1>The ground gives way somewhere. We find where.</h1>
+    <p class="lede">A robot trained in simulation walks beautifully until the moss is wet, the
+      slope is steeper, or a sensor answers late. We hunt those conditions on purpose —
+      thousands of them — so the first failure happens in simulation.</p>
+    <div class="acts">
+      <a class="btn btn--solid" href="#contact">Talk to us</a>
+      <a class="btn btn--ghost" href="#output">See what comes out</a>
+    </div>
+  </div>
+  <div class="wrap hero__bar">
+    <span>Deterministic — every run reproducible from its seed</span>
+    <span>Baku, Azerbaijan</span>
+  </div>
+</section>
+
+<section class="sec" id="problem">
+  <div class="wrap grid">
+    <div class="col-h"><p class="idx">01</p><h2>Coverage means nothing here.</h2></div>
+    <div class="col-b">
+      <p>A modern robot doesn't run hand-written control code. It runs a neural network
+        trained in simulation — a policy — mapping what the robot senses to what its motors
+        do. It works under the conditions it was trained on and offers no guarantee anywhere
+        else, and nothing in it signals when a situation is unfamiliar.</p>
+      <p>That breaks every instinct from software testing. Ordinary programs have branches
+        you can enumerate, so "100% coverage" means something. A network has none. Line
+        coverage of the inference code is 100% after a single run and tells you nothing. The
+        space of situations is a continuous volume, not a list of cases — and a hundred
+        scripted scenarios tell you about a hundred points in it.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec--dark" id="space">
+  <div class="wrap grid">
+    <div class="col-h"><p class="idx">02</p><h2>You declare the space. In real units.</h2></div>
+    <div class="col-b">
+      <p>No normalised 0–1 knobs. An assessor reads <em>slope 10 degrees</em>, not
+        <em>slope 0.72</em>. These are the axes from the campaign below.</p>
+      <table class="tbl">
+        <thead><tr><th>Axis</th><th>Declared range</th><th>Unit</th></tr></thead>
+        <tbody>
+          <tr><td>push_impulse_ns</td><td class="n">0 – 9.0</td><td>N·s</td></tr>
+          <tr><td>slope_deg</td><td class="n">0 – 10.0</td><td>deg</td></tr>
+          <tr><td>sensor_lag_ms</td><td class="n">0 – 60.0</td><td>ms</td></tr>
+          <tr><td>torque_loss_pct</td><td class="n">0 – 15.0</td><td>%</td></tr>
+          <tr><td>payload_kg</td><td class="n">0 – 2.0</td><td>kg</td></tr>
+          <tr><td>payload_offset_m</td><td class="n">0 – 0.06</td><td>m</td></tr>
+        </tbody>
+      </table>
+      <p class="fine">Six axes here; <code>friction_mu</code> is also searchable and was not
+        varied in this campaign. Impulse and sensor lag quantise onto the control grid, so
+        both are quoted as <em>requested</em> values.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="rules">
+  <div class="wrap grid">
+    <div class="col-h"><p class="idx">03</p><h2>A failure is a rule you wrote.</h2></div>
+    <div class="col-b">
+      <p>Never a learned classifier, never a heuristic we invented. When a run is flagged you
+        can read the line that flagged it and disagree with it. Checked at every step of the
+        whole trajectory, not just the final state.</p>
+      <pre class="code"><code><span class="k">predicates</span>:
+  - {name: tilt_limit, signal: tilt_deg,  op: <span class="s">"&gt;"</span>, threshold: 35.0}
+  - {name: fallen,     signal: height_m,  op: <span class="s">"&lt;"</span>, threshold: 0.12}</code></pre>
+      <p class="fine">Predicates see four signals and nothing else: <code>tilt_deg</code>,
+        <code>height_m</code>, <code>contact_force_n</code>, <code>joint_vel_rads</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec--dark" id="output">
+  <div class="wrap grid">
+    <div class="col-h"><p class="idx">04</p><h2>One campaign, actually run.</h2></div>
+    <div class="col-b">
+      <div class="stats">
+        <div><b class="n">150</b><span>simulations</span></div>
+        <div><b class="n">51</b><span>violations</span></div>
+        <div><b class="n">10</b><span>reduced to minimal cases</span></div>
+        <div><b class="n">87<i>/4096</i></b><span>grid cells visited</span></div>
+      </div>
+      <p>Each violation is reduced — perturbations relaxed toward nominal until it stops
+        firing — so what you get is the smallest condition that still breaks the policy,
+        grouped by what it actually needs.</p>
+      <div class="modes">
+        <div class="mode">
+          <p class="mode__t">tilt_limit via push_impulse_ns</p>
+          <dl><dt>Occurrences</dt><dd class="n">7</dd>
+              <dt>Minimal, requested</dt><dd class="n">7.875 N·s</dd>
+              <dt>First breach</dt><dd class="n">1.26 s</dd></dl>
+        </div>
+        <div class="mode">
+          <p class="mode__t">tilt_limit via push_impulse_ns + torque_loss_pct</p>
+          <dl><dt>Occurrences</dt><dd class="n">3</dd>
+              <dt>Minimal, requested</dt><dd class="n">7.594 N·s · 0.965 %</dd>
+              <dt>First breach</dt><dd class="n">1.54 s</dd></dl>
+        </div>
+      </div>
+      <p class="fine">Campaign of 2026-08-22 · MuJoCo 3.12.0 · seeds 0–4 · coverage measured at
+        4 bins per axis. Directed search concentrates where failures are dense, so 51/150 is a
+        property of the search, not a failure rate for the robot.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="status">
+  <div class="wrap grid">
+    <div class="col-h"><p class="idx">05</p><h2>What we can show, and what we can't.</h2></div>
+    <div class="col-b">
+      <ul class="rules">
+        <li><b>Can</b> — name the conditions under which a policy broke, reduce each to its
+          smallest form, and hand over an archive where every run re-executes bit-for-bit
+          from its seed.</li>
+        <li><b>Cannot</b> — show that failures are absent. The search finds them; it can
+          never prove there are none left.</li>
+        <li><b>Will not</b> — call a policy safe, verified or compliant, or imply the output
+          satisfies a notified body. Nobody can currently say what does.</li>
+        <li><b>Today</b> — one robot class exercised, no completed customer pilots, one
+          person. EU Machinery Regulation 2023/1230 applies 20 January 2027; the delegated
+          act defining adequate evidence is not due until 2028.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec--cta" id="contact">
+  <div class="wrap">
+    <h2>If you ship a learned policy into Europe, we want to hear your plan.</h2>
+    <p class="lede">We're looking for design partners rather than users.</p>
+    <a class="btn btn--solid btn--lg" href="mailto:hello@faultline.dev">Start a conversation</a>
+    <p class="fine">hello@faultline.dev is a placeholder and not yet a real address.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <span class="lock lock--sm">
+      <svg class="mk" viewBox="0 0 24 24" aria-hidden="true">
+        <polygon points="2,2 15,2 7,22 2,22"/><polygon points="18,2 22,2 22,22 10,22"/>
+      </svg><span>Faultline</span></span>
+    <span>Identity v2 · 7 September 2026</span>
+  </div>
+</footer>
+</body>
+</html>
