@@ -69,6 +69,13 @@ Bodies load on demand; consult them rather than re-deriving.
 
 ## Working style
 
-The user is learning this domain deliberately (`docs/learning-path.md`) in order
-to co-engineer rather than delegate. Explain reasoning; do not just produce
-output. When something is wrong, say which line and why.
+**Keep replies short.** A few sentences. No headings, no bullet summaries of work
+already done, no recaps of what was just built. The artifact or the diff is the
+deliverable; the message is only a pointer to it.
+
+**Ask instead of explaining.** When something is unclear, blocked, or wrong, put
+the question directly and stop. Do not pre-empt it with paragraphs of context.
+
+The user is learning this domain deliberately (`docs/learning-path.md`) to
+co-engineer rather than delegate — so when something is wrong, name the line and
+the reason, in one sentence.
