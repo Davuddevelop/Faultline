@@ -1,0 +1,162 @@
+/* Faultline — surrealist cut.
+   The hero is Magritte's Human Condition: a panel of the same landscape set
+   slightly out of register with the landscape behind it. The seam is the point.
+   EB Garamond for the painted register, Archivo for anything instrumental. */
+:root{
+  --ground:#0E1210; --ink:#F2F0E9; --ink-2:#B3B8B2; --ink-3:#8A918B;
+  --paper:#F2F0E9; --paper-ink:#141715; --paper-2:#5C625E;
+  --edge:rgba(242,240,233,.15); --edge-p:#D8D6CD;
+  --seam:#C8452E;
+  --g:"EB Garamond",Georgia,serif; --a:"Archivo",system-ui,sans-serif;
+  --wrap:1100px; --gut:clamp(18px,4vw,46px);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--g);
+  font-size:18px;line-height:1.66;-webkit-font-smoothing:antialiased}
+::selection{background:var(--seam);color:var(--paper)}
+.wrap{width:100%;max-width:var(--wrap);margin-inline:auto;padding-inline:var(--gut)}
+a{color:inherit}
+:where(a,button):focus-visible{outline:2px solid var(--seam);outline-offset:3px}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:8px;top:8px;background:var(--paper);color:var(--paper-ink);padding:10px 15px;z-index:99}
+
+.mk{width:21px;height:21px;flex:none;fill:currentColor}
+.lock{display:inline-flex;align-items:center;gap:9px;text-decoration:none;
+  font-family:var(--a);font-weight:500;font-size:16px;letter-spacing:-.02em}
+.lock--sm{font-size:14px}.lock--sm .mk{width:16px;height:16px}
+
+.nav{position:sticky;top:0;z-index:30;background:rgba(14,18,16,.82);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--edge)}
+.nav__in{display:flex;align-items:center;gap:24px;min-height:60px}
+.nav__links{display:none;gap:24px;margin-inline:auto;font-family:var(--a);
+  font-size:13px;color:var(--ink-2)}
+.nav__links a{text-decoration:none}.nav__links a:hover{color:var(--seam)}
+@media(min-width:880px){.nav__links{display:flex}}
+
+.btn{display:inline-flex;align-items:center;min-height:46px;padding:0 22px;
+  font-family:var(--a);font-size:14px;font-weight:500;text-decoration:none;
+  border:1px solid currentColor;transition:background-color .2s,color .2s,border-color .2s}
+.btn--sm{min-height:34px;padding:0 13px;font-size:12.5px;margin-left:auto}
+.btn--lg{min-height:54px;padding:0 30px;font-size:15px}
+.btn--solid{background:var(--paper);color:var(--paper-ink);border-color:var(--paper)}
+.btn--solid:hover{background:var(--seam);border-color:var(--seam);color:var(--paper)}
+.btn--line{color:var(--ink)}
+.btn--line:hover{background:rgba(242,240,233,.1)}
+.nav .btn--sm{color:var(--ink)}
+.nav .btn--sm:hover{background:var(--paper);color:var(--paper-ink);border-color:var(--paper)}
+
+/* ── hero: world, then the panel out of register ─────────── */
+.hero{position:relative;isolation:isolate;overflow:hidden;
+  min-height:min(96vh,880px);display:flex;flex-direction:column;justify-content:flex-end;
+  padding-block:clamp(70px,11vw,130px) clamp(34px,5vw,60px)}
+.hero__world{position:absolute;inset:0;z-index:-3}
+.hero__world img{width:100%;height:100%;object-fit:cover;display:block;
+  filter:saturate(.34) brightness(.52) contrast(1.02)}
+.hero::after{content:"";position:absolute;inset:0;z-index:-2;
+  background:linear-gradient(180deg,rgba(14,18,16,.5),rgba(14,18,16,.2) 34%,rgba(14,18,16,.9) 88%,var(--ground))}
+
+/* the easel panel — same picture, displaced, with a hard seam */
+.easel{position:absolute;z-index:-1;margin:0;
+  top:clamp(58px,9vw,104px);right:calc(50% - min(50vw, var(--wrap)/2) + var(--gut));
+  width:min(46vw,470px)}
+@media(max-width:880px){.easel{position:relative;right:auto;top:auto;width:100%;
+  margin:0 0 30px;order:-1}}
+.easel__panel{position:relative;aspect-ratio:16/10;overflow:hidden;
+  border:1px solid rgba(242,240,233,.5);
+  box-shadow:0 34px 90px rgba(0,0,0,.6), 0 2px 0 rgba(242,240,233,.14)}
+.easel__panel img{position:absolute;width:236%;height:auto;
+  /* deliberately out of register with the world behind it */
+  top:-24%;left:-84%;filter:saturate(1.02) contrast(1.04)}
+.easel__plate{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  margin-top:12px;font-family:var(--a);font-size:11px;letter-spacing:.06em;
+  color:var(--ink-3)}
+.easel__plate span:first-child{color:var(--ink-2);font-style:normal}
+
+.hero__text{position:relative;z-index:2;max-width:none}
+.hero h1{font-size:clamp(40px,7.4vw,92px);font-weight:400;line-height:1.0;
+  letter-spacing:-.024em;margin:0 0 22px;max-width:15ch;text-wrap:balance}
+.hero h1 em{font-style:italic;color:var(--seam)}
+.lede{font-size:clamp(17px,2vw,21px);color:var(--ink-2);max-width:46ch;margin:0 0 30px}
+.acts{display:flex;gap:12px;flex-wrap:wrap}
+
+.strip{border-block:1px solid var(--edge);font-family:var(--a);font-size:12.5px;
+  color:var(--ink-3)}
+.strip .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding-block:14px}
+
+/* ── sections ────────────────────────────────────────────── */
+.sec{padding-block:clamp(58px,9vw,118px);border-bottom:1px solid var(--edge)}
+.sec--dark{background:#0A0D0C}
+.two{display:grid;gap:clamp(22px,3.4vw,52px)}
+@media(min-width:880px){.two{grid-template-columns:minmax(0,.66fr) minmax(0,1.34fr)}}
+.fig{font-family:var(--a);font-size:12px;letter-spacing:.22em;color:var(--seam);
+  margin:0 0 12px}
+.sec h2,.limits h2,.cta h2{font-weight:400;font-size:clamp(26px,3.7vw,42px);
+  line-height:1.12;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.two__b p{max-width:58ch;margin:0 0 18px}
+.two__b p:last-child{margin-bottom:0}
+.aside{font-family:var(--a);font-size:13.5px;line-height:1.66;color:var(--ink-3);
+  border-left:1px solid var(--seam);padding-left:15px}
+.aside code,.two__b code{font-family:var(--a);font-size:.94em;color:var(--ink-2)}
+
+/* axes */
+.axes{list-style:none;padding:0;margin:0 0 20px;display:grid;gap:0}
+.axes li{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:baseline;
+  padding:13px 0;border-bottom:1px solid var(--edge)}
+.axes li:last-child{border-bottom:0}
+.axes span{font-family:var(--a);font-size:14px;color:var(--ink-2)}
+.axes b{font-weight:400;font-size:19px;font-variant-numeric:tabular-nums}
+.axes i{font-family:var(--a);font-style:normal;font-size:12px;color:var(--ink-3);
+  min-width:34px;text-align:right}
+
+.code{margin:0 0 18px;padding:17px 19px;background:rgba(0,0,0,.34);
+  border-left:1px solid var(--seam);overflow-x:auto;
+  font-family:var(--a);font-size:13px;line-height:1.8;color:var(--ink-2)}
+
+/* counts */
+.counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  gap:22px;margin:0 0 26px;padding-bottom:24px;border-bottom:1px solid var(--edge)}
+.counts b{display:block;font-weight:400;font-size:clamp(34px,4.6vw,50px);line-height:1;
+  font-variant-numeric:tabular-nums}
+.counts i{font-style:normal;font-size:.44em;color:var(--ink-3)}
+.counts span{display:block;font-family:var(--a);font-size:12px;color:var(--ink-3);margin-top:9px}
+
+.modes{display:grid;gap:16px;margin:20px 0}
+@media(min-width:660px){.modes{grid-template-columns:1fr 1fr}}
+.mode{border:1px solid var(--edge);padding:18px 20px}
+.mode__t{font-family:var(--a);font-size:13px;color:var(--ink-2);margin:0 0 14px;
+  padding-bottom:12px;border-bottom:1px solid var(--edge)}
+.mode dl{display:grid;grid-template-columns:auto 1fr;gap:9px 14px;margin:0;
+  font-family:var(--a);font-size:13px}
+.mode dt{color:var(--ink-3)}
+.mode dd{margin:0;text-align:right;font-family:var(--g);font-size:16px;
+  font-variant-numeric:tabular-nums}
+
+/* ── limits over the second painting ─────────────────────── */
+.limits{position:relative;isolation:isolate;overflow:hidden;
+  padding-block:clamp(62px,9vw,120px);border-bottom:1px solid var(--edge)}
+.limits__bg{position:absolute;inset:0;z-index:-2}
+.limits__bg img{width:100%;height:100%;object-fit:cover;
+  filter:saturate(.2) brightness(.32) contrast(1.05)}
+.limits::after{content:"";position:absolute;inset:0;z-index:-1;background:rgba(10,13,12,.58)}
+.limits h2{max-width:20ch;margin-bottom:28px}
+.says{list-style:none;padding:0;margin:0;display:grid;gap:0;max-width:74ch}
+.says li{display:grid;gap:4px 22px;padding:16px 0;border-bottom:1px solid var(--edge)}
+@media(min-width:620px){.says li{grid-template-columns:104px 1fr}}
+.says li:last-child{border-bottom:0}
+.says b{font-family:var(--a);font-size:12.5px;font-weight:500;letter-spacing:.08em;
+  color:var(--seam);text-transform:uppercase}
+.says span{color:var(--ink-2);font-size:17px}
+
+.cta{padding-block:clamp(66px,10vw,128px);text-align:center;background:var(--paper);
+  color:var(--paper-ink)}
+.cta h2{max-width:21ch;margin-inline:auto}
+.cta .lede{color:var(--paper-2);margin:20px auto 30px}
+.cta .aside{color:var(--paper-2);border-left-color:var(--seam);display:inline-block;
+  margin-top:22px;text-align:left}
+
+.foot{padding-block:22px 52px;background:var(--paper);color:var(--paper-2)}
+.foot__in{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  font-family:var(--a);font-size:12.5px}
