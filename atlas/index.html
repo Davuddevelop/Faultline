@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faultline — the ground gives way somewhere</title>
+<meta name="description" content="Faultline searches a declared space of physical conditions for the ones that make a trained robot policy fail, and returns evidence anyone can re-run.">
+<meta name="theme-color" content="#0A1626">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Archivo:wght@400;500&display=swap">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" data-nav>
+  <div class="wrap nav__in">
+    <a class="lock" href="#top"><svg class="mk" viewBox="0 0 24 24" aria-hidden="true">
+      <polygon points="2,2 15,2 7,22 2,22"/><polygon points="18,2 22,2 22,22 10,22"/></svg>
+      <span>Faultline</span></a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#gap">I</a><a href="#space">II</a><a href="#rules">III</a>
+      <a href="#found">IV</a><a href="#limits">V</a>
+    </nav>
+    <a class="btn btn--sm" href="#contact">Talk to us</a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ── HERO ────────────────────────────────────────────────── -->
+<section class="hero" id="top">
+  <div class="plate" data-plate>
+    <canvas class="plate__dither" data-dither="assets/plate-01.jpg" aria-hidden="true"></canvas>
+    <img class="plate__real" src="assets/plate-01.jpg" alt="A four-legged robot at the edge of a fissure opening across a meadow">
+    <span class="plate__seam" aria-hidden="true"></span>
+  </div>
+
+  <div class="wrap hero__in">
+    <p class="over" data-rise>Adversarial testing for learned robot policies</p>
+    <h1 class="display">
+      <span class="ln"><span data-rise>The ground gives</span></span>
+      <span class="ln"><span data-rise>way <em>somewhere</em>.</span></span>
+    </h1>
+    <p class="lede" data-rise>A policy trained in simulation walks beautifully until the moss
+      is wet, the slope is steeper, or a sensor answers late. We hunt those conditions on
+      purpose — thousands of them.</p>
+    <div class="acts" data-rise>
+      <a class="btn btn--solid" href="#contact">Talk to us</a>
+      <a class="btn btn--line" href="#found">What we found</a>
+    </div>
+  </div>
+
+  <div class="wrap scrollcue" aria-hidden="true">
+    <span class="scrollcue__rule"></span>
+    <span>Scroll — the plate resolves</span>
+  </div>
+</section>
+
+<!-- ── I ───────────────────────────────────────────────────── -->
+<section class="sec" id="gap">
+  <div class="wrap two">
+    <div class="two__a"><p class="fig" data-rise>I</p>
+      <h2 data-rise>A robot trained inside a picture.</h2></div>
+    <div class="two__b">
+      <p data-rise>A modern robot doesn't run hand-written control code. It runs a neural
+        network trained in simulation — a policy — mapping what it senses to what its motors
+        do. It works under the conditions it was trained on and offers no guarantee anywhere
+        else. Nothing inside it signals when a situation is unfamiliar; it extrapolates
+        silently, and confidently.</p>
+      <p data-rise>That breaks every instinct from software testing. Ordinary programs have
+        branches you can enumerate, so "100% coverage" means something. A network has none.
+        Line coverage of the inference code reaches 100% after one run and tells you nothing.</p>
+      <p class="aside" data-rise>The space of situations is a continuous volume. A hundred
+        scripted scenarios tell you about a hundred points inside it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── II ──────────────────────────────────────────────────── -->
+<section class="sec sec--tight" id="space">
+  <div class="wrap two">
+    <div class="two__a"><p class="fig" data-rise>II</p>
+      <h2 data-rise>You declare the space. In real units.</h2></div>
+    <div class="two__b">
+      <p data-rise>No normalised knobs. An assessor reads <em>slope 10 degrees</em>, not
+        <em>slope 0.72</em>. These six were varied in the campaign below.</p>
+      <p class="aside" data-rise><code>friction_mu</code> is also searchable and was not varied
+        here. Impulse and sensor lag quantise onto the control grid, so both are quoted as
+        <em>requested</em> values.</p>
+    </div>
+  </div>
+  <div class="belt" data-belt aria-hidden="true">
+    <div class="belt__row" data-belt-row>
+      <span>push_impulse_ns <b>0–9.0</b> N·s</span><span class="dot"></span>
+      <span>slope_deg <b>0–10.0</b> deg</span><span class="dot"></span>
+      <span>sensor_lag_ms <b>0–60.0</b> ms</span><span class="dot"></span>
+      <span>torque_loss_pct <b>0–15.0</b> %</span><span class="dot"></span>
+      <span>payload_kg <b>0–2.0</b> kg</span><span class="dot"></span>
+      <span>payload_offset_m <b>0–0.06</b> m</span><span class="dot"></span>
+    </div>
+  </div>
+  <ul class="sr-only">
+    <li>push_impulse_ns, 0 to 9.0 newton seconds</li>
+    <li>slope_deg, 0 to 10.0 degrees</li>
+    <li>sensor_lag_ms, 0 to 60.0 milliseconds</li>
+    <li>torque_loss_pct, 0 to 15.0 percent</li>
+    <li>payload_kg, 0 to 2.0 kilograms</li>
+    <li>payload_offset_m, 0 to 0.06 metres</li>
+  </ul>
+</section>
+
+<!-- ── plate 02 ────────────────────────────────────────────── -->
+<section class="band">
+  <div class="band__media" data-para="0.16">
+    <canvas class="band__dither" data-dither="assets/plate-02.jpg" aria-hidden="true"></canvas>
+    <img src="assets/plate-02.jpg" alt="" aria-hidden="true">
+  </div>
+  <blockquote class="wrap band__q" data-rise>
+    <p>Finding a failure is strong evidence.<br>Finding none is weak evidence.</p>
+  </blockquote>
+</section>
+
+<!-- ── III ─────────────────────────────────────────────────── -->
+<section class="sec" id="rules">
+  <div class="wrap two">
+    <div class="two__a"><p class="fig" data-rise>III</p>
+      <h2 data-rise>A failure is a rule you wrote.</h2></div>
+    <div class="two__b">
+      <p data-rise>Never a learned classifier, never a heuristic we invented. When a run is
+        flagged you can read the line that flagged it and disagree with it. Checked at every
+        step of the whole trajectory, not only at the end.</p>
+      <pre class="code" data-rise><code>predicates:
+  - {name: tilt_limit, signal: tilt_deg, op: "&gt;", threshold: 35.0}
+  - {name: fallen,     signal: height_m, op: "&lt;", threshold: 0.12}</code></pre>
+      <p class="aside" data-rise>Predicates see four signals and nothing else:
+        <code>tilt_deg</code>, <code>height_m</code>, <code>contact_force_n</code>,
+        <code>joint_vel_rads</code>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── IV ──────────────────────────────────────────────────── -->
+<section class="sec sec--deep" id="found">
+  <div class="wrap">
+    <p class="fig" data-rise>IV</p>
+    <h2 class="wide" data-rise>One campaign, actually run.</h2>
+    <div class="counts">
+      <div data-rise><b data-count="150">0</b><span>simulations</span></div>
+      <div data-rise><b data-count="51">0</b><span>violations</span></div>
+      <div data-rise><b data-count="10">0</b><span>reduced</span></div>
+      <div data-rise><b data-count="87">0</b><i>/4096</i><span>cells visited</span></div>
+    </div>
+    <div class="two two--flip">
+      <div class="two__b">
+        <p data-rise>Each violation is reduced — perturbations relaxed back toward nominal
+          until it stops firing — so what you receive is the smallest condition that still
+          breaks the policy, grouped by what it actually requires.</p>
+        <p class="aside" data-rise>Campaign of 2026-08-22 · MuJoCo 3.12.0 · seeds 0–4 ·
+          coverage at four bins per axis. Directed search concentrates where failures are
+          dense, so 51 of 150 is a property of the search and not a failure rate.</p>
+      </div>
+      <div class="two__a">
+        <div class="mode" data-rise>
+          <p class="mode__t">tilt_limit via push_impulse_ns</p>
+          <dl><dt>Occurrences</dt><dd>7</dd><dt>Minimal, requested</dt><dd>7.875 N·s</dd>
+              <dt>First breach</dt><dd>1.26 s</dd></dl>
+        </div>
+        <div class="mode" data-rise>
+          <p class="mode__t">tilt_limit via push_impulse_ns + torque_loss_pct</p>
+          <dl><dt>Occurrences</dt><dd>3</dd><dt>Minimal, requested</dt><dd>7.594 N·s · 0.965 %</dd>
+              <dt>First breach</dt><dd>1.54 s</dd></dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── V ───────────────────────────────────────────────────── -->
+<section class="sec" id="limits">
+  <div class="wrap">
+    <p class="fig" data-rise>V</p>
+    <h2 class="wide" data-rise>What we can show, and what we can't.</h2>
+    <ul class="says">
+      <li data-rise><b>Can</b><span>Name the conditions under which a policy broke, reduce each
+        to its smallest form, and hand over an archive where every run re-executes
+        bit-for-bit from its seed.</span></li>
+      <li data-rise><b>Cannot</b><span>Show that failures are absent. The search finds them;
+        it can never prove there are none left.</span></li>
+      <li data-rise><b>Will not</b><span>Call a policy safe, verified or compliant, or imply
+        the output satisfies a notified body. Nobody can currently say what does.</span></li>
+      <li data-rise><b>Today</b><span>One robot class exercised, no completed pilots, one
+        person. EU Machinery Regulation 2023/1230 applies 20 January 2027; the delegated act
+        defining adequate evidence is not due until 2028.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="cta" id="contact">
+  <div class="wrap">
+    <h2 data-rise>If you ship a learned policy into Europe, we want to hear your plan.</h2>
+    <p class="lede" data-rise>We're looking for design partners rather than users.</p>
+    <a class="btn btn--solid btn--lg" href="mailto:hello@faultline.dev" data-rise>Start a conversation</a>
+    <p class="aside" data-rise>hello@faultline.dev is a placeholder and not yet a real address.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot"><div class="wrap foot__in">
+  <span class="lock lock--sm"><svg class="mk" viewBox="0 0 24 24" aria-hidden="true">
+    <polygon points="2,2 15,2 7,22 2,22"/><polygon points="18,2 22,2 22,22 10,22"/></svg>
+    <span>Faultline</span></span>
+  <span>Baku, Azerbaijan</span>
+</div></footer>
+
+<script src="app.js"></script>
+</body>
+</html>
