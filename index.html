@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>document.documentElement.className+=" js"</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Faultline — Adversarial testing for learned robot policies</title>
@@ -28,6 +29,7 @@
     <a class="nav__ghost" href="#contact">Talk to us</a>
     <a class="nav__cta" href="app/">Get started</a>
   </div>
+  <span class="nav__prog" aria-hidden="true"><i data-prog></i></span>
 </header>
 
 <main>
@@ -43,17 +45,17 @@
 
   <div class="hero__in wrap">
     <div class="hero__lead">
-      <p class="eyebrow">Adversarial testing for learned robot policies</p>
-      <h1 class="display">The ground gives way somewhere. We find <em>where</em>.</h1>
-      <div class="hero__act">
+      <p class="eyebrow" data-seq="0">Adversarial testing for learned robot policies</p>
+      <h1 class="display" data-split>The ground gives way somewhere. We find <em>where</em>.</h1>
+      <div class="hero__act" data-seq="2">
         <a class="btn btn--solid" href="app/">Get started <span aria-hidden="true">→</span></a>
         <a class="btn" href="#contact">Start a conversation <span aria-hidden="true">→</span></a>
       </div>
     </div>
-    <p class="hero__note">A robot trained in simulation walks beautifully until the moss is wet, the slope is steeper, or a sensor answers late. We hunt those conditions on purpose — thousands of them — so the first failure happens in simulation, not in a warehouse.</p>
+    <p class="hero__note" data-seq="3">A robot trained in simulation walks beautifully until the moss is wet, the slope is steeper, or a sensor answers late. We hunt those conditions on purpose — thousands of them — so the first failure happens in simulation, not in a warehouse.</p>
   </div>
 
-  <div class="hero__bar wrap">
+  <div class="hero__bar wrap" data-seq="4">
     <span class="mono">Deterministic simulation · every run reproducible from its seed</span>
     <span class="mono">Baku, Azerbaijan</span>
   </div>
@@ -71,7 +73,7 @@
 </section>
 
 <!-- ── deadline ─────────────────────────────────────────────── -->
-<section class="section" id="deadline">
+<section class="section" id="deadline" data-rule>
   <div class="wrap grid2">
     <div data-reveal>
       <p class="eyebrow">Why now</p>
@@ -87,7 +89,7 @@
 </section>
 
 <!-- ── how a run works ──────────────────────────────────────── -->
-<section class="section" id="run">
+<section class="section" id="run" data-rule>
   <div class="wrap">
     <div class="head" data-reveal>
       <p class="micro">How a run works</p>
@@ -142,7 +144,7 @@
 
 
 <!-- ── the search space ─────────────────────────────────────── -->
-<section class="section" id="space">
+<section class="section" id="space" data-rule>
   <div class="wrap">
     <div class="head" data-reveal>
       <p class="micro">Search space</p>
@@ -157,7 +159,7 @@
           <thead>
             <tr><th scope="col">Axis</th><th scope="col">Field</th><th scope="col">Unit</th><th scope="col">Range</th></tr>
           </thead>
-          <tbody>
+          <tbody data-stagger>
             <tr><th scope="row">A shove to the torso</th><td class="mono f">push_impulse_ns</td><td class="u">N&middot;s</td><td class="n">0 &ndash; 16</td></tr>
             <tr><th scope="row">Ground incline</th><td class="mono f">slope_deg</td><td class="u">deg</td><td class="n">0 &ndash; 12</td></tr>
             <tr><th scope="row">Sensor delay</th><td class="mono f">sensor_lag_ms</td><td class="u">ms</td><td class="n">0 &ndash; 50</td></tr>
@@ -197,14 +199,14 @@
 </section>
 
 <!-- ── predicates ───────────────────────────────────────────── -->
-<section class="section" id="predicates">
+<section class="section" id="predicates" data-rule>
   <div class="wrap grid2">
     <div data-reveal>
       <h2 class="h2">A failure is a rule you wrote, not a judgement we made.</h2>
       <p>Every violation is an explicit predicate over the trajectory. No learned classifier sits between the run and the verdict — when a run is flagged you can read the line that flagged it, and disagree with it.</p>
     </div>
     <div data-reveal>
-      <ul class="rules mono">
+      <ul class="rules mono" data-stagger>
         <li><span>tilt(t)</span> &gt; θ_max &nbsp;for any <span>t</span></li>
         <li><span>contact_force(t, link)</span> &gt; F_max</li>
         <li><span>com(t)</span> ∉ <span>S_safe</span></li>
@@ -230,7 +232,8 @@
           <text class="trace__label" x="60" y="114">θ_max = 35°</text>
           <line class="trace__event" x1="313" y1="20" x2="313" y2="266"/>
           <text class="trace__label trace__label--dim" x="306" y="31" text-anchor="end">push 22 N·s</text>
-          <path class="trace__line" d="M52.0,247.9 L54.2,246.8 L56.3,244.1 L58.5,246.7 L60.7,246.1 L62.9,245.3 L65.0,247.6 L67.2,245.1 L69.4,244.0 L71.6,242.6 L73.7,246.9 L75.9,245.2 L78.1,246.3 L80.3,241.3 L82.4,241.7 L84.6,245.7 L86.8,239.3 L88.9,239.1 L91.1,240.9 L93.3,240.9 L95.5,243.7 L97.6,244.4 L99.8,240.8 L102.0,243.7 L104.2,242.6 L106.3,242.1 L108.5,243.4 L110.7,240.4 L112.9,240.4 L115.0,237.6 L117.2,239.6 L119.4,238.7 L121.5,239.6 L123.7,238.4 L125.9,239.7 L128.1,240.8 L130.2,236.1 L132.4,236.1 L134.6,237.1 L136.8,238.0 L138.9,240.6 L141.1,241.2 L143.3,240.9 L145.5,242.4 L147.6,237.9 L149.8,240.4 L152.0,237.6 L154.1,240.8 L156.3,237.1 L158.5,238.0 L160.7,243.7 L162.8,242.6 L165.0,238.2 L167.2,241.2 L169.4,238.1 L171.5,242.2 L173.7,244.5 L175.9,241.1 L178.1,240.4 L180.2,244.0 L182.4,245.5 L184.6,244.2 L186.7,240.3 L188.9,242.0 L191.1,246.5 L193.3,245.9 L195.4,247.2 L197.6,247.8 L199.8,243.3 L202.0,247.7 L204.1,245.5 L206.3,246.6 L208.5,248.6 L210.7,245.4 L212.8,249.7 L215.0,246.7 L217.2,250.5 L219.3,248.8 L221.5,250.5 L223.7,250.5 L225.9,246.2 L228.0,247.7 L230.2,251.3 L232.4,247.8 L234.6,252.5 L236.7,251.7 L238.9,248.9 L241.1,250.6 L243.3,254.5 L245.4,248.9 L247.6,254.3 L249.8,254.3 L251.9,251.2 L254.1,254.3 L256.3,254.8 L258.5,256.5 L260.6,256.6 L262.8,253.6 L265.0,256.0 L267.2,253.9 L269.3,255.5 L271.5,255.2 L273.7,252.0 L275.9,255.3 L278.0,254.8 L280.2,253.0 L282.4,257.6 L284.5,257.8 L286.7,252.9 L288.9,253.6 L291.1,257.4 L293.2,257.8 L295.4,254.2 L297.6,252.9 L299.8,257.7 L301.9,252.7 L304.1,253.1 L306.3,254.9 L308.5,256.0 L310.6,258.0 L312.8,258.3 L315.0,246.3 L317.1,245.2 L319.3,236.5 L321.5,233.9 L323.7,224.8 L325.8,221.1 L328.0,218.0 L330.2,213.8 L332.4,205.4 L334.5,205.0 L336.7,199.4 L338.9,192.8 L341.1,186.6 L343.2,183.9 L345.4,182.1 L347.6,173.9 L349.7,174.7 L351.9,172.2 L354.1,166.8 L356.3,162.1 L358.4,161.1 L360.6,157.0 L362.8,152.4 L365.0,147.9 L367.1,147.6 L369.3,143.1 L371.5,136.6 L373.7,133.1 L375.8,132.5 L378.0,129.5 L380.2,127.5 L382.3,127.8 L384.5,126.0 L386.7,123.7 L388.9,115.4 L391.0,114.5 L393.2,110.5 L395.4,114.5 L397.6,108.3 L399.7,107.3 L401.9,103.6 L404.1,104.4 L406.3,98.0 L408.4,102.2 L410.6,97.4 L412.8,94.4 L414.9,91.6 L417.1,91.1 L419.3,89.7 L421.5,87.6 L423.6,85.4 L425.8,87.6 L428.0,84.1 L430.2,81.3 L432.3,80.3 L434.5,82.0 L436.7,78.4 L438.9,76.8 L441.0,77.6 L443.2,76.2 L445.4,76.8 L447.5,74.5 L449.7,73.4 L451.9,76.0 L454.1,71.5 L456.2,68.3 L458.4,68.3 L460.6,68.6 L462.8,70.1 L464.9,67.2 L467.1,67.6 L469.3,67.9 L471.5,64.7 L473.6,69.2 L475.8,64.3 L478.0,68.6 L480.1,64.4 L482.3,64.8 L484.5,66.1 L486.7,62.7 L488.8,63.7 L491.0,62.6 L493.2,60.4 L495.4,64.5 L497.5,65.9 L499.7,63.8 L501.9,61.2 L504.1,64.2 L506.2,64.3 L508.4,59.4 L510.6,60.9 L512.7,62.3 L514.9,59.3 L517.1,63.0 L519.3,60.7 L521.4,63.8 L523.6,62.3 L525.8,59.9 L528.0,59.2 L530.1,59.5 L532.3,62.9 L534.5,61.6 L536.7,63.5 L538.8,64.8 L541.0,62.5 L543.2,60.4 L545.3,60.4 L547.5,61.5 L549.7,60.0 L551.9,64.6 L554.0,65.4 L556.2,63.7 L558.4,65.0 L560.6,65.6 L562.7,64.4 L564.9,63.2 L567.1,64.2 L569.3,65.5 L571.4,62.2 L573.6,61.4 L575.8,65.0 L577.9,67.6 L580.1,68.0 L582.3,62.5 L584.5,68.1 L586.6,63.8 L588.8,64.8 L591.0,66.6 L593.2,63.5 L595.3,68.6 L597.5,67.9 L599.7,65.9 L601.9,68.7 L604.0,63.5 L606.2,67.4 L608.4,68.0 L610.5,68.6 L612.7,64.8 L614.9,65.9 L617.1,64.7 L619.2,64.5 L621.4,63.4 L623.6,62.3 L625.8,64.0 L627.9,67.1 L630.1,65.2 L632.3,67.0 L634.5,67.9 L636.6,64.8 L638.8,63.0 L641.0,66.3 L643.1,65.5 L645.3,64.9 L647.5,62.3 L649.7,63.3 L651.8,62.4 L654.0,61.2 L656.2,63.4 L658.4,60.5 L660.5,59.5 L662.7,64.5 L664.9,58.7 L667.1,59.8 L669.2,63.4 L671.4,60.9 L673.6,59.5 L675.7,57.3 L677.9,60.4 L680.1,58.8 L682.3,56.4 L684.4,56.6 L686.6,55.3 L688.8,58.1 L691.0,56.5 L693.1,59.1 L695.3,55.3 L697.5,54.3 L699.7,55.1 L701.8,54.2 L704.0,57.2"/>
+          <path class="trace__line" pathLength="1" d="M52.0,247.9 L54.2,246.8 L56.3,244.1 L58.5,246.7 L60.7,246.1 L62.9,245.3 L65.0,247.6 L67.2,245.1 L69.4,244.0 L71.6,242.6 L73.7,246.9 L75.9,245.2 L78.1,246.3 L80.3,241.3 L82.4,241.7 L84.6,245.7 L86.8,239.3 L88.9,239.1 L91.1,240.9 L93.3,240.9 L95.5,243.7 L97.6,244.4 L99.8,240.8 L102.0,243.7 L104.2,242.6 L106.3,242.1 L108.5,243.4 L110.7,240.4 L112.9,240.4 L115.0,237.6 L117.2,239.6 L119.4,238.7 L121.5,239.6 L123.7,238.4 L125.9,239.7 L128.1,240.8 L130.2,236.1 L132.4,236.1 L134.6,237.1 L136.8,238.0 L138.9,240.6 L141.1,241.2 L143.3,240.9 L145.5,242.4 L147.6,237.9 L149.8,240.4 L152.0,237.6 L154.1,240.8 L156.3,237.1 L158.5,238.0 L160.7,243.7 L162.8,242.6 L165.0,238.2 L167.2,241.2 L169.4,238.1 L171.5,242.2 L173.7,244.5 L175.9,241.1 L178.1,240.4 L180.2,244.0 L182.4,245.5 L184.6,244.2 L186.7,240.3 L188.9,242.0 L191.1,246.5 L193.3,245.9 L195.4,247.2 L197.6,247.8 L199.8,243.3 L202.0,247.7 L204.1,245.5 L206.3,246.6 L208.5,248.6 L210.7,245.4 L212.8,249.7 L215.0,246.7 L217.2,250.5 L219.3,248.8 L221.5,250.5 L223.7,250.5 L225.9,246.2 L228.0,247.7 L230.2,251.3 L232.4,247.8 L234.6,252.5 L236.7,251.7 L238.9,248.9 L241.1,250.6 L243.3,254.5 L245.4,248.9 L247.6,254.3 L249.8,254.3 L251.9,251.2 L254.1,254.3 L256.3,254.8 L258.5,256.5 L260.6,256.6 L262.8,253.6 L265.0,256.0 L267.2,253.9 L269.3,255.5 L271.5,255.2 L273.7,252.0 L275.9,255.3 L278.0,254.8 L280.2,253.0 L282.4,257.6 L284.5,257.8 L286.7,252.9 L288.9,253.6 L291.1,257.4 L293.2,257.8 L295.4,254.2 L297.6,252.9 L299.8,257.7 L301.9,252.7 L304.1,253.1 L306.3,254.9 L308.5,256.0 L310.6,258.0 L312.8,258.3 L315.0,246.3 L317.1,245.2 L319.3,236.5 L321.5,233.9 L323.7,224.8 L325.8,221.1 L328.0,218.0 L330.2,213.8 L332.4,205.4 L334.5,205.0 L336.7,199.4 L338.9,192.8 L341.1,186.6 L343.2,183.9 L345.4,182.1 L347.6,173.9 L349.7,174.7 L351.9,172.2 L354.1,166.8 L356.3,162.1 L358.4,161.1 L360.6,157.0 L362.8,152.4 L365.0,147.9 L367.1,147.6 L369.3,143.1 L371.5,136.6 L373.7,133.1 L375.8,132.5 L378.0,129.5 L380.2,127.5 L382.3,127.8 L384.5,126.0 L386.7,123.7 L388.9,115.4 L391.0,114.5 L393.2,110.5 L395.4,114.5 L397.6,108.3 L399.7,107.3 L401.9,103.6 L404.1,104.4 L406.3,98.0 L408.4,102.2 L410.6,97.4 L412.8,94.4 L414.9,91.6 L417.1,91.1 L419.3,89.7 L421.5,87.6 L423.6,85.4 L425.8,87.6 L428.0,84.1 L430.2,81.3 L432.3,80.3 L434.5,82.0 L436.7,78.4 L438.9,76.8 L441.0,77.6 L443.2,76.2 L445.4,76.8 L447.5,74.5 L449.7,73.4 L451.9,76.0 L454.1,71.5 L456.2,68.3 L458.4,68.3 L460.6,68.6 L462.8,70.1 L464.9,67.2 L467.1,67.6 L469.3,67.9 L471.5,64.7 L473.6,69.2 L475.8,64.3 L478.0,68.6 L480.1,64.4 L482.3,64.8 L484.5,66.1 L486.7,62.7 L488.8,63.7 L491.0,62.6 L493.2,60.4 L495.4,64.5 L497.5,65.9 L499.7,63.8 L501.9,61.2 L504.1,64.2 L506.2,64.3 L508.4,59.4 L510.6,60.9 L512.7,62.3 L514.9,59.3 L517.1,63.0 L519.3,60.7 L521.4,63.8 L523.6,62.3 L525.8,59.9 L528.0,59.2 L530.1,59.5 L532.3,62.9 L534.5,61.6 L536.7,63.5 L538.8,64.8 L541.0,62.5 L543.2,60.4 L545.3,60.4 L547.5,61.5 L549.7,60.0 L551.9,64.6 L554.0,65.4 L556.2,63.7 L558.4,65.0 L560.6,65.6 L562.7,64.4 L564.9,63.2 L567.1,64.2 L569.3,65.5 L571.4,62.2 L573.6,61.4 L575.8,65.0 L577.9,67.6 L580.1,68.0 L582.3,62.5 L584.5,68.1 L586.6,63.8 L588.8,64.8 L591.0,66.6 L593.2,63.5 L595.3,68.6 L597.5,67.9 L599.7,65.9 L601.9,68.7 L604.0,63.5 L606.2,67.4 L608.4,68.0 L610.5,68.6 L612.7,64.8 L614.9,65.9 L617.1,64.7 L619.2,64.5 L621.4,63.4 L623.6,62.3 L625.8,64.0 L627.9,67.1 L630.1,65.2 L632.3,67.0 L634.5,67.9 L636.6,64.8 L638.8,63.0 L641.0,66.3 L643.1,65.5 L645.3,64.9 L647.5,62.3 L649.7,63.3 L651.8,62.4 L654.0,61.2 L656.2,63.4 L658.4,60.5 L660.5,59.5 L662.7,64.5 L664.9,58.7 L667.1,59.8 L669.2,63.4 L671.4,60.9 L673.6,59.5 L675.7,57.3 L677.9,60.4 L680.1,58.8 L682.3,56.4 L684.4,56.6 L686.6,55.3 L688.8,58.1 L691.0,56.5 L693.1,59.1 L695.3,55.3 L697.5,54.3 L699.7,55.1 L701.8,54.2 L704.0,57.2"/>
+          <circle class="trace__ping" cx="389" cy="122" r="4" vector-effect="non-scaling-stroke"/>
           <circle class="trace__hit" cx="389" cy="122" r="4"/>
           <text class="trace__label trace__label--hit" x="399" y="142">violation · t=3.10s</text>
         </svg>
@@ -270,7 +273,7 @@
     <div class="actions" data-reveal style="margin-bottom:clamp(26px,3.2vw,40px)">
       <a class="btn btn--solid" href="report/">See a real report <span aria-hidden="true">&rarr;</span></a>
     </div>
-    <div class="cards" data-reveal>
+    <div class="cards" data-stagger>
       <article class="card">
         <h3>Engineering report</h3>
         <p>Failures clustered by mode rather than listed by count, with the region of parameter space each cluster occupies, the minimal reproducing case for every one, and trajectory traces and video for each flagged run.</p>
@@ -288,13 +291,13 @@
 </section>
 
 <!-- ── interfaces ───────────────────────────────────────────── -->
-<section class="section" id="interfaces">
+<section class="section" id="interfaces" data-rule>
   <div class="wrap">
     <div class="head" data-reveal>
       <p class="micro">Interfaces</p>
       <h2 class="h2">What it plugs into.</h2>
     </div>
-    <div class="stack" data-reveal>
+    <div class="stack" data-stagger>
       <div><p class="stack__k mono">Simulators</p><p class="stack__v">MuJoCo, Isaac Sim</p></div>
       <div><p class="stack__k mono">Robot models</p><p class="stack__v">URDF, MJCF</p></div>
       <div><p class="stack__k mono">Policies</p><p class="stack__v">PyTorch checkpoints, ONNX</p></div>
@@ -306,14 +309,14 @@
 </section>
 
 <!-- ── inputs ───────────────────────────────────────────────── -->
-<section class="section" id="start">
+<section class="section" id="start" data-rule>
   <div class="wrap grid2">
     <div data-reveal>
       <p class="eyebrow">To start</p>
       <h2 class="h2">Three things.</h2>
     </div>
     <div data-reveal>
-      <dl class="inputs">
+      <dl class="inputs" data-stagger>
         <dt>A trained policy</dt>
         <dd>The checkpoint, plus the observation and action spec it expects.</dd>
         <dt>A robot model</dt>
@@ -327,14 +330,14 @@
 </section>
 
 <!-- ── honest status ────────────────────────────────────────── -->
-<section class="section" id="status">
+<section class="section" id="status" data-rule>
   <div class="wrap">
     <div class="head" data-reveal>
       <p class="micro">Status</p>
       <h2 class="h2">What we can show, and what we can&rsquo;t.</h2>
       <p class="head__lede">A testing company that overstates its evidence is worse than no testing company. So, plainly:</p>
     </div>
-    <div class="panels" data-reveal>
+    <div class="panels" data-stagger>
       <div class="pane pane--yes">
         <p class="pane__tag"><span class="pill pill--ok">In progress</span></p>
         <ul>
@@ -357,7 +360,7 @@
 
 <!-- ── contact ──────────────────────────────────────────────── -->
 <section class="contact" id="contact">
-  <div class="contact__media">
+  <div class="contact__media" data-parallax="0.05">
     <picture>
       <source type="image/webp" srcset="assets/img/valley-line-800.webp 800w, assets/img/valley-line-1280.webp 1280w, assets/img/valley-line-2048.webp 2048w" sizes="100vw">
       <img src="assets/img/valley-line.jpg" alt="Several robots walking in a line across a wide green valley." width="2048" height="1152" loading="lazy" data-fade>
