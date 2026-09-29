@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>reel</title>
+<style>
+  html,body{margin:0;background:#000;overflow:hidden}
+  canvas{display:block}
+</style></head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* Faultline — 22s brand reel.
+   One canvas, one pure function of time. seek(t) draws the frame at t and
+   nothing persists between frames, so the render is deterministic and can be
+   stepped by a screenshotter rather than captured in real time. */
+const C = document.getElementById('c'), X = C.getContext('2d');
+const W = 1920, H = 1080, FPS = 30, DUR = 22;
+
+const DEEP = '#0A1626', BONE = '#EDE8DC', SEAM = '#D5502F', DIM = '#7C8790';
+const SERIF = '"Bitstream Charter", Charter, Georgia, serif';
+const MONO  = '"DejaVu Sans Mono", monospace';
+
+/* ── helpers ─────────────────────────────────────────────── */
+const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
+const inv   = (t,a,b)=>clamp((t-a)/(b-a),0,1);
+const ease  = k=>k<.5 ? 4*k*k*k : 1-Math.pow(-2*k+2,3)/2;
+const out   = k=>1-Math.pow(1-k,3);
+// window(t, in0, in1, out0, out1) -> 0..1 opacity envelope
+function win(t,i0,i1,o0,o1){ return Math.min(inv(t,i0,i1), 1-inv(t,o0,o1)); }
+
+function text(s,x,y,{size=60,font=SERIF,col=BONE,al='left',a=1,track=0}={}){
+  if(a<=0.001) return;
+  X.save(); X.globalAlpha=a; X.fillStyle=col; X.font=size+'px '+font;
+  X.textAlign = track ? 'left' : al; X.textBaseline='alphabetic';
+  if(track){
+    const w = s.split('').reduce((n,ch)=>n+X.measureText(ch).width+track,0)-track;
+    let cx = al==='center' ? x-w/2 : al==='right' ? x-w : x;
+    for(const ch of s){ X.fillText(ch,cx,y); cx += X.measureText(ch).width+track; }
+  } else X.fillText(s,x,y);
+  X.restore();
+}
+
+/* the mark: two blocks split by a diagonal void, on a 24-unit grid */
+function mark(x,y,s,col,a=1){
+  if(a<=0.001) return;
+  X.save(); X.globalAlpha=a; X.translate(x,y); X.scale(s/24,s/24); X.fillStyle=col;
+  X.beginPath(); X.moveTo(2,2); X.lineTo(15,2); X.lineTo(7,22); X.lineTo(2,22); X.fill();
+  X.beginPath(); X.moveTo(18,2); X.lineTo(22,2); X.lineTo(22,22); X.lineTo(10,22); X.fill();
+  X.restore();
+}
+
+/* ── the plate, Floyd–Steinberg dithered once at load ────── */
+let plate=null, plateDither=null;
+function buildPlate(img){
+  const w=340, h=Math.round(w*img.naturalHeight/img.naturalWidth);
+  const o=document.createElement('canvas'); o.width=w; o.height=h;
+  const oc=o.getContext('2d',{willReadFrequently:true});
+  oc.drawImage(img,0,0,w,h);
+  const d=oc.getImageData(0,0,w,h), p=d.data, g=new Float32Array(w*h);
+  for(let i=0;i<w*h;i++) g[i]=(0.2126*p[i*4]+0.7152*p[i*4+1]+0.0722*p[i*4+2])/255;
+  const L=3;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i=y*w+x, old=g[i], q=Math.round(old*L)/L, e=old-q; g[i]=q;
+    if(x+1<w)        g[i+1]    += e*7/16;
+    if(y+1<h){ if(x) g[i+w-1]  += e*3/16;
+                     g[i+w]    += e*5/16;
+               if(x+1<w) g[i+w+1] += e*1/16; }
+  }
+  const D=[10,22,38], B=[237,232,220];
+  for(let i=0;i<w*h;i++){ const t=clamp(g[i],0,1);
+    p[i*4]=D[0]+(B[0]-D[0])*t; p[i*4+1]=D[1]+(B[1]-D[1])*t;
+    p[i*4+2]=D[2]+(B[2]-D[2])*t; p[i*4+3]=255; }
+  oc.putImageData(d,0,0); plateDither=o;
+}
+
+/* cover-fit draw */
+function cover(src,a,blur){
+  if(a<=0.001) return;
+  const r=Math.max(W/src.width, H/src.height), w=src.width*r, h=src.height*r;
+  X.save(); X.globalAlpha=a;
+  if(blur) X.filter='blur('+blur+'px)';
+  X.imageSmoothingEnabled = src!==plateDither;
+  X.drawImage(src,(W-w)/2,(H-h)/2,w,h); X.restore();
+}
+
+/* ── the campaign scatter: real structure, seeded ────────── */
+// A deterministic LCG so the point cloud is identical on every render.
+let _s=41279; const rnd=()=>((_s=(_s*1664525+1013904223)>>>0)/4294967296);
+const PTS=[]; (function(){
+  _s=41279;
+  for(let i=0;i<150;i++){
+    // first third uniform, then concentrated toward high impulse — the shape
+    // a directed search actually produces
+    const k=i/150, conc=k<0.33?0:(k-0.33)/0.67;
+    const x=clamp(rnd()*(1-conc*0.55)+conc*0.45+rnd()*0.12,0,1);
+    const y=clamp(rnd()*(1-conc*0.35)+conc*0.2,0,1);
+    PTS.push({x,y,fail:x>0.62&&rnd()<0.72,i});
+  }
+})();
+
+function scatter(t,a){
+  if(a<=0.001) return;
+  const bx=W*0.545, by=H*0.30, bw=W*0.37, bh=H*0.44;
+  X.save(); X.globalAlpha=a;
+  X.strokeStyle='rgba(237,232,220,.22)'; X.lineWidth=1;
+  X.strokeRect(bx,by,bw,bh);
+  text('push_impulse_ns  0 – 9.0 N·s', bx, by+bh+34, {size:19,font:MONO,col:DIM,a});
+  X.save(); X.translate(bx-26, by+bh); X.rotate(-Math.PI/2);
+  text('torque_loss_pct  0 – 15.0 %', 0, 0, {size:19,font:MONO,col:DIM,a});
+  X.restore();
+  const shown = Math.floor(inv(t,11.2,15.4)*150);
+  for(let i=0;i<shown;i++){
+    const p=PTS[i], px=bx+p.x*bw, py=by+(1-p.y)*bh;
+    const age=clamp((shown-i)/9,0,1);
+    X.globalAlpha=a*(0.25+0.75*age);
+    X.fillStyle=p.fail?SEAM:'rgba(237,232,220,.5)';
+    X.beginPath(); X.arc(px,py,p.fail?4.6:3,0,7); X.fill();
+  }
+  X.restore();
+}
+
+/* ── the frame ───────────────────────────────────────────── */
+function seek(t){
+  X.fillStyle=DEEP; X.fillRect(0,0,W,H);
+
+  /* 0–2.6  the seam draws, the mark lands */
+  const seamK = out(inv(t,0.25,1.9));
+  if(seamK>0 && t<6.2){
+    const a=win(t,0,0.3,5.4,6.2);
+    X.save(); X.globalAlpha=a*0.85; X.strokeStyle=SEAM; X.lineWidth=2;
+    X.beginPath(); X.moveTo(W/2,H*0.5-H*0.5*seamK); X.lineTo(W/2,H*0.5+H*0.5*seamK); X.stroke(); X.restore();
+  }
+
+  /* 1.4–6.2  plate resolves behind */
+  if(plate){
+    const rise=inv(t,1.4,2.6), res=ease(inv(t,3.0,5.6)), gone=1-inv(t,15.9,16.7);
+    const base=Math.min(rise,gone);
+    cover(plate, base*0.5*res + base*0.06, 0);
+    if(plateDither) cover(plateDither, base*(1-res)*0.92, 0);
+    // deepen the scrim once data type is on screen, so 20px mono stays legible
+    const scrim = 0.5 + 0.34*inv(t,10.2,11.6);
+    X.save(); X.globalAlpha=base*scrim; X.fillStyle=DEEP; X.fillRect(0,0,W,H); X.restore();
+  }
+
+  /* 2.2–6.2  lockup */
+  {
+    const a=win(t,2.2,3.0,5.5,6.2), y=H*0.5+ (1-out(inv(t,2.2,3.2)))*18;
+    mark(W/2-268, y-64, 92, BONE, a);
+    text('Faultline', W/2-150, y+16, {size:118,col:BONE,a});
+    text('ADVERSARIAL TESTING FOR LEARNED ROBOT POLICIES', W/2, y+96,
+         {size:21,font:MONO,col:SEAM,al:'center',a:win(t,3.1,3.8,5.4,6.1),track:3.4});
+  }
+
+  /* 6.4–11.0  the claim */
+  {
+    const a1=win(t,6.4,7.2,9.2,9.9);
+    text('A neural network', W*0.5, H*0.44, {size:96,col:BONE,al:'center',a:a1});
+    text('has no branches.',  W*0.5, H*0.56, {size:96,col:BONE,al:'center',a:a1});
+    const a2=win(t,9.6,10.3,12.0,12.7);
+    text('So there is nothing to cover.', W*0.5, H*0.47, {size:72,col:DIM,al:'center',a:a2});
+    text('Only a volume to search.',      W*0.5, H*0.58, {size:72,col:BONE,al:'center',a:a2});
+  }
+
+  /* 11.2–16.4  the campaign */
+  {
+    const a=win(t,11.2,11.9,15.9,16.6);
+    scatter(t,a);
+    const lx=W*0.10;
+    text('ONE CAMPAIGN, ACTUALLY RUN', lx, H*0.30, {size:20,font:MONO,col:SEAM,a,track:3});
+    const n=v=>Math.floor(v*out(inv(t,11.4,14.6)));
+    const row=(label,val,suffix,yy,d)=>{
+      const aa=win(t,11.6+d,12.3+d,15.9,16.6);
+      text(String(n(val))+(suffix||''), lx, yy, {size:78,col:BONE,a:aa});
+      text(label, lx+250, yy-6, {size:22,font:MONO,col:DIM,a:aa});
+    };
+    row('simulations',150,'',H*0.42,0);
+    row('violations',51,'',H*0.535,0.25);
+    row('reduced to minimal cases',10,'',H*0.65,0.5);
+    text('87 / 4096 grid cells visited', lx, H*0.735,
+         {size:24,font:MONO,col:DIM,a:win(t,12.6,13.3,15.9,16.6)});
+  }
+
+  /* 16.8–19.6  the minimal case */
+  {
+    const a=win(t,16.8,17.5,19.0,19.7);
+    text('THE SMALLEST PUSH THAT TOPPLES IT', W/2, H*0.40,
+         {size:22,font:MONO,col:SEAM,al:'center',a,track:3.4});
+    text('7.875 N·s', W/2, H*0.565, {size:170,col:BONE,al:'center',a});
+    text('requested · tilt_deg > 35.0 · first breach 1.26 s', W/2, H*0.655,
+         {size:24,font:MONO,col:DIM,al:'center',a});
+  }
+
+  /* 19.8–22  end card */
+  {
+    const a=inv(t,19.8,20.6);
+    mark(W/2-214, H*0.46-56, 80, BONE, a);
+    text('Faultline', W/2-106, H*0.46+14, {size:104,col:BONE,a});
+    text('Find where it breaks.', W/2, H*0.60, {size:40,col:SEAM,al:'center',a:inv(t,20.4,21.1)});
+    text('Baku, Azerbaijan', W/2, H*0.70,
+         {size:20,font:MONO,col:DIM,al:'center',a:inv(t,20.8,21.4),track:2.4});
+  }
+}
+window.seek = seek;
+window.META = {FPS, DUR, FRAMES: Math.round(FPS*DUR)};
+
+const im = new Image();
+im.onload = ()=>{ plate=im; try{ buildPlate(im); }catch(e){} window.READY=true; seek(0); };
+im.onerror = ()=>{ window.READY=true; seek(0); };
+im.src = 'plate.jpg';
+</script>
+</body></html>
