@@ -439,12 +439,12 @@
 
       <h3 data-reveal>What it plugs into.</h3>
       <dl class="stack" data-stagger>
-        <div><dt class="mono">Simulators</dt><dd>MuJoCo, Isaac Sim</dd></div>
-        <div><dt class="mono">Robot models</dt><dd>URDF, MJCF</dd></div>
-        <div><dt class="mono">Policies</dt><dd>PyTorch checkpoints, ONNX</dd></div>
-        <div><dt class="mono">Predicates</dt><dd>YAML, or Python for anything the schema can&rsquo;t express</dd></div>
-        <div><dt class="mono">Output</dt><dd>PDF, ROS 2 bags, trajectory CSV, MP4 per flagged run</dd></div>
-        <div><dt class="mono">Execution</dt><dd>Your infrastructure or ours; containerised either way</dd></div>
+        <div><dt class="mono">Simulator</dt><dd>MuJoCo, pinned at <span data-v="mujoco">3.12.0</span> — contact solvers change between minor versions, and a campaign that can&rsquo;t be re-run on the same physics is not evidence</dd></div>
+        <div><dt class="mono">Robot models</dt><dd>MJCF. URDF loads, with a warning: it carries no contact parameters and no actuator dynamics</dd></div>
+        <div><dt class="mono">Policies</dt><dd>ONNX graphs and TorchScript archives, each an optional extra so neither runtime is forced on you</dd></div>
+        <div><dt class="mono">Predicates</dt><dd>YAML — a signal, an operator, a threshold and a grace period</dd></div>
+        <div><dt class="mono">Output</dt><dd>Engineering report and safety appendix in Markdown, plus an archive: run manifest, campaign and report JSON, and a trajectory CSV per failure mode</dd></div>
+        <div><dt class="mono">Execution</dt><dd>A pip-installable package. Run it inside your own infrastructure and send us the archive — it holds results, not weights</dd></div>
       </dl>
     </div>
   </div>
