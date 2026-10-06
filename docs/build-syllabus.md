@@ -239,8 +239,8 @@ glamorous.
   plain `state_dict` is not a TorchScript archive and says how to export one.
   Error messages are a feature when your user is an engineer who will not file a
   ticket.
-- **Tests as the only licence to claim anything.** 131 of them. Install pytest
-  and run them before believing any claim, including mine.
+- **Tests as the only licence to claim anything.** 168 of them; 164 pass and 4
+  skip, in 99 seconds. Run them before believing any claim, including mine.
 
 **Externally:** this is mostly learned by reading good code and by being burnt.
 *A Philosophy of Software Design* (Ousterhout) is the shortest useful book on

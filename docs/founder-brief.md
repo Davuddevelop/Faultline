@@ -25,7 +25,7 @@ Not what the site says. What the code does, on 3 October 2026.
 | | |
 | --- | --- |
 | Harness | 4,917 lines of Python across `harness/`, of which 2,909 are the package |
-| Tests | 131 test functions in 9 files |
+| Tests | 168 collected — **164 pass, 4 skip**, in 99 s (run 6 Oct 2026) |
 | Searchable axes | **7** — `push_impulse_ns`, `slope_deg`, `sensor_lag_ms`, `torque_loss_pct`, `payload_kg`, `payload_offset_m`, `friction_mu` |
 | Trajectory signals | 4 — `tilt_deg`, `height_m`, `contact_force_n`, `joint_vel_rads` |
 | Simulator | MuJoCo, pinned exactly at 3.12.0 |
@@ -42,13 +42,18 @@ Re-check any of it:
 ```sh
 grep -A 10 'SEVERITY_AXES: tuple' harness/faultline/reduce.py
 find harness -name '*.py' -not -path '*__pycache__*' | xargs wc -l | tail -1
-grep -c '^def test_' harness/tests/*.py
 grep -n 'add_parser' harness/faultline/cli.py
+
+cd harness && python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]" && python3 -m pytest tests/ -q
 ```
 
-**You cannot currently run the test suite in a fresh container** — `pytest` is
-not installed in the Claude Code environment. Install it (`pip install
-pytest`) before you believe any claim that the suite passes, including mine.
+**The suite has now actually been run**, which earlier versions of this file
+could not say. In a clean virtual environment, `pip install -e ".[dev]"` then
+`python -m pytest tests/ -q` gives 164 passed, 4 skipped, in 99 seconds. A full
+120-simulation campaign via `faultline init` and `faultline run` takes about 13
+seconds. Both were verified on 6 October 2026 — re-run them before trusting any
+later claim, including mine.
 
 ### Numbers that have already drifted
 
