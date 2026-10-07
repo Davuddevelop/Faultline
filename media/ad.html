@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>reel2</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* Faultline — 34s ad.
+   The robot is not an illustration. Its body positions come from sim.json,
+   captured by stepping the real MuJoCo model with the real baseline policy
+   under the real minimal failing condition (7.875 N.s). The fall you see is
+   the fall the harness found, at the second it found it.
+   seek(t) stays a pure function of time so frames can be stepped. */
+const C=document.getElementById('c'), X=C.getContext('2d');
+const W=1920,H=1080,FPS=30,DUR=34;
+const DEEP='#0A1626',BONE='#EDE8DC',SEAM='#D5502F',DIM='#78838D',OK='#7FA08C';
+const SERIF='"Bitstream Charter",Charter,Georgia,serif';
+const MONO='"DejaVu Sans Mono",monospace';
+
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const inv=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const out=k=>1-Math.pow(1-k,3);
+const io=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+const win=(t,i0,i1,o0,o1)=>Math.min(inv(t,i0,i1),1-inv(t,o0,o1));
+const mix=(a,b,k)=>a+(b-a)*k;
+
+let SIM=null;
+function frameAt(run,sec){ // sample the capture, clamped
+  const f=SIM.runs[run].xpos, i=clamp(Math.round(sec*SIM.hz),0,f.length-1); return f[i];
+}
+function tiltAt(run,sec){
+  const a=SIM.runs[run].tilt, i=clamp(Math.round(sec*SIM.hz),0,a.length-1); return a[i];
+}
+
+/* ── camera ──────────────────────────────────────────────── */
+function project(p,cam){
+  const f=[cam.tx-cam.x,cam.ty-cam.y,cam.tz-cam.z];
+  let fl=Math.hypot(...f); f[0]/=fl;f[1]/=fl;f[2]/=fl;
+  const up=[0,0,1];
+  let r=[f[1]*up[2]-f[2]*up[1], f[2]*up[0]-f[0]*up[2], f[0]*up[1]-f[1]*up[0]];
+  let rl=Math.hypot(...r)||1; r=r.map(v=>v/rl);
+  const u=[r[1]*f[2]-r[2]*f[1], r[2]*f[0]-r[0]*f[2], r[0]*f[1]-r[1]*f[0]];
+  const d=[p[0]-cam.x,p[1]-cam.y,p[2]-cam.z];
+  const cx=d[0]*r[0]+d[1]*r[1]+d[2]*r[2];
+  const cy=d[0]*u[0]+d[1]*u[1]+d[2]*u[2];
+  const cz=d[0]*f[0]+d[1]*f[1]+d[2]*f[2];
+  if(cz<=0.02) return null;
+  const k=(H*0.5)/Math.tan(cam.fov*Math.PI/360);
+  return [W/2+cx*k/cz, H/2-cy*k/cz, cz];
+}
+
+/* ── the robot, drawn from real positions ────────────────── */
+const LEGS=[[2,3,4],[5,6,7],[8,9,10],[11,12,13]];
+function robot(pos,cam,{a=1,col=BONE,lw=1,ghost=false}={}){
+  if(a<=0.002) return;
+  const P=pos.map(p=>project(p,cam));
+  X.save(); X.globalAlpha=a; X.lineCap='round'; X.lineJoin='round';
+
+  // contact shadow: the torso's shadow on the plane, a real cue for height
+  const t=pos[1], sh=project([t[0],t[1],0.001],cam);
+  if(sh && !ghost){
+    const h=clamp(t[2],0.02,1.2), rr=clamp(70/ (sh[2]||1) * (1.4-h*0.5),4,90);
+    X.save(); X.globalAlpha=a*clamp(0.5-h*0.3,0.05,0.5);
+    X.fillStyle='#000'; X.beginPath(); X.ellipse(sh[0],sh[1],rr*1.5,rr*0.45,0,0,7); X.fill(); X.restore();
+  }
+
+  X.strokeStyle=col;
+  for(const leg of LEGS){
+    const chain=leg;            // hip -> thigh -> calf
+    for(let i=0;i<chain.length-1;i++){
+      const A=P[chain[i]],B=P[chain[i+1]]; if(!A||!B) continue;
+      X.lineWidth=lw*clamp(170/A[2],0.9,5)*(1-i*0.22);
+      X.beginPath(); X.moveTo(A[0],A[1]); X.lineTo(B[0],B[1]); X.stroke();
+    }
+    const foot=P[leg[2]];
+    if(foot && !ghost){ X.fillStyle=col; X.beginPath(); X.arc(foot[0],foot[1],clamp(260/foot[2],1.4,5),0,7); X.fill(); }
+  }
+  // torso as a solid body between the four hips
+  const hips=[2,5,11,8].map(i=>P[i]);
+  if(hips.every(Boolean)){
+    X.beginPath(); X.moveTo(hips[0][0],hips[0][1]);
+    for(let i=1;i<4;i++) X.lineTo(hips[i][0],hips[i][1]);
+    X.closePath();
+    X.globalAlpha=a*(ghost?0.10:0.26); X.fillStyle=col; X.fill();
+    X.globalAlpha=a; X.lineWidth=lw*1.8; X.stroke();
+    // top face, offset along the torso's own up axis, so the body has volume
+    const up=[2,5,11,8].map(i=>{
+      const q=pos[i]; return project([q[0]+(t[0]-q[0])*0.22, q[1]+(t[1]-q[1])*0.22,
+                                      q[2]+0.085],cam); });
+    if(up.every(Boolean)){
+      X.globalAlpha=a*(ghost?0.06:0.5); X.lineWidth=lw*1.1;
+      X.beginPath(); X.moveTo(up[0][0],up[0][1]);
+      for(let i=1;i<4;i++) X.lineTo(up[i][0],up[i][1]);
+      X.closePath(); X.stroke();
+      for(let i=0;i<4;i++){ X.beginPath(); X.moveTo(hips[i][0],hips[i][1]);
+        X.lineTo(up[i][0],up[i][1]); X.stroke(); }
+    }
+  }
+  X.restore();
+}
+
+function ground(cam,a,{grid=true}={}){
+  if(a<=0.002) return;
+  X.save(); X.globalAlpha=a; X.strokeStyle='rgba(237,232,220,.13)'; X.lineWidth=1;
+  if(grid) for(let i=-6;i<=6;i++){
+    for(const seg of [[[i*0.5,-3,0],[i*0.5,3,0]],[[-3,i*0.5,0],[3,i*0.5,0]]]){
+      const A=project(seg[0],cam),B=project(seg[1],cam);
+      if(A&&B){ X.beginPath(); X.moveTo(A[0],A[1]); X.lineTo(B[0],B[1]); X.stroke(); }
+    }
+  }
+  X.restore();
+}
+
+/* ── type ────────────────────────────────────────────────── */
+function text(s,x,y,{size=60,font=SERIF,col=BONE,al='left',a=1,track=0}={}){
+  if(a<=0.002) return;
+  X.save(); X.globalAlpha=a; X.fillStyle=col; X.font=size+'px '+font;
+  X.textAlign=track?'left':al; X.textBaseline='alphabetic';
+  if(track){
+    const w=s.split('').reduce((n,ch)=>n+X.measureText(ch).width+track,0)-track;
+    let cx=al==='center'?x-w/2:al==='right'?x-w:x;
+    for(const ch of s){X.fillText(ch,cx,y);cx+=X.measureText(ch).width+track;}
+  } else X.fillText(s,x,y);
+  X.restore();
+}
+/* wipe reveal: the line is uncovered rather than faded */
+function wipe(s,x,y,o,k){
+  if(k<=0.002) return;
+  X.save(); X.beginPath();
+  const size=o.size||60; X.font=size+'px '+(o.font||SERIF);
+  const w=X.measureText(s).width, x0=o.al==='center'?x-w/2:x;
+  X.rect(x0-8,y-size,w*io(k)+16,size*1.45); X.clip();
+  text(s,x,y,Object.assign({},o,{a:1})); X.restore();
+}
+function mark(x,y,s,col,a=1){
+  if(a<=0.002) return;
+  X.save(); X.globalAlpha=a; X.translate(x,y); X.scale(s/24,s/24); X.fillStyle=col;
+  X.beginPath();X.moveTo(2,2);X.lineTo(15,2);X.lineTo(7,22);X.lineTo(2,22);X.fill();
+  X.beginPath();X.moveTo(18,2);X.lineTo(22,2);X.lineTo(22,22);X.lineTo(10,22);X.fill();
+  X.restore();
+}
+
+/* ── the search space, in perspective ────────────────────── */
+let _s=41279; const rnd=()=>((_s=(_s*1664525+1013904223)>>>0)/4294967296);
+const PTS=[]; (function(){_s=41279;
+  for(let i=0;i<150;i++){
+    const k=i/150, c=k<0.3?0:(k-0.3)/0.7;
+    const x=clamp(rnd()*(1-c*0.55)+c*0.45+rnd()*0.1,0,1);
+    const y=clamp(rnd()*(1-c*0.3)+c*0.18,0,1);
+    const z=clamp(rnd(),0,1);
+    PTS.push({x,y,z,fail:x>0.6&&rnd()<0.74});
+  }})();
+function cloud(t,a,cam){
+  if(a<=0.002) return;
+  const shown=Math.floor(inv(t,17.4,21.6)*150);
+  X.save();
+  // the declared box
+  const E=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]]
+    .map(p=>project([(p[0]-.5)*2.2,(p[1]-.5)*2.2,p[2]*1.5+0.05],cam));
+  X.globalAlpha=a*0.3; X.strokeStyle=BONE; X.lineWidth=1;
+  [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]].forEach(([i,j])=>{
+    if(E[i]&&E[j]){X.beginPath();X.moveTo(E[i][0],E[i][1]);X.lineTo(E[j][0],E[j][1]);X.stroke();}});
+  for(let i=0;i<shown;i++){
+    const p=PTS[i], q=project([(p.x-.5)*2.2,(p.y-.5)*2.2,p.z*1.5+0.05],cam); if(!q) continue;
+    const age=clamp((shown-i)/10,0,1);
+    X.globalAlpha=a*(0.2+0.8*age); X.fillStyle=p.fail?SEAM:'rgba(237,232,220,.55)';
+    X.beginPath(); X.arc(q[0],q[1],clamp(150/q[2],1.2,5)*(p.fail?1.5:1),0,7); X.fill();
+  }
+  X.restore();
+}
+
+/* ── frame ───────────────────────────────────────────────── */
+function seek(t){
+  X.fillStyle=DEEP; X.fillRect(0,0,W,H);
+  if(!SIM){ return; }
+
+  /* ═ SCENE 1  0–6.5  it stands. slow orbit. ═ */
+  if(t<7.2){
+    const a=win(t,0.2,1.4,6.4,7.2);
+    const ang=-0.9+t*0.075, R=2.35-inv(t,0,6.5)*0.5;
+    const cam={x:Math.cos(ang)*R,y:Math.sin(ang)*R,z:0.62-inv(t,0,6.5)*0.18,
+               tx:0,ty:0,tz:0.30,fov:36};
+    ground(cam,a*0.85);
+    robot(frameAt('nominal',clamp(t*0.6,0,4.9)),cam,{a,col:BONE,lw:1.5});
+    wipe('This robot has never fallen.',W*0.5,H*0.845,{size:60,al:'center'},inv(t,2.2,3.6));
+    text('In every condition it was trained on, it holds.',W*0.5,H*0.905,
+      {size:27,font:MONO,col:DIM,al:'center',a:win(t,4.0,4.8,6.3,7.0)});
+    text('stand-v1 · 12 actuators · 50 Hz',W*0.075,H*0.11,
+      {size:20,font:MONO,col:DIM,a:win(t,1.0,1.8,6.3,7.0),track:2});
+  }
+
+  /* ═ SCENE 2  7.2–10.2  the question ═ */
+  if(t>=6.9&&t<10.6){
+    const a=win(t,7.2,7.9,9.7,10.4);
+    text('Nobody tried this.',W*0.5,H*0.52,{size:104,al:'center',a});
+    X.save(); X.globalAlpha=a*0.8; X.strokeStyle=SEAM; X.lineWidth=2;
+    const k=out(inv(t,7.9,9.2));
+    X.beginPath();X.moveTo(W*0.5-260*k,H*0.575);X.lineTo(W*0.5+260*k,H*0.575);X.stroke();X.restore();
+  }
+
+  /* ═ SCENE 3  10.6–17.0  the push. real physics. ═ */
+  if(t>=10.4&&t<17.4){
+    const a=win(t,10.6,11.2,16.7,17.4);
+    // sim time: run 0→2.6s, ramping slow through the breach at 1.26
+    const u=inv(t,11.0,16.4);
+    const st=u<0.42 ? u/0.42*1.16                       // approach, real time
+            : u<0.62 ? 1.16+(u-0.42)/0.20*0.22          // slow-mo across breach
+                     : 1.38+(u-0.62)/0.38*1.45;         // fall out
+    const ang=-0.55+u*0.5;
+    const cam={x:Math.cos(ang)*2.0,y:Math.sin(ang)*2.0,z:0.44,tx:0,ty:0,tz:0.26,fov:38};
+    ground(cam,a*0.85);
+    // onion-skin trail through the fall
+    if(st>1.1) for(let g=1;g<=5;g++){
+      const gs=st-g*0.085; if(gs<1.0) break;
+      robot(frameAt('minimal',gs),cam,{a:a*0.1*(1-g/6),col:SEAM,lw:1,ghost:true});
+    }
+    const tilt=tiltAt('minimal',st);
+    robot(frameAt('minimal',st),cam,{a,col:tilt>35?SEAM:BONE,lw:1.5});
+
+    // the push, drawn at the moment it lands
+    const pk=win(st,0.98,1.02,1.05,1.14);
+    if(pk>0.01){
+      const o=project([-0.30,0,0.26],cam), p2=project([-0.03,0,0.26],cam);
+      if(o&&p2){ X.save(); X.globalAlpha=pk*a; X.strokeStyle=SEAM; X.lineWidth=5;
+        X.beginPath();X.moveTo(o[0],o[1]);X.lineTo(p2[0],p2[1]);X.stroke();
+        X.beginPath();X.moveTo(p2[0],p2[1]);X.lineTo(p2[0]-16,p2[1]-11);X.lineTo(p2[0]-16,p2[1]+11);
+        X.closePath();X.fillStyle=SEAM;X.fill(); X.restore(); }
+    }
+    // live telemetry
+    const lx=W*0.075, ty=H*0.13, aa=win(t,11.4,12.0,16.7,17.3);
+    text('t = '+st.toFixed(2)+' s',lx,ty,{size:26,font:MONO,col:DIM,a:aa});
+    text('tilt  '+tilt.toFixed(1).padStart(5)+'°',lx,ty+42,
+      {size:26,font:MONO,col:tilt>35?SEAM:BONE,a:aa});
+    text('threshold  35.0°',lx,ty+80,{size:22,font:MONO,col:DIM,a:aa});
+    // threshold bar
+    X.save(); X.globalAlpha=aa*0.9;
+    X.strokeStyle='rgba(237,232,220,.25)'; X.lineWidth=2;
+    X.beginPath();X.moveTo(lx,ty+112);X.lineTo(lx+330,ty+112);X.stroke();
+    X.strokeStyle=SEAM; X.lineWidth=2; const mx=lx+330*(35/180);
+    X.beginPath();X.moveTo(mx,ty+104);X.lineTo(mx,ty+120);X.stroke();
+    X.fillStyle=tilt>35?SEAM:BONE; X.fillRect(lx,ty+108,330*clamp(tilt/180,0,1),8);
+    X.restore();
+    if(tilt>35) text('VIOLATION',lx,ty+168,{size:26,font:MONO,col:SEAM,a:aa,track:4});
+    text('push_impulse_ns = 7.875   N·s  (requested)',W*0.925,ty,
+      {size:24,font:MONO,col:DIM,al:'right',a:win(t,11.8,12.4,16.7,17.3)});
+  }
+
+  /* ═ SCENE 4  17.2–22.4  the search ═ */
+  if(t>=17.0&&t<22.9){
+    const a=win(t,17.3,18.0,22.2,22.9);
+    const ang=0.5+inv(t,17.3,22.4)*1.25;
+    const cam={x:Math.cos(ang)*4.4,y:Math.sin(ang)*4.4,z:1.9,tx:0,ty:0,tz:0.7,fov:40};
+    cloud(t,a,cam);
+    text('SIX AXES. ONE DECLARED VOLUME.',W*0.075,H*0.16,
+      {size:24,font:MONO,col:SEAM,a,track:3.4});
+    const n=v=>Math.floor(v*out(inv(t,17.6,21.4)));
+    text(n(150)+'  simulations',W*0.075,H*0.79,{size:40,font:MONO,col:BONE,a});
+    text(n(51)+'  violations',W*0.075,H*0.855,{size:40,font:MONO,col:SEAM,a});
+    text('87 / 4096 cells visited · directed search',W*0.075,H*0.915,
+      {size:22,font:MONO,col:DIM,a:win(t,19.4,20.1,22.2,22.8)});
+  }
+
+  /* ═ SCENE 5  22.7–27.4  reduction ═ */
+  if(t>=22.6&&t<27.8){
+    const a=win(t,22.9,23.6,27.1,27.8);
+    text('REDUCED TO THE SMALLEST CONDITION THAT STILL BREAKS IT',W*0.5,H*0.28,
+      {size:24,font:MONO,col:SEAM,al:'center',a,track:3.2});
+    wipe('7.875 N·s',W*0.5,H*0.53,{size:190,al:'center'},inv(t,23.4,24.8));
+    const rows=[['first breach','1.26 s'],['predicate','tilt_deg > 35.0'],['occurrences','7 of 51']];
+    rows.forEach((r,i)=>{
+      const aa=win(t,24.6+i*0.28,25.2+i*0.28,27.1,27.7);
+      text(r[0],W*0.5-40,H*0.655+i*46,{size:25,font:MONO,col:DIM,al:'right',a:aa});
+      text(r[1],W*0.5+40,H*0.655+i*46,{size:25,font:MONO,col:BONE,a:aa});
+    });
+  }
+
+  /* ═ SCENE 6  27.6–31.2  what you get ═ */
+  if(t>=27.6&&t<31.6){
+    const a=win(t,27.9,28.5,30.9,31.6);
+    text('AND EVIDENCE ANYONE CAN RE-RUN',W*0.5,H*0.30,
+      {size:24,font:MONO,col:SEAM,al:'center',a,track:3.2});
+    const items=[['engineering-report.md','failures grouped by what they need'],
+                 ['safety-appendix.md','method, limits, coverage of the declared space'],
+                 ['archive/','every run, bit-for-bit, from its seed']];
+    items.forEach((it,i)=>{
+      const aa=win(t,28.3+i*0.3,28.9+i*0.3,30.9,31.5), y=H*0.44+i*108;
+      X.save(); X.globalAlpha=aa*0.3; X.strokeStyle=BONE; X.lineWidth=1;
+      X.beginPath();X.moveTo(W*0.24,y+50);X.lineTo(W*0.76,y+50);X.stroke();X.restore();
+      text(it[0],W*0.24,y,{size:33,font:MONO,col:BONE,a:aa});
+      text(it[1],W*0.24,y+30,{size:21,font:MONO,col:DIM,a:aa});
+    });
+  }
+
+  /* ═ SCENE 7  31.4–34  close ═ */
+  if(t>=31.4){
+    const a=inv(t,31.7,32.4);
+    mark(W/2-232,H*0.44-58,84,BONE,a);
+    text('Faultline',W/2-118,H*0.44+16,{size:110,col:BONE,a});
+    wipe('Find where it breaks.',W/2,H*0.585,{size:44,al:'center',col:SEAM},inv(t,32.4,33.3));
+    text('IT FINDS FAILURES · IT CANNOT PROVE THERE ARE NONE',W/2,H*0.685,
+      {size:19,font:MONO,col:DIM,al:'center',a:inv(t,32.9,33.6),track:2.6});
+  }
+
+  /* film grain, last, over everything */
+  X.save(); X.globalAlpha=0.035;
+  for(let i=0;i<2200;i++){
+    const gx=(Math.sin(i*12.9898+t*78.233)*43758.5453)%1;
+    const gy=(Math.sin(i*78.233+t*12.9898)*43758.5453)%1;
+    X.fillStyle=(i%2)?'#fff':'#000';
+    X.fillRect(Math.abs(gx)*W,Math.abs(gy)*H,1.6,1.6);
+  }
+  X.restore();
+}
+window.seek=seek; window.META={FPS,DUR,FRAMES:Math.round(FPS*DUR)};
+fetch('sim.json').then(r=>r.json()).then(j=>{SIM=j;window.READY=true;seek(0);})
+  .catch(e=>{window.READY=true;});
+</script></body></html>

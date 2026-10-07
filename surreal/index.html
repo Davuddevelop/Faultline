@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faultline — the ground gives way somewhere</title>
+<meta name="description" content="Faultline searches a declared space of physical conditions for the ones that make a trained robot policy fail, and returns evidence anyone can re-run.">
+<meta name="theme-color" content="#0E1210">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Archivo:wght@400;500&display=swap">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap nav__in">
+    <a class="lock" href="#top"><svg class="mk" viewBox="0 0 24 24" aria-hidden="true">
+      <polygon points="2,2 15,2 7,22 2,22"/><polygon points="18,2 22,2 22,22 10,22"/></svg>
+      <span>Faultline</span></a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#gap">The gap</a><a href="#space">The space</a>
+      <a href="#rules">The rules</a><a href="#found">What we found</a>
+    </nav>
+    <a class="btn btn--sm" href="#contact">Talk to us</a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ── HERO: the painting that does not match the world ────── -->
+<section class="hero" id="top">
+  <div class="hero__world"><img src="assets/hero.jpg" alt="" aria-hidden="true"></div>
+
+  <figure class="easel" aria-label="A painted panel of the same landscape, set slightly out of alignment with it">
+    <div class="easel__panel"><img src="assets/hero.jpg" alt="A four-legged robot at the edge of a fissure opening across a meadow"></div>
+    <figcaption class="easel__plate">
+      <span>The Sim and the Ground</span>
+      <span>simulation on canvas · 2026</span>
+    </figcaption>
+  </figure>
+
+  <div class="wrap hero__text">
+    <h1>The ground gives way <em>somewhere</em>.</h1>
+    <p class="lede">Every simulator is a picture of the world placed in front of the world.
+      It lines up almost everywhere. We look for the seam.</p>
+    <div class="acts">
+      <a class="btn btn--solid" href="#contact">Talk to us</a>
+      <a class="btn btn--line" href="#found">See what we found</a>
+    </div>
+  </div>
+</section>
+
+<section class="strip"><div class="wrap">
+  <span>Deterministic — every run reproducible from its seed</span>
+  <span>Baku, Azerbaijan</span>
+</div></section>
+
+<!-- ── the gap ─────────────────────────────────────────────── -->
+<section class="sec" id="gap">
+  <div class="wrap two">
+    <div class="two__a">
+      <p class="fig">I.</p>
+      <h2>A robot trained inside a picture.</h2>
+    </div>
+    <div class="two__b">
+      <p>A modern robot doesn't run hand-written control code. It runs a neural network
+        trained in simulation — a policy — that maps what it senses to what its motors do.
+        It works under the conditions it was trained on and offers no guarantee anywhere
+        else. Nothing inside it signals when a situation is unfamiliar; it extrapolates
+        silently, and confidently.</p>
+      <p>That breaks every instinct from software testing. Ordinary programs have branches
+        you can enumerate, so "100% coverage" means something. A network has none. Line
+        coverage of the inference code reaches 100% after a single run and tells you
+        nothing at all.</p>
+      <p class="aside">The space of situations is a continuous volume. A hundred scripted
+        scenarios tell you about a hundred points inside it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── the space: floating panels ──────────────────────────── -->
+<section class="sec sec--dark" id="space">
+  <div class="wrap two">
+    <div class="two__a">
+      <p class="fig">II.</p>
+      <h2>You declare the space. In real units.</h2>
+    </div>
+    <div class="two__b">
+      <p>No normalised knobs. An assessor reads <em>slope 10 degrees</em>, not
+        <em>slope 0.72</em>. These six were varied in the campaign below.</p>
+      <ul class="axes">
+        <li><span>push_impulse_ns</span><b>0 – 9.0</b><i>N·s</i></li>
+        <li><span>slope_deg</span><b>0 – 10.0</b><i>deg</i></li>
+        <li><span>sensor_lag_ms</span><b>0 – 60.0</b><i>ms</i></li>
+        <li><span>torque_loss_pct</span><b>0 – 15.0</b><i>%</i></li>
+        <li><span>payload_kg</span><b>0 – 2.0</b><i>kg</i></li>
+        <li><span>payload_offset_m</span><b>0 – 0.06</b><i>m</i></li>
+      </ul>
+      <p class="aside"><code>friction_mu</code> is also searchable and was not varied here.
+        Impulse and sensor lag quantise onto the control grid, so both are quoted as
+        <em>requested</em> values.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── rules ───────────────────────────────────────────────── -->
+<section class="sec" id="rules">
+  <div class="wrap two">
+    <div class="two__a">
+      <p class="fig">III.</p>
+      <h2>A failure is a rule you wrote.</h2>
+    </div>
+    <div class="two__b">
+      <p>Never a learned classifier, never a heuristic we invented. When a run is flagged
+        you can read the line that flagged it and disagree with it. Checked at every step
+        of the whole trajectory, not only at the end.</p>
+      <pre class="code"><code>predicates:
+  - {name: tilt_limit, signal: tilt_deg, op: "&gt;", threshold: 35.0}
+  - {name: fallen,     signal: height_m, op: "&lt;", threshold: 0.12}</code></pre>
+      <p class="aside">Predicates see four signals and nothing else: <code>tilt_deg</code>,
+        <code>height_m</code>, <code>contact_force_n</code>, <code>joint_vel_rads</code>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── found ───────────────────────────────────────────────── -->
+<section class="sec sec--dark" id="found">
+  <div class="wrap two">
+    <div class="two__a">
+      <p class="fig">IV.</p>
+      <h2>One campaign, actually run.</h2>
+    </div>
+    <div class="two__b">
+      <div class="counts">
+        <div><b>150</b><span>simulations</span></div>
+        <div><b>51</b><span>violations</span></div>
+        <div><b>10</b><span>reduced</span></div>
+        <div><b>87<i>/4096</i></b><span>cells visited</span></div>
+      </div>
+      <p>Each violation is reduced — perturbations relaxed back toward nominal until it
+        stops firing — so what you receive is the smallest condition that still breaks the
+        policy, grouped by what it actually requires.</p>
+      <div class="modes">
+        <div class="mode">
+          <p class="mode__t">tilt_limit via push_impulse_ns</p>
+          <dl><dt>Occurrences</dt><dd>7</dd>
+              <dt>Minimal, requested</dt><dd>7.875 N·s</dd>
+              <dt>First breach</dt><dd>1.26 s</dd></dl>
+        </div>
+        <div class="mode">
+          <p class="mode__t">tilt_limit via push_impulse_ns + torque_loss_pct</p>
+          <dl><dt>Occurrences</dt><dd>3</dd>
+              <dt>Minimal, requested</dt><dd>7.594 N·s · 0.965 %</dd>
+              <dt>First breach</dt><dd>1.54 s</dd></dl>
+        </div>
+      </div>
+      <p class="aside">Campaign of 2026-08-22 · MuJoCo 3.12.0 · seeds 0–4 · coverage at four
+        bins per axis. Directed search concentrates where failures are dense, so 51 of 150
+        is a property of the search and not a failure rate for the robot.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── limits, over the second painting ────────────────────── -->
+<section class="limits">
+  <div class="limits__bg"><img src="assets/valley.jpg" alt="" aria-hidden="true"></div>
+  <div class="wrap limits__in">
+    <p class="fig">V.</p>
+    <h2>What we can show, and what we can't.</h2>
+    <ul class="says">
+      <li><b>Can</b><span>Name the conditions under which a policy broke, reduce each to its
+        smallest form, and hand over an archive where every run re-executes bit-for-bit
+        from its seed.</span></li>
+      <li><b>Cannot</b><span>Show that failures are absent. The search finds them; it can
+        never prove there are none left.</span></li>
+      <li><b>Will not</b><span>Call a policy safe, verified or compliant, or imply the output
+        satisfies a notified body. Nobody can currently say what does.</span></li>
+      <li><b>Today</b><span>One robot class exercised, no completed pilots, one person. EU
+        Machinery Regulation 2023/1230 applies 20 January 2027; the delegated act defining
+        adequate evidence is not due until 2028.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="cta" id="contact">
+  <div class="wrap">
+    <h2>If you ship a learned policy into Europe, we want to hear your plan.</h2>
+    <p class="lede">We're looking for design partners rather than users.</p>
+    <a class="btn btn--solid btn--lg" href="mailto:hello@faultline.dev">Start a conversation</a>
+    <p class="aside">hello@faultline.dev is a placeholder and not yet a real address.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot"><div class="wrap foot__in">
+  <span class="lock lock--sm"><svg class="mk" viewBox="0 0 24 24" aria-hidden="true">
+    <polygon points="2,2 15,2 7,22 2,22"/><polygon points="18,2 22,2 22,22 10,22"/></svg>
+    <span>Faultline</span></span>
+  <span>Surrealist cut · 14 September 2026</span>
+</div></footer>
+</body>
+</html>

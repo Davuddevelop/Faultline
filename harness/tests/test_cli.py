@@ -229,15 +229,14 @@ def test_the_config_shown_on_the_landing_page_is_a_real_campaign(tmp_path):
         pytest.skip("landing page not present; harness checked out standalone")
 
     block = re.search(
-        r'<pre class="config__body mono"><code>(.*?)</code></pre>',
+        r'<pre class="code__body"><code>(.*?)</code></pre>',
         page.read_text(), re.S,
     )
     assert block, "the landing page no longer shows a config block"
 
-    text = unescape(re.sub(r"<[^>]+>", "", block.group(1)))
-    # the page shows a customer's own files; point those two at real ones
-    text = text.replace("my_robot.urdf", MODEL).replace(
-        "mypkg.policies:WalkPolicy", "stand")
+    text = unescape(re.sub(r"<!--.*?-->|<[^>]+>", "", block.group(1), flags=re.S))
+    # the page's robot path is relative to the harness; point it at the real file
+    text = re.sub(r"^robot: .*$", f"robot: {MODEL}", text, flags=re.M)
 
     cfg = tmp_path / "from_page.yaml"
     cfg.write_text(text)
