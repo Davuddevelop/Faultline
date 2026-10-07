@@ -70,8 +70,9 @@ in `build_brand.py`; text pairs must reach 4.5:1.
 | Vellum 100 | `#E9E6DE` | 15.79 | text |
 | Vellum 50 | `#F5F3EE` | 17.76 | emphasis |
 
-**Failure is hatching at 35°, and nothing else.** It survives a black-and-white
-print of a safety appendix, which red does not.
+**Failure is hatching at 35°, and nothing else.** The angle is the tilt limit in
+the published campaign's rule, `tilt_deg > 35.0`, not the angle of any mark. It
+survives a black-and-white print of a safety appendix, which red does not.
 
 ```css
 background: repeating-linear-gradient(145deg, var(--ink) 0 1px, transparent 1px 6px);
