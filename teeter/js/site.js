@@ -292,43 +292,21 @@
     [[minor, 0x1c1c1a], [major, 0x2c2b28]].forEach(function (p) {
       var g = new T.BufferGeometry();
       g.setAttribute('position', new T.Float32BufferAttribute(p[0], 3));
-      scene.add(new T.LineSegments(g, mat(p[1])));
+      scene.add(new T.LineSegments(g, mat(p[1], { depthWrite: false })));
     });
   })();
 
-  var robotGeo = segGeo(40), robot = new T.LineSegments(robotGeo, mat(0xE9E6DE));
-  var gizmoGeo = segGeo(80), gizmo = new T.LineSegments(gizmoGeo, mat(0xB5B1A8));
-  var phantomGeo = segGeo(40);
-  var phantom = new T.LineSegments(phantomGeo, new T.LineDashedMaterial({ color: 0x8E8B83, dashSize: .014, gapSize: .009, transparent: true }));
-  var arrowGeo = segGeo(4), arrow = new T.LineSegments(arrowGeo, mat(0xE9E6DE));
+  // annotations are drawn over the machine, as dimensions are drawn over a part
+  var gizmoGeo = segGeo(80), gizmo = new T.LineSegments(gizmoGeo, mat(0xB5B1A8, { depthTest: false }));
+  var arrowGeo = segGeo(4), arrow = new T.LineSegments(arrowGeo, mat(0xE9E6DE, { depthTest: false }));
+  gizmo.renderOrder = arrow.renderOrder = 10;
   var trailGeo = new T.BufferGeometry();
   trailGeo.setAttribute('position', new T.BufferAttribute(new Float32Array(600 * 3), 3));
   trailGeo.setDrawRange(0, 0);
-  var trail = new T.Line(trailGeo, mat(0x5F5D57));
-  scene.add(robot, gizmo, phantom, arrow, trail);
-
-  // joints: small rings that always face the camera
-  var ring = (function () {
-    var c = document.createElement('canvas'); c.width = c.height = 64;
-    var x = c.getContext('2d'); x.strokeStyle = '#E9E6DE'; x.lineWidth = 7;
-    x.fillStyle = '#0B0B0A'; x.beginPath(); x.arc(32, 32, 24, 0, Math.PI * 2); x.fill(); x.stroke();
-    return new T.CanvasTexture(c);
-  })();
-  var jointGeo = new T.BufferGeometry();
-  jointGeo.setAttribute('position', new T.BufferAttribute(new Float32Array(17 * 3), 3));
-  var joints = new T.Points(jointGeo, new T.PointsMaterial({ size: .02, map: ring, transparent: true, alphaTest: .4, color: 0xffffff }));
-  scene.add(joints);
+  var trail = new T.Line(trailGeo, mat(0x5F5D57, { depthWrite: false }));
+  scene.add(gizmo, arrow, trail);
 
   var HX = D.half[0], HY = D.half[1], HZ = D.half[2];
-  var EDGES = [];
-  (function () {
-    var cs = [];
-    for (var i = 0; i < 8; i++) cs.push([(i & 1) ? 1 : -1, (i & 2) ? 1 : -1, (i & 4) ? 1 : -1]);
-    for (var a = 0; a < 8; a++) for (var b = a + 1; b < 8; b++) {
-      var diff = 0; for (var k = 0; k < 3; k++) if (cs[a][k] !== cs[b][k]) diff++;
-      if (diff === 1) EDGES.push([cs[a], cs[b]]);
-    }
-  })();
   function qrot(q, v) {
     var w = q[0], x = q[1], y = q[2], z = q[3];
     var tx = 2 * (y * v[2] - z * v[1]), ty = 2 * (z * v[0] - x * v[2]), tz = 2 * (x * v[1] - y * v[0]);
@@ -346,29 +324,166 @@
     var a = run.tilt, i = Math.max(0, Math.min(a.length - 1, Math.floor(f))), j = Math.min(a.length - 1, i + 1);
     return a[i] + (a[j] - a[i]) * (f - i);
   }
-  function writeRobot(geo, r) {
-    var p = geo.attributes.position.array, n = 0, c = [r[0], r[1], r[2]], q = [r[3], r[4], r[5], r[6]];
-    function put(m) { var t = V(m[0], m[1], m[2]); p[n++] = t[0]; p[n++] = t[1]; p[n++] = t[2]; }
-    EDGES.forEach(function (e) {
-      [e[0], e[1]].forEach(function (s) {
-        var d = qrot(q, [s[0] * HX, s[1] * HY, s[2] * HZ]); put([c[0] + d[0], c[1] + d[1], c[2] + d[2]]);
-      });
-    });
-    for (var leg = 0; leg < 4; leg++) {
-      var o = 7 + leg * 12;
-      for (var s = 0; s < 3; s++) { put(r.slice(o + s * 3, o + s * 3 + 3)); put(r.slice(o + s * 3 + 3, o + s * 3 + 6)); }
+  /* ── the machine ─────────────────────────────────────────
+     Every pose comes from the record: the torso's position and quaternion, and
+     for each leg the hip, thigh and calf body origins and the foot. The body,
+     motors and links drawn around those poses are a design, not the simulated
+     collision geometry, and the caption says so. Drawn the way CAD draws a part:
+     dark shaded fill, ink outline and edges, hidden edges dashed. */
+  var world = new T.Group();                       // works in MuJoCo's z-up frame
+  world.rotation.x = -Math.PI / 2;
+  scene.add(world);
+  var key = new T.DirectionalLight(0xffffff, .75); key.position.set(.8, 1.6, 1.1); scene.add(key);
+  scene.add(new T.HemisphereLight(0xE9E6DE, 0x0B0B0A, .5));
+
+  function fillMat(c) { return new T.MeshLambertMaterial({ color: c, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }); }
+  var SHELL = fillMat(0x1f1f1d), DARK = fillMat(0x161615), METAL = fillMat(0x2a2926);
+  var INKL = new T.LineBasicMaterial({ color: 0xE9E6DE }), DETAIL = new T.LineBasicMaterial({ color: 0xA9A59C });
+  var HIDDEN = new T.LineDashedMaterial({ color: 0x5F5D57, dashSize: .005, gapSize: .004, transparent: true, opacity: .85,
+    depthFunc: T.GreaterDepth, depthWrite: false });
+  var GHOST = new T.LineDashedMaterial({ color: 0x8E8B83, dashSize: .01, gapSize: .007, transparent: true, depthWrite: false });
+  var OUTLINE = new T.MeshBasicMaterial({ color: 0xE9E6DE, side: T.BackSide });
+  OUTLINE.onBeforeCompile = function (sh) {                    // an inverted hull draws the silhouette
+    sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', 'vec3 transformed = position + normal * 0.0017;');
+  };
+  var parts = [], ghosts = new T.Group();
+  ghosts.visible = false; world.add(ghosts);
+
+  // one solid: fill, silhouette, visible edges, hidden edges, and a ghost for the breach
+  function solid(frame, geo, fill, detail, at) {
+    if (at) geo.applyMatrix4(at);
+    var edges = new T.EdgesGeometry(geo, 24);
+    var hid = new T.LineSegments(edges, HIDDEN); hid.computeLineDistances();
+    frame.add(new T.Mesh(geo, fill), new T.Mesh(geo, OUTLINE), new T.LineSegments(edges, detail ? DETAIL : INKL), hid);
+    var g = new T.LineSegments(edges, GHOST); g.matrixAutoUpdate = false;
+    g.userData.frame = frame; ghosts.add(g);
+  }
+  function frameGroup() { var g = new T.Group(); g.matrixAutoUpdate = false; world.add(g); parts.push(g); return g; }
+  function M() { return new T.Matrix4(); }
+  function move(x, y, z) { return M().makeTranslation(x, y, z); }
+  // cylinders are built along y; turn them onto x or z as needed
+  function cyl(r, len, seg) { return new T.CylinderGeometry(r, r, len, seg || 28); }
+  function onX() { return M().makeRotationZ(Math.PI / 2); }
+  function box(a, b, c) { return new T.BoxGeometry(a, b, c); }
+  // a profile in (u, v) extruded by depth d; placed so u -> x, v -> z and the extrusion runs along y
+  function plate(shape, d, bevel) {
+    var g = new T.ExtrudeGeometry(shape, { depth: d, bevelEnabled: !!bevel, bevelSize: bevel || 0, bevelThickness: bevel || 0, bevelSegments: 1, curveSegments: 10 });
+    g.applyMatrix4(M().set(1, 0, 0, 0, 0, 0, -1, d / 2, 0, 1, 0, 0, 0, 0, 0, 1));
+    return g;
+  }
+  // a profile in (y, z) extruded along x by length d
+  function section(shape, d, bevel) {
+    var g = new T.ExtrudeGeometry(shape, { depth: d, bevelEnabled: true, bevelSize: bevel, bevelThickness: bevel, bevelSegments: 1 });
+    g.applyMatrix4(M().set(0, 0, 1, -d / 2, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1));
+    return g;
+  }
+  function chamfered(hw, hh, ct, cb) {           // half-width, half-height, top and bottom chamfers
+    var sh = new T.Shape();
+    sh.moveTo(-hw + cb, -hh); sh.lineTo(hw - cb, -hh); sh.lineTo(hw, -hh + cb); sh.lineTo(hw, hh - ct);
+    sh.lineTo(hw - ct, hh); sh.lineTo(-hw + ct, hh); sh.lineTo(-hw, hh - ct); sh.lineTo(-hw, -hh + cb); sh.closePath();
+    return sh;
+  }
+  // a tapered link with rounded ends from z = 0 down to z = -len, with a lightening slot
+  function link(len, w0, w1, slot) {
+    var sh = new T.Shape(), r0 = w0 / 2, r1 = w1 / 2;
+    sh.absarc(0, 0, r0, 0, Math.PI, false);
+    sh.lineTo(-r1, -len); sh.absarc(0, -len, r1, Math.PI, Math.PI * 2, false); sh.lineTo(r0, 0);
+    if (slot) {
+      var h = new T.Path(), a = len * .22, b = len * .78, s0 = r0 * .38, s1 = r1 * .38;
+      h.absarc(0, -a, s0, 0, Math.PI, false); h.lineTo(-s1, -b); h.absarc(0, -b, s1, Math.PI, Math.PI * 2, false); h.lineTo(s0, -a);
+      sh.holes.push(h);
     }
-    geo.attributes.position.needsUpdate = true;
-    geo.setDrawRange(0, n / 3);
-    return n / 3;
+    return sh;
   }
-  function writeJoints(r) {
-    var p = jointGeo.attributes.position.array, n = 0;
-    function put(m) { var t = V(m[0], m[1], m[2]); p[n++] = t[0]; p[n++] = t[1]; p[n++] = t[2]; }
-    put([r[0], r[1], r[2]]);
-    for (var leg = 0; leg < 4; leg++) { var o = 7 + leg * 12; for (var s = 0; s < 4; s++) put(r.slice(o + s * 3, o + s * 3 + 3)); }
-    jointGeo.attributes.position.needsUpdate = true;
+  function boltRing(frame, n, rr, y, r) {         // bolt heads around a motor cap, on the y axis
+    for (var k = 0; k < n; k++) {
+      var a = k / n * Math.PI * 2;
+      solid(frame, cyl(r || .0028, .003, 8), METAL, true, move(Math.cos(a) * rr, y, Math.sin(a) * rr));
+    }
   }
+
+  // torso: shell, sensor head, tail block, handle, deck plate, vents, abduction motors
+  var torso = frameGroup();
+  solid(torso, section(chamfered(HY + .004, HZ + .006, .016, .008), HX * 2 - .02, .006), SHELL);
+  solid(torso, section(chamfered(.066, .03, .012, .006), .036, .004), DARK, false, move(HX + .016, 0, .002));
+  [-.026, .026].forEach(function (y) {
+    solid(torso, cyl(.011, .008), METAL, false, M().multiplyMatrices(move(HX + .04, y, .006), onX()));
+    solid(torso, cyl(.006, .004), DARK, true, M().multiplyMatrices(move(HX + .046, y, .006), onX()));
+  });
+  solid(torso, box(.003, .07, .006), DARK, true, move(HX + .036, 0, -.014));
+  solid(torso, section(chamfered(.058, .022, .008, .006), .03, .004), DARK, false, move(-HX - .012, 0, 0));
+  solid(torso, box(.2, .11, .004), DARK, true, move(-.01, 0, HZ + .009));
+  [-.075, .075].forEach(function (x) { solid(torso, box(.012, .012, .03), METAL, false, move(x, 0, HZ + .024)); });
+  solid(torso, box(.172, .014, .01), METAL, false, move(0, 0, HZ + .042));
+  [-1, 1].forEach(function (side) {
+    for (var v = 0; v < 6; v++) solid(torso, box(.004, .003, .026), DARK, true, move(-.05 + v * .02, side * (HY + .0105), .002));
+    solid(torso, box(.07, .003, .03), DARK, true, move(.07, side * (HY + .0105), .0));
+  });
+  var HIPS = [[1, -1], [1, 1], [-1, -1], [-1, 1]];          // fr, fl, hr, hl, as the record orders them
+  HIPS.forEach(function (h) {
+    var hx = h[0] * (HX - .03), hy = h[1] * (HY - .012);
+    solid(torso, cyl(.027, .05), METAL, false, M().multiplyMatrices(move(hx, hy, -.03), onX()));
+    solid(torso, cyl(.019, .006), DARK, true, M().multiplyMatrices(move(hx + h[0] * .028, hy, -.03), onX()));
+  });
+
+  // legs: hip-pitch motor at the thigh body, thigh plate, knee, shin, foot
+  var F0 = D.runs.minimal.f[0];
+  function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); }
+  var legs = [0, 1, 2, 3].map(function (leg) {
+    var o = 7 + leg * 12, at = function (k) { return F0.slice(o + k * 3, o + k * 3 + 3); };
+    var Lt = dist(at(1), at(2)), Lc = dist(at(2), at(3)), out = leg % 2 ? 1 : -1;
+    var motor = frameGroup(), thigh = frameGroup(), shin = frameGroup(), foot = frameGroup();
+    // y points outward on every leg, so the outside face is +y
+    // inside to outside along y: motor housing, thigh plate, motor cap and bolts
+    solid(motor, cyl(.031, .034), METAL, false, move(0, -.006, 0));
+    solid(motor, cyl(.023, .006), DARK, true, move(0, .028, 0));
+    solid(motor, cyl(.009, .004), METAL, true, move(0, .033, 0));
+    boltRing(motor, 6, .016, .0315);
+    solid(thigh, plate(link(Lt, .046, .03, true), .014, .002), SHELL, false, move(0, .018, 0));
+    solid(thigh, cyl(.019, .036), METAL, false, move(0, .009, -Lt));
+    solid(thigh, cyl(.012, .004), DARK, true, move(0, .029, -Lt));
+    solid(shin, plate(link(Lc - .012, .024, .014, true), .01, .0015), DARK, false);
+    solid(shin, box(.018, .006, .05), METAL, true, move(.006, .008, -.03));
+    solid(foot, new T.IcosahedronGeometry(.021, 1), DARK);
+    solid(foot, cyl(.016, .008, 16), METAL, true, move(0, 0, -.004));
+    return { o: o, out: out, motor: motor, thigh: thigh, shin: shin, foot: foot };
+  });
+
+  var vx = new T.Vector3(), vy = new T.Vector3(), vz = new T.Vector3();
+  function basis(g, p, x, y, z) {
+    vx.set(x[0], x[1], x[2]); vy.set(y[0], y[1], y[2]); vz.set(z[0], z[1], z[2]);
+    g.matrix.makeBasis(vx, vy, vz).setPosition(p[0], p[1], p[2]);
+    g.matrixWorldNeedsUpdate = true;
+  }
+  function norm(a) { var l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+  function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function sub3(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function pose(r) {
+    var q = [r[3], r[4], r[5], r[6]], c = [r[0], r[1], r[2]];
+    var X = qrot(q, [1, 0, 0]), Y = qrot(q, [0, 1, 0]), Z = qrot(q, [0, 0, 1]);
+    basis(torso, c, X, Y, Z);
+    legs.forEach(function (L) {
+      var hip = r.slice(L.o, L.o + 3), th = r.slice(L.o + 3, L.o + 6), kn = r.slice(L.o + 6, L.o + 9), ft = r.slice(L.o + 9, L.o + 12);
+      // the lateral axis is exact: the thigh body sits on the hip body's own y axis
+      var lat = norm(sub3(th, hip)), down;
+      function frameAlong(g, from, to) {
+        var z = norm(sub3(from, to)), x = norm(cross(lat, z)), y = cross(z, x);
+        basis(g, from, x, y, z);
+      }
+      down = norm(cross(cross(lat, Z), lat));
+      var mx = norm(cross(lat, down));
+      basis(L.motor, th, mx, lat, cross(mx, lat));
+      frameAlong(L.thigh, th, kn);
+      frameAlong(L.shin, kn, ft);
+      var zf = norm(cross(X, lat));
+      basis(L.foot, ft, cross(lat, zf), lat, zf);
+    });
+  }
+  function leaveGhost(on) {
+    ghosts.visible = on;
+    if (on) ghosts.children.forEach(function (g) { g.matrix.copy(g.userData.frame.matrix); g.matrixWorldNeedsUpdate = true; });
+  }
+
   // the angle being measured: world vertical, the torso's own up-axis, the arc
   // between them, and the threshold; past it, the wedge is hatched
   function writeGizmo(r, tiltDeg) {
@@ -422,7 +537,7 @@
   var DUR = (run.f.length - 1) / D.hz, HOLD = 2.4;
   function reset() {
     simT = START; hold = 0; breached = false; peak = 0; trailN = 0;
-    phantomGeo.setDrawRange(0, 0); trailGeo.setDrawRange(0, 0); phantomAt = null;
+    leaveGhost(false); trailGeo.setDrawRange(0, 0); phantomAt = null;
     hud.rule.classList.remove('is-fail');
   }
   runButtons.forEach(function (b) {
@@ -450,7 +565,7 @@
     else { simT += dt * D.speed; if (simT >= DUR) { simT = DUR; hold = HOLD; } }
     var f = simT * D.hz, r = frameAt(run, f), tilt = tiltAt(run, f);
     peak = Math.max(peak, tilt);
-    writeRobot(robotGeo, r); writeJoints(r); writeGizmo(r, tilt);
+    pose(r); writeGizmo(r, tilt);
 
     // the torso's path, drawn as it is made
     if (hold <= 0 && trailN < 600) {
@@ -465,9 +580,8 @@
     // at the breach, the pose is left behind in phantom line
     if (!breached && tilt > D.threshold) {
       breached = true;
-      var cnt = writeRobot(phantomGeo, r);
-      phantomAt = [r[0], r[1], r[2] + HZ];
-      phantom.computeLineDistances(); phantomGeo.setDrawRange(0, cnt);
+      leaveGhost(true);
+      phantomAt = [r[0], r[1], r[2] + HZ + .05];
       hud.rule.classList.add('is-fail');
       // report the recorded control step that first exceeded the limit, not the blended frame
       var ib = run.tilt.findIndex(function (x) { return x > D.threshold; });
@@ -484,7 +598,7 @@
     var tv = V(r[0], r[1], r[2]);
     target.x += (tv[0] - target.x) * Math.min(1, dt * 2.2);
     target.z += (tv[2] * .5 - target.z) * Math.min(1, dt * 2.2);
-    var az = .34 + .2 * Math.sin(clock * .16), el = .3, dist = camera.aspect > 1.8 ? 1.45 : 1.35;
+    var az = .34 + .2 * Math.sin(clock * .16), el = .3, dist = camera.aspect > 1.8 ? 1.28 : 1.55;
     camera.position.set(target.x + Math.sin(az) * Math.cos(el) * dist, target.y + Math.sin(el) * dist,
       target.z + Math.cos(az) * Math.cos(el) * dist);
     camera.lookAt(target);
