@@ -5,7 +5,9 @@ declared space of physical conditions for the ones that make a frozen policy
 violate a rule the customer wrote, then hands back evidence someone hostile can
 re-run.
 
-Solo founder, pre-product, based in Baku. Python + MuJoCo harness, static site.
+The company is **Teeter**; the software and its CLI keep the working name
+`faultline` until renamed. Solo founder, pre-product, based in Baku. Python +
+MuJoCo harness, static site.
 
 ## Standing rules
 
@@ -15,9 +17,10 @@ These are not style preferences. They are the product.
    their absence. Never write that a policy is safe, verified, validated,
    certified or compliant, and never imply the output satisfies a notified body
    — nobody can currently say what does.
-2. **Flag every placeholder.** `hello@faultline.dev` appears across the site and
-   is **invented** — it is not a real address. Say so whenever it comes up
-   rather than treating it as configured.
+2. **Flag every placeholder.** `hello@teeter.dev` (the Teeter site) and
+   `hello@faultline.dev` (the older pages) are **invented** — neither is a real
+   address, and teeter.dev is not registered to us. Say so whenever one comes
+   up rather than treating it as configured.
 3. **Label illustrative values as illustrative**, in the same sentence, never in
    a footnote.
 4. **Trace claims to code or to a measured number.** This repo has repeatedly
@@ -51,7 +54,9 @@ Verify before quoting; they drift.
 | `harness/tests/` | the test suite — run it before claiming anything works |
 | `docs/primer.md` | the domain from scratch, written to be learned from |
 | `docs/strategy.md`, `product-spec.md`, `roadmap.md` | business case, spec, sequencing |
-| `index.html`, `configure/`, `app/`, `start/`, `report/` | the static site |
+| `teeter/` | the Teeter website, filled by `tools/build_teeter_site.py` from the campaign record |
+| `teeter/brand/` | the identity standard (TT-000 to TT-010) and every logo file, drawn by `tools/build_brand.py` |
+| `index.html`, `ink/`, `configure/`, `app/`, `start/`, `report/` | the older site, still under the previous identity |
 
 Run the tests with `cd harness && python3 -m pytest tests/ -q`.
 
@@ -66,6 +71,7 @@ Bodies load on demand; consult them rather than re-deriving.
 - `optimisation-and-search` — severity, CEM, sampling bias
 - `uncertainty-and-evidence` — what the numbers license you to claim
 - `robot-policy-testing` — reproducibility, predicates, sim-to-real, regulation
+- `teeter-brand` — the mark, tone, hatching, type, drawing conventions, voice
 
 ## Working style
 

@@ -1,0 +1,46 @@
+{
+  "block": {
+    "width": 7.0,
+    "height": 10.0
+  },
+  "theta_c_deg": 34.992,
+  "diagonal": 12.206556,
+  "corners": {
+    "pivot": [
+      0.0,
+      0.0
+    ],
+    "left": [
+      -5.734623,
+      4.014236
+    ],
+    "top": [
+      0.0,
+      12.206556
+    ],
+    "right": [
+      5.734623,
+      8.192319
+    ]
+  },
+  "centroid": [
+    0.0,
+    6.103278
+  ],
+  "wordmark": {
+    "cap": 10.0,
+    "stem": 1.5,
+    "horizontal": 1.28,
+    "width": 70.26,
+    "r_leg_deg_from_vertical": 35.0
+  },
+  "files": [
+    "teeter-mark.svg",
+    "favicon.svg",
+    "teeter-wordmark.svg",
+    "teeter-lockup.svg",
+    "teeter-mark-plain.svg",
+    "teeter-lockup-stacked.svg",
+    "teeter-mark-construction.svg"
+  ]
+}

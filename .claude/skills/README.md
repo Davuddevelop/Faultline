@@ -6,14 +6,14 @@ so the standing cost is the descriptions (~1k tokens), not the content.
 
 ## Where these came from
 
-**25 skills installed.** Counted from `metadata.origin` in each `SKILL.md`, so
+**26 skills installed.** Counted from `metadata.origin` in each `SKILL.md`, so
 these numbers can be re-derived rather than trusted:
 
 | Source | Licence | Skills |
 | --- | --- | --- |
 | [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code), tagged `ECC` | MIT (see `LICENSE-everything-claude-code`) | 12 |
 | Tagged `community` | see upstream | 3 |
-| Written for this repo | — | 7 (the domain set, below) |
+| Written for this repo | — | 8 (the domain set and the brand, below) |
 | Untagged — `benchmark-methodology`, `frontend-design`, `motion-foundations` | see each file | 3 |
 
 `frontend-design` is Anthropic's, from [`anthropics/skills`](https://github.com/anthropics/skills).
@@ -52,6 +52,11 @@ code, with every claim traced to a file and line or to a measured number.
 - `design-system` — consistency audits and styling review
 - `motion-foundations` — motion tokens, spring presets, reduced-motion safety
 - `accessibility` — WCAG 2.2 AA
+
+**The brand — written for this repo**
+- `teeter-brand` — the tipping-block mark and its geometry, the tone scale
+  with no colour, failure as 35° hatching, Archivo and B612 Mono, the drawing
+  conventions, the generated-figure pipeline, the voice
 
 **Working sessions**
 - `context-budget` — audit what is eating the context window
