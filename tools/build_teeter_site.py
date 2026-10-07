@@ -60,11 +60,11 @@ def scatter_figure(c, pid="hx-scatter"):
     o.append(f'<rect class="fail-zone" {band} fill="url(#{pid})"/><rect class="fail-edge" {band}/>')
     o.append(f'<line class="axis" x1="{l}" y1="{t}" x2="{l}" y2="{b}"/>'
              f'<line class="axis" x1="{l}" y1="{b}" x2="{r}" y2="{b}"/>')
-    for p in sorted(sc["points"], key=lambda p: p["f"]):
-        if p["f"]:
-            o.append(f'<circle class="dot--fail" cx="{f(X(p["x"]))}" cy="{f(Y(p["y"]))}" r="3.1"/>')
-        else:
-            o.append(f'<circle class="dot" cx="{f(X(p["x"]))}" cy="{f(Y(p["y"]))}" r="2.5"/>')
+    dots = []
+    for i, p in enumerate(sc["points"]):          # stored in evaluation order; main() checks it
+        cls, rad = ("dot--fail", 3.1) if p["f"] else ("dot", 2.5)
+        dots.append(f'<circle class="{cls}" data-i="{i}" cx="{f(X(p["x"]))}" cy="{f(Y(p["y"]))}" r="{rad}"/>')
+    o.append(f'<g class="dots">{"".join(dots)}</g>')
     o.append(f'<text class="tick" x="{l - 8}" y="{b + 3.5}" text-anchor="end">{y0:g}</text>'
              f'<text class="tick" x="{l - 8}" y="{t + 3.5}" text-anchor="end">{y1:g}</text>'
              f'<text class="tick" x="{l}" y="{b + 18}" text-anchor="middle">{x0:g}</text>'
@@ -178,6 +178,123 @@ def wilson(k, n, z=1.96):
     return centre - half, centre + half
 
 
+# ── the hero: the simulator's own record, replayed ───────────────────────
+LEGS = ("fr", "fl", "hr", "hl")
+
+
+def torso_half_extents():
+    """The torso box, read from the model rather than retyped."""
+    xml = (ROOT / "harness/models/quadruped.xml").read_text()
+    m = re.search(r'<geom name="torso" type="box" size="([^"]+)"', xml)
+    return [float(v) for v in m.group(1).split()]
+
+
+def push_timing():
+    """When and over how long capture_sim.py pushes: its run() defaults."""
+    src = (ROOT / "media/capture_sim.py").read_text()
+    t = float(re.search(r"push_t=([\d.]+)", src).group(1))
+    w = float(re.search(r"win, f = ([\d.]+)", src).group(1))
+    return t, w
+
+
+def replay_json(s, c, speed):
+    """Per control step: torso position and quaternion, then for each leg the
+    hip, thigh and calf body origins and the foot, all in MuJoCo's world frame."""
+    import json
+    names = s["names"]
+    idx = {n: i for i, n in enumerate(names)}
+    runs = {}
+    for label, run in s["runs"].items():
+        frames = []
+        for xs, q, feet in zip(run["xpos"], run["quat"], run["feet"]):
+            row = [round(v, 3) for v in xs[idx["torso"]]] + [round(v, 4) for v in q]
+            for k, leg in enumerate(LEGS):
+                for part in ("hip", "thigh", "calf"):
+                    row += [round(v, 3) for v in xs[idx[f"{leg}_{part}"]]]
+                row += [round(v, 3) for v in feet[k]]
+            frames.append(row)
+        runs[label] = {"push": run["push_ns"], "tilt": run["tilt"], "f": frames}
+    t, w = push_timing()
+    thr = next(p for p in c["report"]["predicates"] if p["name"] == "tilt_limit")["threshold"]
+    doc = {"hz": s["hz"], "speed": speed, "push_t": t, "window": w, "threshold": thr,
+           "half": torso_half_extents(), "runs": runs}
+    return ('<script type="application/json" id="replay-data">'
+            + json.dumps(doc, separators=(",", ":")) + "</script>")
+
+
+def _quat_rot(q, v):
+    w, x, y, z = q
+    tx, ty, tz = 2 * (y * v[2] - z * v[1]), 2 * (z * v[0] - x * v[2]), 2 * (x * v[1] - y * v[0])
+    return (v[0] + w * tx + y * tz - z * ty, v[1] + w * ty + z * tx - x * tz, v[2] + w * tz + x * ty - y * tx)
+
+
+def robot_segments(s, run, i):
+    """Line segments of the robot at control step i, in world coordinates."""
+    names = s["names"]
+    idx = {n: k for k, n in enumerate(names)}
+    xs, q, feet = run["xpos"][i], run["quat"][i], run["feet"][i]
+    hx, hy, hz = torso_half_extents()
+    c = xs[idx["torso"]]
+    corner = {}
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                d = _quat_rot(q, (sx * hx, sy * hy, sz * hz))
+                corner[(sx, sy, sz)] = (c[0] + d[0], c[1] + d[1], c[2] + d[2])
+    segs = []
+    for a, b in ((a, b) for a in corner for b in corner if a < b and sum(u != v for u, v in zip(a, b)) == 1):
+        segs.append((corner[a], corner[b]))
+    legs = []
+    for k, leg in enumerate(LEGS):
+        chain = [xs[idx[f"{leg}_{p}"]] for p in ("hip", "thigh", "calf")] + [feet[k]]
+        legs += list(zip(chain, chain[1:]))
+    return segs, legs
+
+
+def robot_poster(s, c):
+    """Side elevation at the breach, with the starting pose in phantom line: the
+    page's picture when there is no WebGL, no script, or reduced motion. The
+    view is fitted to the two poses, so nothing is placed by eye."""
+    run = s["runs"]["minimal"]
+    thr = next(p for p in c["report"]["predicates"] if p["name"] == "tilt_limit")["threshold"]
+    ib = next(i for i, v in enumerate(run["tilt"]) if v > thr)
+    poses = [(0, "ph"), (ib, "k")]
+    segs = {i: sum(robot_segments(s, run, i), []) for i, _ in poses}
+    xs = [v[0] for i, _ in poses for seg in segs[i] for v in seg]
+    zs = [v[2] for i, _ in poses for seg in segs[i] for v in seg] + [0.0]
+    k = 300.0 / (max(zs) - min(zs) + 0.12)                 # px per metre: 300 px of drawing height
+    pad = 60.0
+    W = round((max(xs) - min(xs)) * k + 2 * pad + 220)
+    H = round((max(zs) - min(zs)) * k + 2 * pad + 30)
+    ox = pad + 80 - min(xs) * k
+    oy = pad + 30 + max(zs) * k
+    P = lambda v: (ox + v[0] * k, oy - v[2] * k)
+    o = [f"<defs>{bb.hatch_pattern('hx-poster', 6.0)}</defs>"]
+    o.append(f'<rect class="fail-zone" x="0" y="{f(oy)}" width="{W}" height="18" fill="url(#hx-poster)"/>')
+    o.append(f'<line class="k" x1="0" y1="{f(oy)}" x2="{W}" y2="{f(oy)}"/>')
+    for i, cls in poses:
+        d = " ".join(f"M{f(P(a)[0])},{f(P(a)[1])} L{f(P(b)[0])},{f(P(b)[1])}" for a, b in segs[i])
+        o.append(f'<path class="{cls}" d="{d}"/>')
+    # a key in the top corner rather than labels on the drawing, so it fits at any width
+    for row, (cls, text) in enumerate((("k", f"t = {ib / s['hz']:.2f} s · tilt {run['tilt'][ib]:.2f}°"),
+                                       ("ph", "t = 0"))):
+        y = 24 + row * 22
+        o.append(f'<line class="{cls}" x1="{W - 40}" y1="{y - 4}" x2="{W - 12}" y2="{y - 4}"/>'
+                 f'<text class="lab" x="{W - 48}" y="{y}" text-anchor="end">{text}</text>')
+    label = (f"Side elevation of the stand-in quadruped at {ib / s['hz']:.2f} seconds, the moment its tilt passes "
+             f"{thr:g} degrees after a requested push of {run['push_ns']:g} newton-seconds, with its starting "
+             f"pose drawn in phantom line.")
+    return f'<svg class="draw poster" viewBox="0 0 {W} {H}" role="img" aria-label="{label}">{"".join(o)}</svg>'
+
+
+def hud_bar(s, c):
+    """The HUD's tilt bar, 0 to 180 degrees, at rest on the breach frame."""
+    thr = next(p for p in c["report"]["predicates"] if p["name"] == "tilt_limit")["threshold"]
+    at = next(x for x in s["runs"]["minimal"]["tilt"] if x > thr)
+    return (f'<div class="hud__bar" aria-hidden="true" style="--lim:{100 * thr / 180:.3f}%;--w:{100 * at / 180:.3f}%">'
+            '<span class="hud__over"></span><span class="hud__fill" data-hud="bar"></span><i class="hud__lim"></i></div>')
+
+
 def site_values(c, s):
     v = ink.values(c, s)
     # only the uniform arm supports a rate; the directed arm's hit rate describes the search
@@ -186,7 +303,15 @@ def site_values(c, s):
     v.update({"n_seeds": len(c["seeds"]), "unif_k": k, "unif_n": n,
               "unif_lo": f"{100 * lo:.1f}", "unif_hi": f"{100 * hi:.1f}",
               "theta_c": f"{math.degrees(bb.THETA):.2f}"})
+    tilt = s["runs"]["minimal"]["tilt"]
+    thr = float(v["threshold"])
+    v["breach_tilt"] = f"{next(x for x in tilt if x > thr):.2f}"
+    v["first_fail"] = c["first_failure"]["cem"][0]
+    v["replay_speed"] = f"{REPLAY_SPEED:g}"
     return v
+
+
+REPLAY_SPEED = 0.5
 
 
 def fill(html, vals):
@@ -250,6 +375,12 @@ def main():
     if (len(c["scatter"]["points"]), fails) != (c["budget"], c["report"]["failures_total"]):
         sys.exit(f"scatter holds {len(c['scatter']['points'])} points and {fails} failures; "
                  f"the report records {c['budget']} and {c['report']['failures_total']}")
+    # ...and to be in the order the search ran them: it is the directed search of
+    # seed 0, whose recorded first violation and total it must reproduce
+    first = next(i for i, p in enumerate(c["scatter"]["points"]) if p["f"])
+    if (first, fails) != (c["first_failure"]["cem"][0], c["totals"]["cem"][0]):
+        sys.exit(f"scatter is not the directed seed-0 run in evaluation order: first failure at {first}, "
+                 f"{fails} failures; the record says {c['first_failure']['cem'][0]} and {c['totals']['cem'][0]}")
 
     vb, lock = bb.lockup()
     pieces = {
@@ -264,7 +395,9 @@ def main():
         "scatter": scatter_figure(c),
         "efficiency": efficiency_figure(c),
         "reduction": wide_and_narrow(bb.reduction_figure(c), bb.reduction_figure(c, pid="hx-red-n", w=360)),
-        "mark": bb.inline(f"0 0 {f(bb.MARK_W)} {f(bb.MARK_H)}", bb.mark_body(bb.MARK_OX, bb.MARK_OY)),
+        "replay": replay_json(s, c, REPLAY_SPEED),
+        "robot-poster": robot_poster(s, c),
+        "hud-bar": hud_bar(s, c),
         "modes": modes_rows(c),
         "yaml": campaign_yaml(c),
     }

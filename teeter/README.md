@@ -6,17 +6,19 @@ built from. The software and its command-line tool keep the working name
 
 | Path | What |
 | --- | --- |
-| `index.html` | the site: one page drawn as one sheet, sections TT-101 to TT-108 |
+| `index.html` | the site: one page drawn as one sheet, sections TT-101 to TT-109 |
 | `brand/index.html` | the identity standard, eleven sheets TT-000 to TT-010 |
 | `brand/*.svg`, `brand/geometry.json` | the mark, wordmark, lockups and favicon, and the numbers they are drawn from |
 | `css/`, `js/`, `assets/fonts/` | styles, the motion script, Archivo and B612 Mono (SIL OFL), self-hosted |
 | `assets/og.png` | the 1200 × 630 social card |
+| `vendor/` | three.js and GSAP, self-hosted; see `vendor/README.md` |
 
 Nothing here is drawn by eye or typed by hand:
 
 | Figure or value | From |
 | --- | --- |
 | The mark and its construction drawing | `tools/build_brand.py`, from the 7 × 10 block |
+| The 3D replay in the opening: torso pose, leg bodies and feet per control step | `media/sim.json`, captured by `media/capture_sim.py` |
 | Measured tilt, nominal against the smallest failing push | `media/sim.json`, captured by `media/capture_sim.py` |
 | Where the budget went, sample efficiency, coverage, reduction, failure modes | `assets/data/campaign.json` |
 | The uniform rate and its 95% Wilson interval | `assets/data/campaign.json`, the random arm only |

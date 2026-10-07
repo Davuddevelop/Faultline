@@ -143,8 +143,13 @@ drawing scales. A figure too wide for a phone is drawn twice (`fig--wide`,
 
 ## Motion
 
-One orchestrated moment: on load the block tips from upright to θc about P,
-2.6 s, cubic in-out, with a live θ readout. Recorded traces then draw at a
+The opening is a 3D replay of the real simulated robot (three.js, wireframe in
+the drawing's line types) from `media/sim.json`: the push, the fall, the pose
+at the breach left behind in phantom line, a HUD reading the recorded tilt. It
+is labelled as a replay of recorded data and never shows anything the record
+does not hold. Scroll motion is GSAP with ScrollTrigger, both in
+`teeter/vendor/`. The block in the contact section tips from upright to θc about
+P, 2.6 s, cubic in-out, with a live θ readout, when it comes into view. Recorded traces then draw at a
 constant rate when they come into view, because they are recordings; the breach
 marker lands when the line reaches it (`--hit-frac`, an arc-length fraction from
 the builder). The reduction line walks down to the minimal case (`--walk`).
