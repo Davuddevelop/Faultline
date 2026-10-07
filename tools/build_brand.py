@@ -710,10 +710,20 @@ NEEDLE = _spindle(47, 6.4, G_TIP)
 RING = _ring(37, 13.5, 7.0, 2.4, G_RING)
 
 
-def mark_b(uid="g", fill="currentColor", box=32.0, fit=1.0):
-    """The gyroscope in a square box. uid keeps its two mask ids unique."""
+def mark_b(uid="g", fill="currentColor", box=32.0, fit=1.0, tip=None, weave=True, outline=False, turn=0.0):
+    """The gyroscope in a square box. uid keeps its two mask ids unique. The
+    keyword arguments exist to draw what the mark must never be (TT-002)."""
     k = box / G_BOX * fit
     h = G_BOX / 2
+    NEEDLE = _spindle(47, 6.4, G_TIP if tip is None else tip)
+    if outline:
+        sw = 1.4 / k
+        return (f'<g transform="translate({f(box / 2)} {f(box / 2)}) scale({f(k)}) rotate({f(turn)})">'
+                f'<path d="{RING}" fill="none" stroke="{fill}" stroke-width="{f(sw)}" fill-rule="evenodd"/>'
+                f'<path d="{NEEDLE}" fill="none" stroke="{fill}" stroke-width="{f(sw)}"/></g>')
+    if not weave:
+        return (f'<g transform="translate({f(box / 2)} {f(box / 2)}) scale({f(k)}) rotate({f(turn)})">'
+                f'<path d="{RING}" fill="{fill}" fill-rule="evenodd"/><path d="{NEEDLE}" fill="{fill}"/></g>')
     m = (f'<mask id="gr-{uid}" maskUnits="userSpaceOnUse" x="{-h}" y="{-h}" width="{G_BOX}" height="{G_BOX}">'
          f'<rect x="{-h}" y="{-h}" width="{G_BOX}" height="{G_BOX}" fill="#fff"/>'
          f'<path d="{NEEDLE}" fill="#000" stroke="#000" stroke-width="5.5"/>'
@@ -722,7 +732,7 @@ def mark_b(uid="g", fill="currentColor", box=32.0, fit=1.0):
          f'<rect x="{-h}" y="{-h}" width="{G_BOX}" height="{G_BOX}" fill="#fff"/>'
          f'<path d="{RING}" fill="#000" stroke="#000" stroke-width="5.5" fill-rule="evenodd"/>'
          f'<rect x="{-h}" y="0" width="{G_BOX}" height="{h}" fill="#fff"/></mask>')
-    return (f'<g transform="translate({f(box / 2)} {f(box / 2)}) scale({f(k)})"><defs>{m}</defs>'
+    return (f'<g transform="translate({f(box / 2)} {f(box / 2)}) scale({f(k)}) rotate({f(turn)})"><defs>{m}</defs>'
             f'<path d="{RING}" fill="{fill}" fill-rule="evenodd" mask="url(#gr-{uid})"/>'
             f'<path d="{NEEDLE}" fill="{fill}" mask="url(#gn-{uid})"/></g>')
 
@@ -793,6 +803,49 @@ def stacked_b(uid="st", fill="currentColor"):
     body = (f'<g transform="translate({f((w - m) / 2)} 0)">{mark_b(uid, fill, box=m)}</g>'
             f'<g transform="translate({f((w - ww) / 2)} {f(m + 4)})">{word}</g>')
     return f"0 0 {f(w)} {f(m + 4 + wh)}", body
+
+
+def clearspace_b():
+    """The symbol with its clear space: a quarter of its box on every side."""
+    b, q = 112.0, 28.0
+    W = b + 2 * q + 40
+    o = [f'<rect class="n" x="20" y="20" width="{f(b + 2 * q)}" height="{f(b + 2 * q)}" stroke-dasharray="3 3"/>',
+         f'<rect class="ph" x="{f(20 + q)}" y="{f(20 + q)}" width="{f(b)}" height="{f(b)}"/>',
+         f'<g transform="translate({f(20 + q)} {f(20 + q)})">{mark_b("cs", box=b)}</g>',
+         f'<line class="n" x1="{f(20 + q)}" y1="12" x2="{f(20 + q)}" y2="{f(20 + q)}"/>',
+         f'<text class="dim" x="{f(20 + q / 2)}" y="14" text-anchor="middle">¼</text>']
+    return inline(f"0 0 {f(W)} {f(W)}", "".join(o), "The symbol inside a dashed square a quarter of its own size larger on every side.", "draw cs")
+
+
+def wordmark_construction_b(k=1.25, mx=70.0, my=40.0):
+    """The stencil wordmark on its grid: cap height, stroke, cut and tracking."""
+    d, ww = _word_d()
+    W, H = mx * 2 + ww * k, my + 100 * k + 80
+    X = lambda u: mx + u * k
+    Y = lambda u: my + u * k
+    o = [f'<path transform="translate({f(mx)} {f(my)}) scale({f(k)})" d="{d}" fill="currentColor" fill-rule="evenodd"/>']
+    for y, name in ((0, "cap 100"), (50, "mid 50"), (100, "base 0")):
+        o.append(f'<line class="gd" x1="{f(mx - 10)}" y1="{f(Y(y))}" x2="{f(W - 10)}" y2="{f(Y(y))}"/>')
+        o.append(f'<text class="lab" x="{f(W - 10)}" y="{f(Y(y) - 6)}" text-anchor="end">{name}</text>')
+    # stroke, on the first T's bar
+    o.append(f'<line class="n" x1="{f(X(-4))}" y1="{f(Y(0))}" x2="{f(X(-4))}" y2="{f(Y(W_S))}" marker-start="url(#ah2)" marker-end="url(#ah2)"/>')
+    o.append(f'<text class="dim sm" x="{f(X(-6))}" y="{f(Y(W_S / 2) + 4)}" text-anchor="end">stroke {W_S:g}</text>')
+    # the stencil cut, between the first T's bar and stem
+    tx = X(62)
+    o.append(f'<line class="n" x1="{f(tx + 24)}" y1="{f(Y(W_S))}" x2="{f(tx + 24)}" y2="{f(Y(W_S + W_G))}"/>')
+    o.append(f'<text class="dim sm" x="{f(tx + 30)}" y="{f(Y(W_S + W_G / 2) + 4)}">cut {W_G:g}</text>')
+    # tracking, between the letters, below the baseline
+    x, ys = 0.0, Y(100) + 34
+    for glyph in (_T, _E, _E, _T, _E):
+        _, w = glyph(x)
+        a, b = X(x + w), X(x + w + W_TRACK)
+        o.append(f'<line class="n" x1="{f(a)}" y1="{f(ys)}" x2="{f(b)}" y2="{f(ys)}" marker-start="url(#ah2)" marker-end="url(#ah2)"/>')
+        o.append(f'<text class="dim sm" x="{f((a + b) / 2)}" y="{f(ys + 18)}" text-anchor="middle">{W_TRACK:g}</text>')
+        x += w + W_TRACK
+    defs = ('<defs><marker id="ah2" viewBox="0 0 10 6" refX="9.5" refY="3" markerWidth="9" markerHeight="5.4" '
+            'orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,3 L0,6 Z" class="ahf"/></marker></defs>')
+    return (f'<svg class="draw" viewBox="0 0 {f(W)} {f(H)}" role="img" aria-label="The wordmark on its grid: cap height 100, '
+            f'stroke {W_S:g}, a stencil cut of {W_G:g} between every bar and its stem, and {W_TRACK:g} between letters.">{defs}{"".join(o)}</svg>')
 
 
 def gyro_construction(uid="gc", W=600, H=420):
@@ -872,13 +925,13 @@ def main():
         "favicons": (f'<span style="width:64px">{Fv("fv1")}</span>'
                      f'<span style="width:32px">{Fv("fv2")}</span>'
                      f'<span style="width:16px">{Fv("fv3")}</span>'),
-        "construction": f'<svg class="draw" viewBox="0 0 {cw} {ch}" role="img" aria-label="Construction of the mark: a 7 by 10 block tipped about corner P to 34.99 degrees, with its upright position, its centroidal line, and the arc its centre of mass travels.">{construction()}</svg>',
-        "clearspace": clearspace_svg(),
-        "dont-angle": inline(f"0 0 {f(mw + 4)} {f(mh)}", block_at(46, ox + 2, oy)),
-        "dont-ground": inline(f"0 0 {f(mw)} {f(mh)}", block_at(math.degrees(THETA), ox, oy, ground=False)),
-        "dont-outline": inline(f"0 0 {f(mw)} {f(mh)}", block_at(math.degrees(THETA), ox, oy, outline=True)),
-        "dont-split": inline(f"0 0 {f(mw)} {f(mh)}", mark_body(ox, oy, gap=0.5)),
-        "wordmark-construction": wordmark_construction(),
+        "construction": f'<svg class="draw" viewBox="0 0 {cw} {ch}" role="img" aria-label="Construction of the symbol: a needle tipped 12 degrees off vertical inside a gimbal ring tilted the other way, with the vertical it has left.">{gyro_construction("bk")}</svg>',
+        "clearspace": clearspace_b(),
+        "dont-angle": inline("0 0 32 32", mark_b("d1", tip=0.0)),
+        "dont-ground": inline("0 0 32 32", mark_b("d2", weave=False)),
+        "dont-outline": inline("0 0 32 32", mark_b("d3", outline=True)),
+        "dont-split": inline("0 0 32 32", mark_b("d4", turn=-30.0)),
+        "wordmark-construction": wordmark_construction_b(),
         "wedge": wedge_html(),
         "hatch-spec": hatch_spec_svg(),
         "trace": trace_figure(sim, campaign),

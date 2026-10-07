@@ -47,8 +47,10 @@ edit an SVG in `teeter/brand/` by hand**, change the builder and run
 | `rev-a-block-construction.svg` | the withdrawn revision-A mark, kept for the record |
 
 Revision A's mark, a 7 × 10 block balanced on its corner at 34.99°, is
-withdrawn. Sheets TT-001 to TT-003 of the identity standard still describe it
-and are marked so.
+withdrawn. Sheets TT-001 to TT-003 of the identity standard document the
+gyroscope: its construction, clear space (a quarter of its box), smallest sizes,
+the four ways it must never be drawn (level, flat, outlined, turned), and the
+wordmark on its grid.
 
 ## Tone, and the absence of colour
 
