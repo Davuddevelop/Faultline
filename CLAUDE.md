@@ -56,7 +56,8 @@ Verify before quoting; they drift.
 | `docs/strategy.md`, `product-spec.md`, `roadmap.md` | business case, spec, sequencing |
 | `teeter/` | the Teeter website, filled by `tools/build_teeter_site.py` from the campaign record |
 | `teeter/brand/` | the identity standard (TT-000 to TT-010) and every logo file, drawn by `tools/build_brand.py` |
-| `index.html`, `ink/`, `configure/`, `app/`, `start/`, `report/` | the older site, still under the previous identity |
+| `index.html` | the front page: generated from `teeter/index.html` by `tools/build_teeter_site.py`; never edit it directly |
+| `faultline.html`, `ink/`, `configure/`, `app/`, `start/`, `report/` | the older site, still under the previous identity; `faultline.html` was the front page |
 
 Run the tests with `cd harness && python3 -m pytest tests/ -q`.
 

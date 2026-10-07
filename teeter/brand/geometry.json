@@ -27,12 +27,15 @@
     0.0,
     6.103278
   ],
-  "wordmark": {
-    "cap": 10.0,
-    "stem": 1.5,
-    "horizontal": 1.28,
-    "width": 70.26,
-    "r_leg_deg_from_vertical": 35.0
+  "logo_rev_b": {
+    "needle_off_vertical_deg": 12.000000000000002,
+    "ring_tilt_deg": -24.000000000000004,
+    "wordmark": {
+      "stroke": 16.0,
+      "stencil_gap": 6.0,
+      "tracking": 26.0,
+      "width_at_cap_10": 80.2
+    }
   },
   "files": [
     "teeter-mark.svg",
@@ -41,6 +44,7 @@
     "teeter-lockup.svg",
     "teeter-mark-plain.svg",
     "teeter-lockup-stacked.svg",
-    "teeter-mark-construction.svg"
+    "teeter-mark-construction.svg",
+    "rev-a-block-construction.svg"
   ]
 }

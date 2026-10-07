@@ -473,3 +473,79 @@ svg{display:block;max-width:100%}
   .plan li{padding-left:32px}
   .plan li::before{left:0;top:3px}
 }
+
+/* ═══ v3: cinematic ═══════════════════════════════════════════
+   Borderless, film-grained, lit from behind. The sheet keeps its
+   numbered rails; it loses its frame. */
+body{background:var(--bg)}
+body::after{content:"";position:fixed;inset:-50%;pointer-events:none;z-index:90;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 1.2s steps(6) infinite}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-3%)}60%{transform:translate(-2%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
+@media (prefers-reduced-motion:reduce){body::after{animation:none}}
+.sheet{border:0;background:transparent;margin-top:0}
+.zones{display:none}
+.sec,.statement,.contact,.tblock{border-top-color:var(--hair)}
+.micro{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);line-height:1.7;margin:0}
+
+/* the opening: the replay fills the screen, the headline sits over it */
+.hero{padding:0;gap:0}
+.hero .display{font-size:clamp(38px,5.4vw,84px);line-height:.98;letter-spacing:-.02em}
+.stage__view{aspect-ratio:auto;height:clamp(460px,64vh,620px);border:0;
+  background:
+    radial-gradient(ellipse 55% 60% at 66% 44%,rgba(233,230,222,.11),transparent 70%),
+    linear-gradient(var(--g900) 1px,transparent 1px),linear-gradient(90deg,var(--g900) 1px,transparent 1px),var(--g950);
+  background-size:auto,32px 32px,32px 32px,auto;touch-action:pan-y;cursor:grab}
+.stage__view:active{cursor:grabbing}
+.stage__view::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 120% 90% at 60% 40%,transparent 55%,rgba(11,11,10,.85) 100%)}
+.cross{position:absolute;width:19px;height:19px;pointer-events:none;z-index:2;
+  background:linear-gradient(var(--ink-2),var(--ink-2)) 50% 0/1px 100% no-repeat,linear-gradient(var(--ink-2),var(--ink-2)) 0 50%/100% 1px no-repeat}
+.cross--tl{left:18px;top:18px}.cross--tr{right:18px;top:18px}.cross--bl{left:18px;bottom:18px}.cross--br{right:18px;bottom:18px}
+.stage__tag{position:absolute;left:48px;top:20px;z-index:2}
+.stage__drag{position:absolute;right:48px;top:20px;z-index:2}
+.stage__drag::before{content:"↔ ";color:var(--ink-2)}
+.stage__cap{font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--ink-3);max-width:80ch;
+  padding:14px clamp(20px,4vw,52px) 0;margin:0}
+.stage__cap span[data-v]{color:var(--ink-2)}
+.hero__text{padding:clamp(28px,5vw,48px) clamp(20px,4vw,52px) 8px}
+@media (min-width:1000px){
+  .hero{display:grid;grid-template-columns:minmax(0,1fr)}
+  .hero > .hero__text,.hero > .stage{grid-area:1 / 1}
+  .stage__view{height:clamp(640px,90vh,920px)}
+  .stage__view::after{background:
+    linear-gradient(to top,var(--bg) 0,rgba(11,11,10,.88) 24%,transparent 58%),
+    linear-gradient(to right,rgba(11,11,10,.75),transparent 46%),
+    radial-gradient(ellipse 120% 90% at 60% 40%,transparent 55%,rgba(11,11,10,.8) 100%)}
+  .hero > .hero__text{z-index:3;align-self:end;pointer-events:none;padding:0 clamp(28px,4vw,56px) clamp(44px,6vh,72px)}
+  .hero__text a,.hero__text button{pointer-events:auto}
+  .hero > .stage__cap{grid-row:2}
+  .hero > .facts{grid-row:3;margin-top:28px}
+  .hud{left:auto;right:28px;top:60px}
+  .stage__drag{right:auto;left:48px;top:62px}
+}
+.facts{margin-inline:0}
+
+/* closing: the emblem, lit, beside the invitation */
+.contact{grid-template-columns:minmax(0,1fr)}
+.emblem{display:none;color:var(--ink);justify-self:center;position:relative}
+.emblem svg{width:100%;height:auto;filter:drop-shadow(0 0 28px rgba(233,230,222,.18))}
+.emblem::before{content:"";position:absolute;inset:-20%;border-radius:50%;
+  background:radial-gradient(circle,rgba(233,230,222,.10),transparent 62%);pointer-events:none}
+@media (min-width:1000px){
+  .contact{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);align-items:center}
+  .emblem{display:block;width:min(340px,26vw)}
+}
+
+/* the wordmark, set as wide as the page */
+.colophon{border-top:1px solid var(--hair);padding:clamp(48px,8vw,120px) clamp(20px,4vw,52px) clamp(28px,4vw,48px);overflow:hidden}
+.colophon svg{width:100%;height:auto;color:var(--ink);display:block}
+.colophon__line{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:22px}
+@media (min-width:1000px){
+  .hero > .hero__text{grid-template-columns:minmax(0,1fr);max-width:min(52%,640px);gap:22px}
+  .hero > .hero__text > *{grid-column:1 !important;grid-row:auto !important}
+  .hero .display{font-size:clamp(38px,4.3vw,66px)}
+  .hero .lede{max-width:46ch;font-size:16.5px}
+}
+.mast__lock{width:156px}
+@media (max-width:699px){.stage__drag{display:none}}

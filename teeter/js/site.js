@@ -236,6 +236,13 @@
     if (btn) btn.addEventListener('click', function () { tip(0); });
   }
 
+  /* ── the emblem drifts, lit; the wordmark is uncovered ─ */
+  var emblem = document.querySelector('.emblem svg');
+  if (emblem && motion) G.to(emblem, { rotation: 6, y: -8, duration: 4.5, ease: 'sine.inOut', yoyo: true, repeat: -1, transformOrigin: '50% 50%' });
+  var wm = document.querySelector('[data-wordmark]');
+  approach(wm, function () { G.set(wm, { clipPath: 'inset(0 100% 0 0)' }); },
+    function () { G.to(wm, { clipPath: 'inset(0 0% 0 0)', duration: 1.8, ease: 'expo.inOut' }); }, 'top 92%');
+
   /* ── which section you are reading ───────────────────── */
   var links = document.querySelectorAll('.mast__nav a[href^="#"]');
   if (links.length && 'IntersectionObserver' in window) {
@@ -549,6 +556,11 @@
   });
 
   var target = new T.Vector3(0, .13, 0), clock = 0, phantomAt = null;
+  // drag to orbit: the offset eases back towards the drift once let go
+  var orbit = 0, dragging = false, lastX = 0;
+  view.addEventListener('pointerdown', function (e) { dragging = true; lastX = e.clientX; view.setPointerCapture(e.pointerId); });
+  view.addEventListener('pointermove', function (e) { if (!dragging) return; orbit += (e.clientX - lastX) * -.006; lastX = e.clientX; });
+  ['pointerup', 'pointercancel'].forEach(function (k) { view.addEventListener(k, function () { dragging = false; }); });
   var notes = { push: stage.querySelector('[data-note="push"]'), breach: stage.querySelector('[data-note="breach"]') };
   var pv = new T.Vector3();
   function place(el, on, at) {
@@ -598,7 +610,8 @@
     var tv = V(r[0], r[1], r[2]);
     target.x += (tv[0] - target.x) * Math.min(1, dt * 2.2);
     target.z += (tv[2] * .5 - target.z) * Math.min(1, dt * 2.2);
-    var az = .34 + .2 * Math.sin(clock * .16), el = .3, dist = camera.aspect > 1.8 ? 1.28 : 1.55;
+    if (!dragging) orbit *= Math.pow(.35, dt);
+    var az = .34 + .2 * Math.sin(clock * .16) + orbit, el = .3, dist = view.clientWidth >= 1000 ? 1.85 : (camera.aspect > 1.8 ? 1.28 : 1.55);
     camera.position.set(target.x + Math.sin(az) * Math.cos(el) * dist, target.y + Math.sin(el) * dist,
       target.z + Math.cos(az) * Math.cos(el) * dist);
     camera.lookAt(target);
@@ -615,7 +628,8 @@
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     // where the HUD sits over the view, shift the picture so the robot clears it
-    if (w >= 700) camera.setViewOffset(w, h, -w * (w / h > 1.8 ? .12 : .16), h * .06, w, h); else camera.clearViewOffset();
+    if (w >= 1000) camera.setViewOffset(w, h, -w * .2, -h * .08, w, h);
+    else if (w >= 700) camera.setViewOffset(w, h, -w * .16, h * .06, w, h); else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }
   if ('ResizeObserver' in window) new ResizeObserver(resize).observe(view);

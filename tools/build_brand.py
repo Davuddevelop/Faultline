@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -606,7 +607,7 @@ def social_svg(lockup_body, lockup_vb_w, lockup_vb_h):
     o = [f'<rect width="{W}" height="{H}" fill="#0B0B0A"/>',
          f'<rect x="24" y="24" width="{W - 48}" height="{H - 48}" fill="none" stroke="#34332F" stroke-width="1"/>']
     # the construction drawing, faint, on the right
-    o.append(f'<g transform="translate(700 92) scale(1.05)" opacity=".42">{construction()}</g>')
+    o.append(f'<g transform="translate(610 100)" opacity=".5">{gyro_construction("soc")}</g>')
     lw = 330
     sc = lw / lockup_vb_w
     o.append(f'<g transform="translate(72 74) scale({f(sc)})" fill="#E9E6DE" color="#E9E6DE">{lockup_body}</g>')
@@ -614,7 +615,7 @@ def social_svg(lockup_body, lockup_vb_w, lockup_vb_h):
     for i, ln in enumerate(lines):
         o.append(f'<text x="72" y="{300 + i * 66}" class="soc-h">{ln}</text>')
     o.append('<text x="72" y="560" class="soc-m">Adversarial testing for learned robot policies</text>')
-    o.append('<text x="1128" y="560" class="soc-m" text-anchor="end">θc = 34.99°</text>')
+    o.append('<text x="1128" y="560" class="soc-m" text-anchor="end">teeter, v.: to sway at the edge of falling</text>')
     css = ('<style>.soc-h{font-family:Archivo,sans-serif;font-stretch:125%;font-variation-settings:"wdth" 125;'
            'font-weight:500;font-size:56px;fill:#E9E6DE;letter-spacing:-.5px}'
            '.soc-m{font-family:"B612 Mono",monospace;font-size:17px;fill:#8E8B83}'
@@ -666,19 +667,159 @@ def paths(shapes, fill="currentColor") -> str:
     return "".join(out)
 
 
-# the mark's box: the block spans x ±5.73 and y 0..12.21, ground and hatch below
+# the revision-A mark's box: the block spans x ±5.73 and y 0..12.21, ground and hatch below
 MARK_W, MARK_H = 14.4, 15.6
 MARK_OX, MARK_OY = MARK_W / 2, 13.0
-LOCK_GAP = 4.6
 
 
-def lockup():
-    """Horizontal lockup, as (viewBox, body): the mark's ground line is the
-    wordmark's baseline."""
-    shapes, ww = wordmark()
-    body = (mark_body(MARK_OX, MARK_OY) +
-            f'<g transform="translate({f(MARK_W + LOCK_GAP)} {f(MARK_OY - CAP)})">{paths(shapes)}</g>')
-    return f"0 0 {f(MARK_W + LOCK_GAP + ww)} {f(MARK_H)}", body
+# ── revision B: the gyroscope and the machined wordmark ──────────────────
+# The symbol is a gyroscope, the sensor a robot balances by: a needle tipped off
+# vertical, and a gimbal ring around it that the needle passes in front of at
+# the bottom and behind at the top. The wordmark is drawn from rectangles with
+# stencil cuts, as lettering is machined into a part. Both are pure geometry.
+G_TIP = math.radians(12.0)       # the needle, off vertical
+G_RING = math.radians(-24.0)     # the gimbal ring's tilt
+G_BOX = 112.0                    # the symbol is drawn in a box centred on 0
+
+
+def _turn(x, y, a):
+    return x * math.cos(a) - y * math.sin(a), x * math.sin(a) + y * math.cos(a)
+
+
+def _spindle(L, w, a, k=.2):
+    """A ray tapering to a point at each end, its sides drawn in to the axis."""
+    pts = [(0, -L), (w, 0), (0, L), (-w, 0)]
+    ctl = [(w * k, -L * k), (w * k, L * k), (-w * k, L * k), (-w * k, -L * k)]
+    P = lambda q: _turn(q[0], q[1], a)
+    d = "M{},{}".format(*map(f, P(pts[0])))
+    for n in range(4):
+        c, q = P(ctl[n]), P(pts[(n + 1) % 4])
+        d += f" Q{f(c[0])},{f(c[1])} {f(q[0])},{f(q[1])}"
+    return d + " Z"
+
+
+def _ring(rx, ry, tx, ty, a, n=120):
+    """An elliptical band, thick at its sides and thin where it turns away."""
+    o = [_turn(rx * math.cos(2 * math.pi * k / n), ry * math.sin(2 * math.pi * k / n), a) for k in range(n)]
+    i = [_turn((rx - tx) * math.cos(2 * math.pi * k / n), (ry - ty) * math.sin(2 * math.pi * k / n), a) for k in range(n)]
+    p = lambda pts: "M" + " L".join(f"{f(x)},{f(y)}" for x, y in pts) + " Z"
+    return p(o) + " " + p(i[::-1])
+
+
+NEEDLE = _spindle(47, 6.4, G_TIP)
+RING = _ring(37, 13.5, 7.0, 2.4, G_RING)
+
+
+def mark_b(uid="g", fill="currentColor", box=32.0, fit=1.0):
+    """The gyroscope in a square box. uid keeps its two mask ids unique."""
+    k = box / G_BOX * fit
+    h = G_BOX / 2
+    m = (f'<mask id="gr-{uid}" maskUnits="userSpaceOnUse" x="{-h}" y="{-h}" width="{G_BOX}" height="{G_BOX}">'
+         f'<rect x="{-h}" y="{-h}" width="{G_BOX}" height="{G_BOX}" fill="#fff"/>'
+         f'<path d="{NEEDLE}" fill="#000" stroke="#000" stroke-width="5.5"/>'
+         f'<rect x="{-h}" y="{-h}" width="{G_BOX}" height="{h}" fill="#fff"/></mask>'
+         f'<mask id="gn-{uid}" maskUnits="userSpaceOnUse" x="{-h}" y="{-h}" width="{G_BOX}" height="{G_BOX}">'
+         f'<rect x="{-h}" y="{-h}" width="{G_BOX}" height="{G_BOX}" fill="#fff"/>'
+         f'<path d="{RING}" fill="#000" stroke="#000" stroke-width="5.5" fill-rule="evenodd"/>'
+         f'<rect x="{-h}" y="0" width="{G_BOX}" height="{h}" fill="#fff"/></mask>')
+    return (f'<g transform="translate({f(box / 2)} {f(box / 2)}) scale({f(k)})"><defs>{m}</defs>'
+            f'<path d="{RING}" fill="{fill}" fill-rule="evenodd" mask="url(#gr-{uid})"/>'
+            f'<path d="{NEEDLE}" fill="{fill}" mask="url(#gn-{uid})"/></g>')
+
+
+# the wordmark, on a cap height of 100: stroke, stencil cut, tracking
+W_S, W_G, W_TRACK = 16.0, 6.0, 26.0
+
+
+def _rect(x, y, w, h):
+    return f"M{f(x)},{f(y)} h{f(w)} v{f(h)} h{f(-w)} Z"
+
+
+def _T(x):
+    w = 124.0
+    return _rect(x, 0, w, W_S) + _rect(x + w / 2 - W_S / 2 - 1, W_S + W_G, W_S + 2, 100 - W_S - W_G), w
+
+
+def _E(x):
+    w, st = 104.0, W_S + 2
+    a = x + st + W_G
+    return (_rect(x, 0, st, 100) + _rect(a, 0, w - st - W_G, W_S) +
+            _rect(a, 50 - W_S / 2, w - st - W_G - 12, W_S) + _rect(a, 100 - W_S, w - st - W_G, W_S)), w
+
+
+def _R(x):
+    w, bh, st = 112.0, 58.0, W_S + 2
+    bx, r = x + st + W_G, bh / 2
+    ir = r - W_S
+    outer = f"M{f(bx)},0 H{f(x + w - r)} A{f(r)},{f(r)} 0 0 1 {f(x + w - r)},{f(bh)} H{f(bx)} Z"
+    inner = f"M{f(bx)},{f(W_S)} H{f(x + w - r)} A{f(ir)},{f(ir)} 0 0 1 {f(x + w - r)},{f(bh - W_S)} H{f(bx)} Z"
+    leg = f"M{f(x + w - 56)},{f(bh + W_G)} L{f(x + w - 34)},{f(bh + W_G)} L{f(x + w)},100 L{f(x + w - 22)},100 Z"
+    return _rect(x, 0, st, 100) + outer + " " + inner + " " + leg, w
+
+
+def _word_d():
+    d, x = [], 0.0
+    for glyph in (_T, _E, _E, _T, _E, _R):
+        p, w = glyph(x)
+        d.append(p)
+        x += w + W_TRACK
+    return " ".join(d), x - W_TRACK
+
+
+def word_b(fill="currentColor", cap=10.0):
+    """The wordmark scaled to a cap height; returns (width, height, body)."""
+    d, w = _word_d()
+    k = cap / 100
+    return w * k, cap, f'<path transform="scale({f(k)})" d="{d}" fill="{fill}" fill-rule="evenodd"/>'
+
+
+LOCK_GAP = 5.0
+
+
+def lockup(uid="lk", fill="currentColor"):
+    """The gyroscope beside the wordmark, its centre on the cap line's middle.
+    Returns (viewBox, body)."""
+    ww, wh, word = word_b(fill)
+    m = 17.0
+    body = (f'<g transform="translate(0 {f((wh - m) / 2)})">{mark_b(uid, fill, box=m)}</g>'
+            f'<g transform="translate({f(m + LOCK_GAP)} 0)">{word}</g>')
+    return f"0 {f((wh - m) / 2)} {f(m + LOCK_GAP + ww)} {f(m)}", body
+
+
+def stacked_b(uid="st", fill="currentColor"):
+    ww, wh, word = word_b(fill)
+    m = 40.0
+    w = max(ww, m)
+    body = (f'<g transform="translate({f((w - m) / 2)} 0)">{mark_b(uid, fill, box=m)}</g>'
+            f'<g transform="translate({f((w - ww) / 2)} {f(m + 4)})">{word}</g>')
+    return f"0 0 {f(w)} {f(m + 4 + wh)}", body
+
+
+def gyro_construction(uid="gc", W=600, H=420):
+    """The gyroscope drawn large and dimensioned: the vertical it has left, the
+    angle it is tipped by, the ring's axes. The needle sits in a group a page
+    can set precessing."""
+    k = 3.3
+    cx, cy = W / 2 - 20, H / 2
+    T = lambda d: f'transform="translate({f(cx)} {f(cy)}) scale({f(k)})"'
+    o = ['<defs><marker id="ah" viewBox="0 0 10 6" refX="9.5" refY="3" markerWidth="9" markerHeight="5.4" '
+         'orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,3 L0,6 Z" class="ahf"/></marker></defs>']
+    o.append(f'<line class="ph" x1="{f(cx)}" y1="{f(cy - 190)}" x2="{f(cx)}" y2="{f(cy + 190)}"/>')
+    ra, rb = _turn(46, 0, G_RING), _turn(0, 17, G_RING)
+    o.append(f'<line class="n" x1="{f(cx - ra[0] * k)}" y1="{f(cy - ra[1] * k)}" x2="{f(cx + ra[0] * k)}" y2="{f(cy + ra[1] * k)}" stroke-dasharray="2 4"/>')
+    o.append(f'<path class="k" {T(0)} d="{RING}" fill-rule="evenodd" style="stroke-width:{f(1.6 / k)}"/>')
+    o.append(f'<g class="tip" style="transform-origin:{f(cx)}px {f(cy)}px">'
+             f'<path class="k gyro-needle" {T(0)} d="{NEEDLE}" style="stroke-width:{f(1.6 / k)}"/>'
+             f'<line class="n" x1="{f(cx)}" y1="{f(cy)}" x2="{f(cx + _turn(0, -60, G_TIP)[0] * k)}" y2="{f(cy + _turn(0, -60, G_TIP)[1] * k)}"/></g>')
+    o.append(f'<circle class="cg" cx="{f(cx)}" cy="{f(cy)}" r="5"/>')
+    R = 172
+    e = (cx + R * math.sin(G_TIP), cy - R * math.cos(G_TIP))
+    dim = [f'<path class="n" d="M{f(cx)},{f(cy - R)} A{R},{R} 0 0 1 {f(e[0])},{f(e[1])}" marker-start="url(#ah)" marker-end="url(#ah)"/>',
+           f'<text class="dim" x="{f(cx + 26)}" y="{f(cy - R - 8)}">{math.degrees(G_TIP):g}°</text>',
+           f'<text class="lab" x="{f(cx + 14)}" y="{f(cy + 196)}" >vertical</text>',
+           f'<text class="lab" x="{f(cx + ra[0] * k + 8)}" y="{f(cy + ra[1] * k + 4)}">gimbal ring</text>']
+    o.append('<g class="dimA">' + "".join(dim) + "</g>")
+    return "".join(o)
 
 
 def write(name, text):
@@ -690,73 +831,47 @@ def main():
     OUT.mkdir(exist_ok=True)
     files = []
 
-    # mark: block spans x ±5.73, y 0..12.21; ground and hatch below
-    mw, mh = MARK_W, MARK_H
+    # revision B: the wordmark, with the teeter-totter T as the symbol
+    mw, mh = MARK_W, MARK_H                      # the revision-A block, still drawn on TT-001..TT-003
     ox, oy = MARK_OX, MARK_OY
-    files.append(write("teeter-mark.svg", svg(
-        f"0 0 {f(mw)} {f(mh)}", mark_body(ox, oy),
-        "Teeter",
-        "A 7 by 10 block balanced on one corner at its tipping angle of 35 degrees.")))
-
-    # favicon: no hatch, no gap, heavier ground, square
-    fb = (f'<rect width="16" height="16" rx="3" fill="#0B0B0A"/>'
-          f'<g transform="translate(8 13.1) scale(0.86) translate(-7.2 -13)">'
-          f'{mark_body(7.2, 13.0, fill="#E9E6DE", gap=0, hatch=False)}</g>')
-    files.append(write("favicon.svg", svg("0 0 16 16", fb, "Teeter")))
-
-    # wordmark
-    shapes, ww = wordmark()
-    body = paths(shapes)
-    files.append(write("teeter-wordmark.svg", svg(f"0 0 {f(ww)} {f(CAP)}", body, "Teeter")))
-
-    # horizontal lockup: the mark's ground line is the wordmark's baseline
-    gapx = LOCK_GAP
-    lw = mw + gapx + ww
-    lh = mh
-    word_y = oy - CAP
-    lock = (mark_body(ox, oy) +
-            f'<g transform="translate({f(mw + gapx)} {f(word_y)})">' + paths(shapes) + "</g>")
-    files.append(write("teeter-lockup.svg", svg(f"0 0 {f(lw)} {f(lh)}", lock, "Teeter")))
-
-    # plain mark for very small sizes: no hatch under the ground
-    files.append(write("teeter-mark-plain.svg", svg(
-        f"0 0 {f(mw)} {f(mh)}", mark_body(ox, oy, hatch=False), "Teeter")))
-
-    # stacked lockup: mark centred over the wordmark
-    ms = 2.1                                  # the mark carries a square space
-    sw = max(ww, mw * ms)
-    sh = mh * ms + 4.0 + CAP
-    stacked = (f'<g transform="translate({f((sw - mw * ms) / 2)} 0) scale({ms})">{mark_body(ox, oy)}</g>'
-               f'<g transform="translate({f((sw - ww) / 2)} {f(mh * ms + 4.0)})">{paths(shapes)}</g>')
-    files.append(write("teeter-lockup-stacked.svg", svg(f"0 0 {f(sw)} {f(sh)}", stacked, "Teeter")))
-
-    # sheet TT-001: the construction drawing, standalone with its own styles
-    cw, ch = 480, 400
+    desc = "A gyroscope: a needle tipped off vertical and a gimbal ring around it."
+    files.append(write("teeter-mark.svg", svg("0 0 32 32", mark_b("f"), "Teeter", desc)))
+    fb = '<rect width="32" height="32" rx="7" fill="#0B0B0A"/>' + mark_b("fav", "#E9E6DE", fit=.92)
+    files.append(write("favicon.svg", svg("0 0 32 32", fb, "Teeter")))
+    ww, wh, word = word_b()
+    files.append(write("teeter-wordmark.svg", svg(f"0 0 {f(ww)} {f(wh)}", word, "Teeter")))
+    lock_vb, lock_body = lockup("file")
+    lw, lh = (float(v) for v in lock_vb.split()[2:])
+    files.append(write("teeter-lockup.svg", svg(lock_vb, lock_body, "Teeter")))
+    files.append(write("teeter-mark-plain.svg", svg("0 0 32 32", mark_b("pl"), "Teeter")))
+    st_vb, st_body = stacked_b("file")
+    files.append(write("teeter-lockup-stacked.svg", svg(st_vb, st_body, "Teeter")))
+    cw, ch = 600, 420
     files.append(write("teeter-mark-construction.svg", svg(
         f"0 0 {cw} {ch}",
-        f'<style>{CONSTRUCTION_CSS}</style><rect width="{cw}" height="{ch}" fill="#0B0B0A"/>'
-        + construction(),
-        "Teeter mark construction",
-        "The block at its tipping angle, its upright position, and the path of its centre of mass.")))
+        f'<style>{CONSTRUCTION_CSS}</style><rect width="{cw}" height="{ch}" fill="#0B0B0A"/>' + gyro_construction("file"),
+        "Teeter mark construction", desc)))
+    old = OUT / "rev-a-block-construction.svg"
+    old.write_text(svg("0 0 480 400", f'<style>{CONSTRUCTION_CSS}</style><rect width="480" height="400" fill="#0B0B0A"/>' + construction(),
+                       "Revision A mark construction, withdrawn"))
+    files.append(old.name)
 
     # the identity standard page
     campaign = json.loads((ROOT / "assets/data/campaign.json").read_text())
     sim = json.loads((ROOT / "media/sim.json").read_text())
-    lock_body = mark_body(ox, oy) + f'<g transform="translate({f(mw + gapx)} {f(word_y)})">{paths(shapes)}</g>'
-    lock_vb = f"0 0 {f(lw)} {f(lh)}"
-    lockup_inline = inline(lock_vb, lock_body)
-    mark_inline = inline(f"0 0 {f(mw)} {f(mh)}", mark_body(ox, oy))
-    fav = fb.replace("#0B0B0A", "#0B0B0A")
+    L = lambda uid, label=None: inline(lockup(uid)[0], lockup(uid)[1], label)
+    Mk = lambda uid: inline("0 0 32 32", mark_b(uid))
+    Fv = lambda uid: inline("0 0 32 32", fb.replace("-fav", "-" + uid))
     standard = {
-        "lockup": lockup_inline, "lockup-cover": inline(lock_vb, lock_body, "Teeter"),
-        "lockup-tb": lockup_inline, "lockup-big": lockup_inline, "lockup-card": lockup_inline,
-        "lockup-report": lockup_inline,
-        "lockup-stacked": inline(f"0 0 {f(sw)} {f(sh)}", stacked),
-        "mark": mark_inline, "mark-inv": mark_inline, "mark-card": mark_inline,
-        "mark-plain": inline(f"0 0 {f(mw)} {f(mh)}", mark_body(ox, oy, hatch=False)),
-        "favicons": (f'<span style="width:64px">{inline("0 0 16 16", fav)}</span>'
-                     f'<span style="width:32px">{inline("0 0 16 16", fav)}</span>'
-                     f'<span style="width:16px">{inline("0 0 16 16", fav)}</span>'),
+        "lockup": L("bk1"), "lockup-cover": L("bk2", "Teeter"),
+        "lockup-tb": L("bk3"), "lockup-big": L("bk4"), "lockup-card": L("bk5"),
+        "lockup-report": L("bk6"),
+        "lockup-stacked": inline(st_vb, stacked_b("bk7")[1]),
+        "mark": Mk("bk8"), "mark-inv": Mk("bk9"), "mark-card": Mk("bk10"),
+        "mark-plain": Mk("bk11"),
+        "favicons": (f'<span style="width:64px">{Fv("fv1")}</span>'
+                     f'<span style="width:32px">{Fv("fv2")}</span>'
+                     f'<span style="width:16px">{Fv("fv3")}</span>'),
         "construction": f'<svg class="draw" viewBox="0 0 {cw} {ch}" role="img" aria-label="Construction of the mark: a 7 by 10 block tipped about corner P to 34.99 degrees, with its upright position, its centroidal line, and the arc its centre of mass travels.">{construction()}</svg>',
         "clearspace": clearspace_svg(),
         "dont-angle": inline(f"0 0 {f(mw + 4)} {f(mh)}", block_at(46, ox + 2, oy)),
@@ -771,8 +886,8 @@ def main():
         "reduction": reduction_figure(campaign),
         "dim-anatomy": dim_anatomy_svg(),
         "modes": modes_rows(campaign),
-        "social": inline("0 0 1200 630", social_svg(lock_body, lw, lh),
-                         "Social preview: the Teeter lockup, the line 'We find the exact condition where your robot falls', and the construction drawing behind it."),
+        "social": inline("0 0 1200 630", social_svg(lockup("soc")[1], lw, lh),
+                         "Social preview: the Teeter lockup, the line 'We find the exact condition where your robot falls', and the mark drawn as an instrument behind it."),
     }
     used = inject(ROOT / "teeter" / "brand" / "index.html", standard)
     missing = sorted(set(standard) - set(used))
@@ -786,8 +901,8 @@ def main():
         "corners": {k: [round(v, 6) for v in pt] for k, pt in
                     zip(("pivot", "left", "top", "right"), (PIVOT, LEFT, TOP, RIGHT))},
         "centroid": [0.0, round(DIAG / 2, 6)],
-        "wordmark": {"cap": CAP, "stem": V, "horizontal": HZ, "width": round(ww, 4),
-                     "r_leg_deg_from_vertical": 35.0},
+        "logo_rev_b": {"needle_off_vertical_deg": math.degrees(G_TIP), "ring_tilt_deg": math.degrees(G_RING),
+                       "wordmark": {"stroke": W_S, "stencil_gap": W_G, "tracking": W_TRACK, "width_at_cap_10": round(ww, 4)}},
         "files": files,
     }
     (OUT / "geometry.json").write_text(json.dumps(facts, indent=2) + "\n")

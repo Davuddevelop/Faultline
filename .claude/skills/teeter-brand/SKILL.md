@@ -1,6 +1,6 @@
 ---
 name: teeter-brand
-description: Teeter's identity and voice — the tipping-block mark and its exact geometry, the graphite and vellum tone scale with no colour, failure shown only by hatching at 35°, Archivo and B612 Mono, ISO 128 drawing conventions, the generated-figure pipeline behind teeter/, and the copy rules. Use when designing, building or reviewing anything branded Teeter (the site in teeter/, the identity standard at teeter/brand/, a deck, a figure, a social card, a report cover) or when a page or document still says Faultline.
+description: Teeter's identity and voice — the gyroscope symbol and machined stencil wordmark, the graphite and vellum tone scale with no colour, failure shown only by hatching at 35°, Archivo and B612 Mono, ISO 128 drawing conventions, the generated-figure pipeline behind teeter/, and the copy rules. Use when designing, building or reviewing anything branded Teeter (the site in teeter/, the identity standard at teeter/brand/, a deck, a figure, a social card, a report cover) or when a page or document still says Faultline.
 metadata:
   origin: written for this repo
 ---
@@ -18,48 +18,37 @@ drawings, title blocks, dimension lines, line types after ISO 128. Not a
 startup landing page. The full standard is eleven sheets at
 `teeter/brand/index.html` (TT-000 to TT-010); this file is the working summary.
 
-## The mark
+## The logo (revision B)
 
-A block 7 modules wide and 10 tall, balanced on its corner P at
-θc = arctan(7/10) = **34.992°**. At that angle the diagonal PT is vertical and
-the centre of mass G sits directly over P: any further and it falls. The
-published campaign's failure rule is `tilt_deg > 35.0`, so the mark is a
-picture of the condition the product looks for. Say exactly that; do not claim
-the two angles are the same physical quantity.
+Wordmark first, the way SpaceX, Palantir and Anduril work, with one simple
+symbol beside it. Both are pure geometry in `tools/build_brand.py`; **never
+edit an SVG in `teeter/brand/` by hand**, change the builder and run
+`python3 tools/build_brand.py`.
 
-Corners, in modules, P at the origin (`teeter/brand/geometry.json`):
-
-| Point | x | y |
-| --- | --- | --- |
-| P, pivot | 0 | 0 |
-| left | −5.734623 | 4.014236 |
-| T, top | 0 | 12.206556 |
-| right | 5.734623 | 8.192319 |
-| G, centroid | 0 | 6.103278 |
-
-Every coordinate comes from `tools/build_brand.py`. **Never edit an SVG in
-`teeter/brand/` by hand** and never place a point by eye; change the builder and
-run `python3 tools/build_brand.py`.
+- **Symbol: the gyroscope.** A needle tapering to a point at each end, tipped
+  12° off vertical, inside an elliptical gimbal ring tilted −24°. The needle
+  passes in front of the ring at the bottom and behind it at the top. It is the
+  sensor a robot balances by. Two masks make the weave, so every inline copy
+  needs its own `uid` (`mark_b(uid)`, `lockup(uid)`).
+- **Wordmark: machined stencil.** TEETER drawn from rectangles on a cap height
+  of 100: stroke 16, stencil cut 6 between every bar and its stem, tracking 26.
+  The R's bowl has a rounded end; its leg is detached.
+- **No tagline yet.** "Sim to real" was considered and dropped: it implies
+  hardware results the company does not have.
 
 | Asset | Use |
 | --- | --- |
-| `teeter-mark.svg` | the full mark: block on a fixed support, hatched at 35°. 48 px / 12 mm and up |
-| `teeter-mark-plain.svg` | no hatch, for 20–48 px |
-| `favicon.svg` | 16 and 32 px, on its own graphite square |
-| `teeter-lockup.svg` | the mark's ground line is the wordmark's baseline. 120 px / 30 mm wide and up |
-| `teeter-lockup-stacked.svg` | mark centred over the wordmark |
-| `teeter-mark-construction.svg` | the dimensioned drawing (TT-001) |
+| `teeter-lockup.svg` | the primary logo: gyroscope beside the wordmark |
+| `teeter-wordmark.svg` | the wordmark alone, for wide formats |
+| `teeter-mark.svg` | the gyroscope alone: avatars, app icons, merchandise |
+| `favicon.svg` | the gyroscope on a graphite rounded square |
+| `teeter-lockup-stacked.svg` | gyroscope centred over the wordmark |
+| `teeter-mark-construction.svg` | the gyroscope dimensioned |
+| `rev-a-block-construction.svg` | the withdrawn revision-A mark, kept for the record |
 
-Clear space is 3.5 modules, half the block's short side, on every side.
-Vellum on graphite, or graphite on vellum; nothing else.
-
-**Never**: at another angle (at 30° it stands, at 40° it has fallen); without
-its ground (it is only balanced because something holds it); as an outline
-(outlines are for drawings *of* the mark); split along its diagonal (tried, it
-reads as a sail).
-
-The wordmark is drawn on the block's module: cap height 10, stems 1.50,
-horizontals 1.28, the R's leg at 35° from vertical. Spacing is in `KERN`.
+Revision A's mark, a 7 × 10 block balanced on its corner at 34.99°, is
+withdrawn. Sheets TT-001 to TT-003 of the identity standard still describe it
+and are marked so.
 
 ## Tone, and the absence of colour
 

@@ -382,14 +382,12 @@ def main():
         sys.exit(f"scatter is not the directed seed-0 run in evaluation order: first failure at {first}, "
                  f"{fails} failures; the record says {c['first_failure']['cem'][0]} and {c['totals']['cem'][0]}")
 
-    vb, lock = bb.lockup()
+    vb, lock = bb.lockup("og")
     pieces = {
-        "lockup": bb.inline(vb, lock),
-        "lockup-tb": bb.inline(vb, lock),
-        "construction": ('<svg class="draw" viewBox="0 0 480 400" role="img" aria-label="Construction of the '
-                         'Teeter mark: a 7 by 10 block tipped about its corner P to 34.99 degrees, where its '
-                         'centre of mass G sits directly over P. Its upright position is drawn in phantom line, '
-                         f'with the arc G travels.">{bb.construction()}</svg>'),
+        "lockup": bb.inline(*bb.lockup("mast")),
+        "lockup-tb": bb.inline(*bb.lockup("tb")),
+        "emblem": bb.inline("0 0 32 32", bb.mark_b("em", box=32)),
+        "wordmark-xl": bb.inline(f"-1 -1 {bb.word_b()[0] + 2:.2f} 12", bb.word_b()[2]),
         "coverage": ink.fig_coverage(c),
         "trace": wide_and_narrow(bb.trace_figure(s, c), bb.trace_figure(s, c, pid="hx-trace-n", w=360)),
         "scatter": scatter_figure(c),
@@ -410,6 +408,15 @@ def main():
     vals = site_values(c, s)
     html, n = fill(PAGE.read_text(), vals)
     PAGE.write_text(html)
+
+    # the site's front page is this page, served from the repository root
+    front = re.sub(r'(\b(?:href|src)=")(?!https?:|#|mailto:|data:|/)([^"]+)"',
+                   lambda m: f'{m.group(1)}teeter/{m.group(2)}"', html)
+    front = front.replace('content="assets/og.png"', 'content="teeter/assets/og.png"')
+    front = front.replace("<!DOCTYPE html>\n", "<!DOCTYPE html>\n<!-- Generated from teeter/index.html by "
+                          "tools/build_teeter_site.py. Edit that file, not this one. -->\n", 1)
+    assert front.startswith("<!DOCTYPE html>")
+    (ROOT / "index.html").write_text(front)
 
     recorded = c["report"]["modes"][0]["first_t"]
     if abs(float(vals["breach_t"]) - recorded) > 1e-9:
