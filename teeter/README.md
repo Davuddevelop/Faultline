@@ -7,9 +7,10 @@ built from. The software and its command-line tool keep the working name
 | Path | What |
 | --- | --- |
 | `index.html` | the site, sections TT-101 to TT-109; the builder also writes it to the repository root as the front page |
+| `app/` | the product prototype (TT-301 to TT-360), every screen in `docs/product-plan.md`; open `app/index.html` |
 | `brand/index.html` | the identity standard, eleven sheets TT-000 to TT-010 |
 | `brand/*.svg`, `brand/geometry.json` | the mark, wordmark, lockups and favicon, and the numbers they are drawn from |
-| `css/`, `js/`, `assets/fonts/` | styles, the motion script, Archivo and B612 Mono (SIL OFL), self-hosted |
+| `css/`, `js/`, `assets/fonts/` | styles, the motion script, the 3D replay (`js/machine.js`, shared with `app/`), Archivo and B612 Mono (SIL OFL), self-hosted |
 | `assets/og.png` | the 1200 × 630 social card |
 | `vendor/` | three.js and GSAP, self-hosted; see `vendor/README.md` |
 
@@ -29,6 +30,7 @@ Nothing here is drawn by eye or typed by hand:
 ```sh
 python3 tools/build_brand.py              # logo files and the identity standard
 python3 tools/build_teeter_site.py        # the site's figures and values
+python3 tools/build_teeter_app.py         # the app prototype's record data
 python3 tools/build_teeter_site.py --og   # also the social card (Playwright)
 python3 tools/fetch_fonts.py teeter       # only if the faces change
 ```
@@ -37,6 +39,17 @@ python3 tools/fetch_fonts.py teeter       # only if the faces change
 physics disagrees with the record. `harness/tests/test_teeter_site.py` fails if
 the page goes stale, if its config sample stops loading, or if its axis table or
 signal list drifts from the harness.
+
+## The app prototype
+
+`app/` is a clickable design of the product, not the product: nothing is
+connected. Every panel carries a tag. **record** panels are drawn from
+`app/js/record.js`, which `tools/build_teeter_app.py` writes from the campaign
+record and the harness source; `harness/tests/test_teeter_app.py` fails if it
+drifts from the harness. **example** panels come from `app/js/example.js`, which
+is illustrative throughout: the workspace, Q2, its checkpoints and gates, the
+runners, people and keys do not exist. Record content only appears under the
+record's own names (C-0001, EP-0001), never under an example's.
 
 ## Placeholders
 
