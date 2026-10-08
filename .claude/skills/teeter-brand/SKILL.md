@@ -148,6 +148,18 @@ the builder). The reduction line walks down to the minimal case (`--walk`).
 Every start-state is gated on the `.js` class; with no script, or with reduced
 motion, the page shows the final state and the replay button is hidden.
 
+## The app prototype
+
+`teeter/app/` draws the product's screens (TT-301 to TT-360) in the same
+register: a 236 px sidebar, panels with a hairline header, values in Archivo
+with tabular figures (B612 Mono's full stop reads "7. 875" inside a sentence),
+mono for code, hashes and labels. Every panel carries a source tag, **record**
+(solid) or **example** (dashed), and record content appears only under the
+record's own names (C-0001, EP-0001). A blocked gate is the inverted banner with
+a hatched swatch; a verdict chip is a hatched square for a violation, a circle
+for passed, dashed for refused. The 3D replay is `js/machine.js`, shared with
+the site's opening; `mount(stage, data, {offset})` returns a stop function.
+
 ## Voice
 
 CLAUDE.md's standing rules are the voice. In practice:

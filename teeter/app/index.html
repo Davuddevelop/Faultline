@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Teeter app prototype</title>
+<meta name="description" content="A clickable prototype of the Teeter product: every screen from sign-in to an assessor's read-only evidence pack, drawn on the published campaign record and on an example workspace labelled as such.">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="../brand/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/site.css">
+<link rel="stylesheet" href="css/app.css">
+<script>document.documentElement.classList.add('js')</script>
+</head>
+<body class="app">
+<a class="skip" href="#view">Skip to content</a>
+
+<!-- The whole interface is drawn by js/app.js from js/record.js (generated
+     from the campaign record) and js/example.js (illustrative). Without
+     script there is nothing to click, so say what this is instead. -->
+<noscript>
+  <main class="nojs">
+    <p class="micro">TT-300 · Teeter app prototype</p>
+    <h1 class="h2">This prototype needs JavaScript.</h1>
+    <p>It is a clickable design of the product, not the product. The plan behind
+    it is <code>docs/product-plan.md</code>.</p>
+  </main>
+</noscript>
+
+<div class="proto" role="note">
+  <span class="proto__tag">Prototype</span>
+  <span class="proto__text">Nothing here is connected. Panels tagged <span class="src src--record">record</span> show the published campaign and the harness; panels tagged <span class="src src--example">example</span> are illustrative.</span>
+  <a class="proto__link" href="../index.html">Site</a>
+</div>
+
+<div class="shell" id="shell">
+  <aside class="side" id="side" aria-label="Workspace">
+    <div class="side__top">
+      <a class="side__lock" href="#/" aria-label="Teeter, overview" data-brand="lockup"></a>
+      <button class="side__close" type="button" data-menu="close" aria-label="Close menu">×</button>
+    </div>
+    <button class="ws" type="button" data-go="/settings/workspace">
+      <span class="ws__mark" aria-hidden="true">ER</span>
+      <span class="ws__name">Example Robotics<span class="ws__plan">Pilot · example</span></span>
+    </button>
+    <nav class="nav" id="nav"></nav>
+    <div class="side__foot" id="side-foot"></div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <button class="top__menu" type="button" data-menu="open" aria-label="Open menu" aria-controls="side"><span></span><span></span></button>
+      <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
+      <button class="find" type="button" data-palette="open"><span>Go to…</span><kbd>⌘K</kbd></button>
+      <a class="btn btn--sm top__new" href="#/campaigns/new">New campaign</a>
+    </header>
+    <main class="view" id="view" tabindex="-1"></main>
+  </div>
+</div>
+
+<div class="palette" id="palette" hidden>
+  <div class="palette__box" role="dialog" aria-modal="true" aria-label="Go to a screen">
+    <input class="palette__in" id="palette-in" type="text" placeholder="Go to a screen, campaign or checkpoint" autocomplete="off" spellcheck="false">
+    <ul class="palette__list" id="palette-list" role="listbox"></ul>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../vendor/three.min.js" defer></script>
+<script src="../js/machine.js" defer></script>
+<script src="js/record.js" defer></script>
+<script src="js/example.js" defer></script>
+<script src="js/app.js" defer></script>
+</body>
+</html>

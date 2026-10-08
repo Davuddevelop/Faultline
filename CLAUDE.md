@@ -54,7 +54,9 @@ Verify before quoting; they drift.
 | `harness/tests/` | the test suite — run it before claiming anything works |
 | `docs/primer.md` | the domain from scratch, written to be learned from |
 | `docs/strategy.md`, `product-spec.md`, `roadmap.md` | business case, spec, sequencing |
+| `docs/product-plan.md` | the product: architecture, every screen, sign-in, what cannot be copied, build phases |
 | `teeter/` | the Teeter website, filled by `tools/build_teeter_site.py` from the campaign record |
+| `teeter/app/` | the product prototype: every screen in `docs/product-plan.md`, record panels from `tools/build_teeter_app.py`, the rest from `js/example.js` (illustrative, tagged on screen) |
 | `teeter/brand/` | the identity standard (TT-000 to TT-010) and every logo file, drawn by `tools/build_brand.py` |
 | `index.html` | the front page: generated from `teeter/index.html` by `tools/build_teeter_site.py`; never edit it directly |
 | `faultline.html`, `ink/`, `configure/`, `app/`, `start/`, `report/` | the older site, still under the previous identity; `faultline.html` was the front page |
