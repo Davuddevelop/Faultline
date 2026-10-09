@@ -1,11 +1,11 @@
-# Every push and pull request: the three test suites (the API's on SQLite and
-# on Postgres), the published record against the engine, and the two images
-# brought up together with a gate run through them.
+# Every push, on every branch, and every pull request: the three test suites
+# (the API's on SQLite and on Postgres), the published record against the
+# engine, and the two images brought up together with a gate run through them.
+# The repository is public, so the minutes cost nothing.
 name: ci
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
