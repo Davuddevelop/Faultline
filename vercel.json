@@ -1,4 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "trailingSlash": true
+  "trailingSlash": true,
+  "redirects": [
+    { "source": "/faultline.html", "destination": "/", "permanent": false },
+    { "source": "/app/:path*", "destination": "/teeter/app/", "permanent": false },
+    { "source": "/:retired(atlas|surreal|next|archive|v1|v2|v3|start|configure|ink|report)/:path*", "destination": "/", "permanent": false }
+  ]
 }

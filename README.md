@@ -25,11 +25,16 @@ stand-in quadruped and its checkpoints are held poses, not trained policies.
 
 ---
 
-# The older Faultline site
+# The older Faultline site (retired)
 
 Everything below describes the pages built under the previous identity
 (`faultline.html`, `start/`, `configure/`, `report/` and the design
-explorations), written before the control plane and runner existed.
+explorations), written before the control plane and runner existed. They were
+retired on 9 October 2026: they stay in the repository for reference, but
+`.vercelignore` keeps them off the deployed site and `vercel.json` redirects
+their old addresses to the Teeter front page. Several quote numbers by hand
+that the fixed engine no longer produces; the Teeter site draws its numbers
+from the record instead.
 
 Static HTML and CSS. No build step, no framework, no external requests at
 runtime: fonts are self-hosted and every image is local.

@@ -11,7 +11,9 @@ metadata:
 working name `faultline` until they are renamed, so `faultline run campaign.yaml`
 is correct on a Teeter page. The previous identity (the name Faultline on the
 site, the stacked-bars mark, Newsreader and Geist, the oxide accent) is
-withdrawn; the root `index.html` and `ink/` still carry it.
+withdrawn. The pages still drawn in it (`faultline.html`, `ink/`, `report/`
+and the rest of the older site) are retired: kept in the repository for
+reference, not deployed, and redirected to the Teeter site (`vercel.json`).
 
 The register is an **engineering drawing**: sheets with zones, numbered
 drawings, title blocks, dimension lines, line types after ISO 128. Not a

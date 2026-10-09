@@ -66,7 +66,8 @@ Verify before quoting; they drift.
 | `teeter/app/` | the app: every screen in `docs/product-plan.md`. Served by the API, `js/live.js` runs it on the workspace's data; anywhere else it is the prototype, record panels from `tools/build_teeter_app.py`, the rest from `js/example.js` (illustrative, tagged on screen) |
 | `teeter/brand/` | the identity standard (TT-000 to TT-010) and every logo file, drawn by `tools/build_brand.py` |
 | `index.html` | the front page: generated from `teeter/index.html` by `tools/build_teeter_site.py`; never edit it directly |
-| `faultline.html`, `ink/`, `configure/`, `app/`, `start/`, `report/` | the older site, still under the previous identity; `faultline.html` was the front page |
+| `faultline.html`, `ink/`, `configure/`, `app/`, `start/`, `report/`, `atlas/`, `surreal/`, `next/`, `archive/`, `v1/`-`v3/` | the older site, under the previous identity: retired, kept for reference, not deployed (`.vercelignore`), its addresses redirected to the Teeter site (`vercel.json`). Some quote old numbers by hand; never cite them |
+| `.vercelignore`, `vercel.json` | what the `faultline` Vercel project deploys: the front page and `teeter/` only |
 
 Run the tests with `make test` (all three suites), or one at a time:
 `cd harness && python3 -m pytest tests/ -q`, likewise in `api/` and `runner/`.

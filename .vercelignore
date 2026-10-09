@@ -1,0 +1,10 @@
+# The faultline project on Vercel deploys the Teeter website only: the front
+# page, teeter/ and this configuration. Everything else in the repository is
+# left out, so Vercel neither serves it nor builds api/ as Python functions:
+# the engine, the control plane (deployed as its own project from api/), the
+# runner, docs and tools, and the retired pages of the previous identity,
+# which vercel.json redirects to the Teeter site.
+/*
+!/index.html
+!/teeter/
+!/vercel.json
