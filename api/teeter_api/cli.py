@@ -18,9 +18,9 @@ from pathlib import Path
 from sqlalchemy import select
 
 from .db import Database, utcnow
-from .models import Checkpoint, Membership, Program, SignInLink, User, Workspace
+from .models import Checkpoint, Membership, Program, SignInLink, Token, User, Workspace
 from .security import digest, mint
-from .settings import REPO, get_settings
+from .settings import get_settings
 
 # The demo program: the published campaign's experiment on the stand-in
 # quadruped, smaller so it finishes in under a minute on a laptop. The three
@@ -67,10 +67,35 @@ def _link(session, ws: Workspace, user: User) -> str:
     return f"{get_settings().public_url.rstrip('/')}/v1/auth/link/{code}"
 
 
+def _token_file(session, ws: Workspace, kind: str, name: str, path: Path) -> Path:
+    """Keep the token already in ``path`` if this database still honours it,
+    otherwise mint one and write it there. Running the demo again must not
+    strand a runner that registered with the first token."""
+    if path.exists():
+        tok = session.scalar(select(Token).where(Token.secret_sha256 == digest(path.read_text().strip())))
+        if tok is not None and tok.workspace_id == ws.id and tok.kind == kind and tok.revoked_at is None:
+            return path
+    _, secret = mint(session, ws, kind, name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(secret + "\n")
+    path.chmod(0o600)
+    return path
+
+
+def _shown(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path)
+
+
 def cmd_serve(args) -> int:
     import uvicorn
+    # A runner's claim is a long-poll of up to 25 s; on shutdown, give open
+    # requests 5 s and then drop them. A claim dropped after it committed is
+    # not lost: its lease lapses and the job is claimed again.
     uvicorn.run("teeter_api.app:create_app", factory=True, host=args.host, port=args.port,
-                log_level="info", proxy_headers=True)
+                log_level="info", proxy_headers=True, timeout_graceful_shutdown=5)
     return 0
 
 
@@ -109,25 +134,19 @@ def cmd_demo(args) -> int:
                 s.flush()
                 if base:
                     prog.baseline_checkpoint_id = ck.id
-        _, runner_secret = mint(s, ws, "runner", "demo runner")
-        _, ci_secret = mint(s, ws, "ci", "demo CI")
+        state = Path(get_settings().state_dir)
+        token_file = _token_file(s, ws, "runner", "demo runner", state / "runner-token")
+        ci_file = _token_file(s, ws, "ci", "demo CI", state / "ci-token")
         s.commit()
-        token_file = REPO / ".teeter" / "runner-token"
-        token_file.parent.mkdir(parents=True, exist_ok=True)
-        token_file.write_text(runner_secret + "\n")
-        token_file.chmod(0o600)
-        ci_file = REPO / ".teeter" / "ci-token"
-        ci_file.write_text(ci_secret + "\n")
-        ci_file.chmod(0o600)
         link = _link(s, ws, user)
     api = get_settings().public_url.rstrip("/")
     print(f"workspace  {args.workspace}  (owner {args.email}, an example address)")
     print(f"program    quadruped: {', '.join(c[0] for c in DEMO_CHECKPOINTS)} (baseline stand-v1)")
     print(f"\nsign in    {link}")
     print("           (one use, 30 minutes; 'teeter-api link' makes another)")
-    print(f"\nrunner     teeter runner start --api {api} --token-file {token_file.relative_to(REPO)} "
+    print(f"\nrunner     teeter runner start --api {api} --token-file {_shown(token_file)} "
           f"--config runner/demo-runner.yaml")
-    print(f"gate       teeter gate --api {api} --token-file {ci_file.relative_to(REPO)} "
+    print(f"gate       teeter gate --api {api} --token-file {_shown(ci_file)} "
           f"--program quadruped --checkpoint tall-v2")
     return 0
 

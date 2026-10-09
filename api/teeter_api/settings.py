@@ -1,7 +1,11 @@
 """Configuration, from the environment only, so one image runs anywhere.
 
+    TEETER_STATE_DIR      local state: the dev database, artifacts, demo tokens
+                          (default .teeter/ in the checkout)
     TEETER_DATABASE_URL   postgresql+psycopg://user:pass@host/db, or sqlite:///path
-    TEETER_STORAGE_DIR    where artifacts are kept (replays, traces)
+                          (default a SQLite file in the state directory)
+    TEETER_STORAGE_DIR    where artifacts are kept: replays, traces
+                          (default storage/ in the state directory)
     TEETER_SITE_DIR       the website and app to serve at /, or empty for none
     TEETER_PUBLIC_URL     how browsers reach this server, for sign-in links
     TEETER_CORS_ORIGINS   comma-separated origins allowed to call the API
@@ -16,6 +20,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 
 
+def _state() -> Path:
+    return Path(os.environ.get("TEETER_STATE_DIR", str(REPO / ".teeter")))
+
+
 def _default_site() -> str:
     site = REPO / "teeter"
     return str(site) if (site / "app" / "index.html").exists() else ""
@@ -23,10 +31,11 @@ def _default_site() -> str:
 
 @dataclass(frozen=True)
 class Settings:
+    state_dir: str = field(default_factory=lambda: str(_state()))
     database_url: str = field(default_factory=lambda: os.environ.get(
-        "TEETER_DATABASE_URL", f"sqlite:///{REPO / '.teeter' / 'dev.sqlite'}"))
+        "TEETER_DATABASE_URL", f"sqlite:///{_state() / 'dev.sqlite'}"))
     storage_dir: str = field(default_factory=lambda: os.environ.get(
-        "TEETER_STORAGE_DIR", str(REPO / ".teeter" / "storage")))
+        "TEETER_STORAGE_DIR", str(_state() / "storage")))
     site_dir: str = field(default_factory=lambda: os.environ.get("TEETER_SITE_DIR", _default_site()))
     public_url: str = field(default_factory=lambda: os.environ.get(
         "TEETER_PUBLIC_URL", "http://127.0.0.1:8000"))
