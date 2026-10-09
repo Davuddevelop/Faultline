@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +36,7 @@ def create_app(settings: Settings | None = None, db: Database | None = None) -> 
                   openapi_url="/v1/openapi.json", redoc_url=None)
     app.state.settings, app.state.db = settings, db
     app.state.storage = make_storage(settings)
+    app.state.workos_http = httpx.Client(timeout=10.0)       # replaced in tests
     app.add_exception_handler(ApiError, api_error_handler)
     app.add_exception_handler(RequestValidationError, validation_handler)
     if settings.cors_origins:
