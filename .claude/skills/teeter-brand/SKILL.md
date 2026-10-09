@@ -166,13 +166,13 @@ CLAUDE.md's standing rules are the voice. In practice:
 
 | Not | Instead |
 | --- | --- |
-| Teeter makes your robot safe. | Teeter found 2 conditions under which your policy breached `tilt_deg > 35.0`. |
-| A 41% failure rate. | 41.1% of directed samples violated a predicate. That describes the search, not the robot. |
+| Teeter makes your robot safe. | Teeter found one condition under which your policy breached `tilt_deg > 35.0`. |
+| A 36% failure rate. | 35.9% of directed samples violated a predicate. That describes the search, not the robot. |
 | A push of 7.875 N·s. | A requested push of 7.875 N·s. |
 | Certified. Validated. Compliant. | Reproducible: every result re-runs from its seeds. |
 
 - A rate comes only from the uniform arm, with its interval, and only over the
-  box that was declared: 29 of 750, 95% Wilson interval 2.7–5.5%.
+  box that was declared: 12 of 750, 95% Wilson interval 0.9–2.8%.
 - Reduction applies to the most severe failures (`reduce.max`), not to every one.
 - `hello@teeter.dev` is **invented**: no mailbox exists and teeter.dev is not
   registered to us. Wherever it appears, say so beside it.

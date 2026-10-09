@@ -26,8 +26,8 @@ graded version if one has been produced.
 
 ## Every figure on screen is real
 
-From the campaign of 2026-08-22 (`assets/data/campaign.json`):
-150 simulations · 51 violations · 10 reduced · 87 of 4096 cells ·
+From the published campaign (`assets/data/campaign.json`, made by `tools/publish_campaign.py`):
+150 simulations · 38 violations · 10 reduced · 83 of 4096 cells ·
 minimal case 7.875 N·s **requested** · `tilt_deg > 35.0` · first breach 1.26 s.
 
 The scatter is a seeded point cloud that begins uniform and concentrates toward

@@ -984,11 +984,12 @@
     ['Program · Stand-in quadruped', '/programs/standin'], ['Program · Q2 · walk', '/programs/q2'], ['Program · A7 arm', '/programs/a7'], ['Checkpoints · Q2', '/programs/q2/checkpoints'],
     ['Robot · quadruped.xml', '/robots/quadruped'], ['Robot · q2.xml', '/robots/q2'], ['Policy · stand', '/policies/stand'], ['Policy · q2-walk', '/policies/q2-walk'],
     ['Campaigns', '/campaigns'], ['New campaign', '/campaigns/new'], ['C-0001 · live', '/campaigns/C-0001/live'], ['C-0001 · result', '/campaigns/C-0001'],
-    ['C-0001 · mode 1', '/campaigns/C-0001/modes/0'], ['C-0001 · mode 2', '/campaigns/C-0001/modes/1'], ['Gates', '/gates'], ['G-0041 · v41 against v40', '/gates/G-0041'], ['G-0039 · refused', '/gates/G-0039'],
+    ['Gates', '/gates'], ['G-0041 · v41 against v40', '/gates/G-0041'], ['G-0039 · refused', '/gates/G-0039'],
     ['Evidence', '/evidence'], ['EP-0001', '/evidence/EP-0001'], ['EP-0002', '/evidence/EP-0002'], ['Assessor view · EP-0001', '/evidence/EP-0001/share'],
     ['Spaces and rules', '/library'], ['Runners', '/runners'], ['Integrations', '/integrations'],
     ['Settings · workspace', '/settings/workspace'], ['Settings · members', '/settings/members'], ['Settings · SSO', '/settings/sso'], ['Settings · plan', '/settings/plan'], ['Settings · data handling', '/settings/data'], ['Settings · audit log', '/settings/audit']
   ];
+  REP.modes.forEach(function (m, i) { PAL.splice(16 + i, 0, ['C-0001 · mode ' + (i + 1), '/campaigns/C-0001/modes/' + i]); });
   var pal = document.getElementById('palette'), pin = document.getElementById('palette-in'), plist = document.getElementById('palette-list'), sel = 0, shown = [];
   function palDraw() {
     var q = pin.value.toLowerCase().trim();

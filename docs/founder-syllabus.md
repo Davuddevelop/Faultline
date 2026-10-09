@@ -127,12 +127,12 @@ and it is easy to get one of them wrong in a way that looks almost right.
 **Prove it:** take a policy exported by someone else, map its observation, and
 show the mapping is right by a test rather than by it not crashing.
 
-### 5. "41%? There is no way our failure rate is 41%."
+### 5. "36%? There is no way our failure rate is 36%."
 
 **Bad answer:** defending the number.
 
 **What you must know:** they are right and the number is not a failure rate.
-41.1% is the fraction of *directed* samples that violated a predicate, and a
+35.9% is the fraction of *directed* samples that violated a predicate, and a
 directed search deliberately concentrates where violations are dense — so the
 number describes the search, not the robot. Only the uniform-random samples
 could support a rate, and five seeds of them cannot support one either.
@@ -144,14 +144,14 @@ This is a standing rule in `CLAUDE.md` for a reason: it is the single easiest
 number on the site to misuse, and misusing it once in front of a customer
 destroys the only thing you are selling.
 
-### 6. "You found 51 failures. How many are there?"
+### 6. "You found 38 failures. How many are there?"
 
 **What you must know:** that you cannot answer, and why. That finding failures
 is strong evidence and finding none is weak evidence. The rule of three — with
 *n* runs and zero failures, the upper 95% bound on the rate is about 3/*n*, so
 300 clean runs buys you "below 1%" and nothing better. That a search which
 found nothing may have been looking in the wrong place, and your coverage
-figure (87 of 4096 cells, 2.1%) says exactly how much of the volume it even
+figure (83 of 4096 cells, 2.0%) says exactly how much of the volume it even
 visited.
 
 **Where it lives:** skill `uncertainty-and-evidence` (binomial basics, the

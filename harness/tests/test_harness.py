@@ -191,3 +191,18 @@ def test_contact_force_signal_is_actually_populated(stand):
     _, traj = execute(spec(policy_id=stand.id, duration_s=4.0,
                            perturbation=Perturbation(push_impulse_ns=25.0)), stand)
     assert traj.contact_force_n.max() > 1.0
+
+
+def test_torque_loss_weakens_a_servo_instead_of_moving_its_setpoint(stand):
+    """Regression: torque_loss_pct scaled each position servo's gain but not its
+    bias, so kp*(1-l)*ctrl - kp*q settled at q = (1-l)*ctrl. The robot changed
+    posture, and with these knees it stood taller: 15% "weaker" motors raised
+    the torso by 17 mm. A weaker motor holds the same pose, and sags under the
+    same load."""
+    def settled(loss: float) -> float:
+        traj = run(spec(policy_id=stand.id).with_perturbation(torque_loss_pct=loss), stand)
+        return float(traj.height_m[-1])
+
+    full, weak = settled(0.0), settled(15.0)
+    assert weak <= full + 1e-4, f"15% torque loss raised the torso from {full:.4f} to {weak:.4f} m"
+    assert full - weak < 0.03, "a 15% loss should sag the stance, not collapse it"

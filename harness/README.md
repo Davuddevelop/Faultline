@@ -66,21 +66,24 @@ archive/traces/mode-N.csv  trajectory for each mode's minimal case
 
 ### Failure modes: how failures are grouped
 
-Listing 49 failures by count tells a customer nothing and invites an argument
+Listing 37 failures by count tells a customer nothing and invites an argument
 about the number. They have to be grouped, and the grouping has to be
 explainable — the moment a black box decides what counts as the same failure,
 the evidence stops being checkable.
 
 **The signature is the reduced form**: which predicate fired, and which axes
 are genuinely required once everything irrelevant is relaxed away. On the
-example campaign:
+starter campaign (`faultline init`, then `faultline run campaign.yaml`):
 
 ```
-3 failure modes from the 10 most severe of 49 failures:
-  1.  5 x  tilt_limit via push_impulse_ns + torque_loss_pct
-  2.  4 x  tilt_limit via push_impulse_ns
-  3.  1 x  tilt_limit via payload_kg + push_impulse_ns + torque_loss_pct
+1 failure mode(s) from the 10 most severe of 37:
+  1. 10 x  tilt_limit via push_impulse_ns
 ```
+
+Before 0.3.0 the same campaign reported extra modes needing a push *and*
+torque loss. They came from a bug: torque loss moved each servo's setpoint
+instead of weakening it. Grouping is computed from re-runnable reductions so
+that a fix like that changes the report, rather than leaving a story behind.
 
 "Fails on a push alone" and "needs a push *and* degraded actuators" are
 different problems for whoever has to fix them. Two runs in one group fail for
@@ -88,14 +91,14 @@ the same reason in that sense and no other, which the report says in those
 words.
 
 Only the `max_reduce` most severe failures are minimised — reduction costs a
-couple of dozen simulations each, and reducing all 49 would cost more than the
+couple of dozen simulations each, and reducing all 37 would cost more than the
 campaign did. The report states how many were reduced so the grouping is never
 mistaken for exhaustive.
 
 ### Coverage is reported bluntly
 
-Six axes at four bins each is 4096 cells. 120 simulations visited **101 of
-them — 2.47%**. The appendix says the campaign *sampled* the declared volume
+Five axes at four bins each is 1024 cells. The starter's 120 simulations
+visited **68 of them — 6.64%**. The appendix says the campaign *sampled* the declared volume
 and did not sweep it, and that behaviour in unvisited regions is unsupported
 by the evidence. A coverage number that flattered the campaign would be worse
 than none.
@@ -123,18 +126,18 @@ their budget exactly, and both are reproducible from a seed.
 
 ### Random versus directed — measured
 
-5 seeds, 150 simulations each, on the space in `examples/search_one.py`:
+5 seeds, 150 simulations each, on the published campaign's space (`tools/publish_campaign.py`):
 
 | method | failures per seed | median | hit rate |
 | --- | --- | --- | --- |
-| random | 6, 4, 7, 5, 7 | 6 | 29/750 = **3.9%** |
-| directed (CEM) | 51, 68, 63, 65, 61 | 63 | 308/750 = **41.1%** |
+| random | 3, 2, 3, 2, 2 | 2 | 12/750 = **1.6%** |
+| directed (CEM) | 38, 61, 55, 62, 53 | 55 | 269/750 = **35.9%** |
 
 Mean severity per CEM round on one seed, showing it concentrating rather than
-wandering: `-30.7 -> -25.7 -> -17.4 -> +14.1 -> +88.6 -> +106.6`.
+wandering: `-28.1 -> -12.1 -> -3.8 -> +30.5 -> +47.7 -> +71.9`.
 
 **Where directed search does *not* help: finding the first failure.** First
-violation landed at run 55, 4, 22, 4, 49 for random and 30, 4, 22, 4, 56 for
+violation landed at run 55, 18, 28, 26, 49 for random and 30, 18, 37, 28, 56 for
 CEM. CEM's opening round is uniform, so it has no head start; its advantage is
 in how much of the remaining budget lands on failures.
 
@@ -150,7 +153,7 @@ Sampling three candidate boxes first:
 | --- | --- |
 | wide (push 0–40, slope 0–25 …) | 87% |
 | mid | 35% |
-| the one used above | 2.5% |
+| the one used above | 1.6% |
 
 In the wide box random sampling finds a failure almost immediately and every
 failure is a full topple, so severity carries no gradient and a comparison
@@ -183,7 +186,7 @@ axis back toward nominal for as long as the failure survives.
 
 ```
 axis                  original   minimal   status
-push_impulse_ns             26      7.62   required
+push_impulse_ns             26      7.82   required
 slope_deg                   14         0   eliminated
 sensor_lag_ms               60         0   eliminated
 torque_loss_pct             15         0   eliminated
@@ -192,7 +195,7 @@ payload_kg                 1.2         0   eliminated
 evaluations 24/250   locally_minimal=True   predicate=tilt_limit
 ```
 
-Five perturbations become one sentence: *it topples under a 7.6 N.s push
+Five perturbations become one sentence: *it topples under a requested 7.8 N.s push
 alone; the slope, the lag, the torque loss and the payload were irrelevant.*
 
 **Locally minimal, not globally minimal.** No single axis of the reduced case
