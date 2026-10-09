@@ -53,13 +53,14 @@ Verify before quoting; they drift.
 | --- | --- |
 | `harness/faultline/` | the product: model loading, observation layout, runner, search, reduction, reporting |
 | `harness/tests/` | the test suite — run it before claiming anything works |
-| `api/` | the control plane (`teeter-api`): FastAPI on Postgres, the job queue, gates, the app served live; see `api/README.md` |
+| `api/` | the control plane (`teeter-api`): FastAPI on Postgres (Alembic migrations), the job queue, gates, roles, sign-in, the app served live. Hosted as its own Vercel project with `api/` as the root (`vercel_build.py`, `vercel.json`); see `api/README.md` |
 | `runner/` | the runner and the `teeter` CLI: claims campaigns, runs the engine on the customer's machine, streams results back; see `runner/README.md` |
 | `scripts/dev.sh`, `Makefile`, `docker-compose.yml` | the whole product locally, natively or in Docker; `make test` runs every suite |
 | `.github/workflows/ci.yml` | CI: the three suites (the API's on Postgres too), the record check, the stack with a gate |
 | `docs/primer.md` | the domain from scratch, written to be learned from |
 | `docs/strategy.md`, `product-spec.md`, `roadmap.md` | business case, spec, sequencing |
 | `docs/v1-roadmap.md` | engineering roadmap: architecture, v0 as built, milestones to v1 |
+| `docs/decisions.md` | the four decisions of 9 October (hosting, sign-in, simulator, the older pages) and the hosted setup only the account owner can do |
 | `docs/product-plan.md` | the product: architecture, every screen, sign-in, what cannot be copied, build phases |
 | `tools/publish_campaign.py` | re-makes the published campaign record from the engine; `--check` compares |
 | `teeter/` | the Teeter website, filled by `tools/build_teeter_site.py` from the campaign record |

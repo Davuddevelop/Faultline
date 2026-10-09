@@ -62,7 +62,7 @@ The robot files and the policy checkpoints do not. What the runner sends:
 
 | Step | Where |
 | --- | --- |
-| Long-poll `/v1/runner/claim`; at most one job at a time | `agent.py` |
+| Ask `/v1/runner/claim` for a job; empty-handed, wait as long as the control plane's `Retry-After` says (a long-polling server has already waited; the hosted one asks for 10 s); at most one job at a time | `agent.py`, `client.py` |
 | A heartbeat thread renews the lease every third of it, and relays *canceled* and *lease lost* to the work, which stops at its next check, between evaluations | `agent.py`, `execute.Control` |
 | The spec becomes the engine's own `Campaign`, through `faultline.config.parse`, so a campaign run here is the one `faultline run` would run from YAML | `execute.build` |
 | Evaluations stream in batches: every 0.5 s or 50 samples, whichever comes first | `execute.Streamer` |
@@ -77,7 +77,10 @@ same numbers.
 ## The CLI
 
 Every command takes `--api` and `--token` or `--token-file`, or reads
-`TEETER_API` and `TEETER_TOKEN`, which is how CI should pass them.
+`TEETER_API` and `TEETER_TOKEN`, which is how CI should pass them. `--header
+'Name: value'` (repeatable, or `TEETER_HEADERS`, one per line) adds a header to
+every request, for a control plane behind an access proxy such as Cloudflare
+Access, or a protected preview deployment.
 
 ```sh
 teeter campaign run spec.yaml        # plan a campaign (teeter.campaign/1) and follow it

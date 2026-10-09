@@ -462,7 +462,7 @@
       traceHTML = tilt ? F.trace({ hz: spec.control_hz, threshold: tilt.threshold, minimal: rows.map(function (r) { return r[1]; }), label: 'Recorded tilt of the minimal case.' })
         : '<p class="note-line">The rule watches ' + esc(rule.signal) + '; the trace is in the CSV.</p>';
     }
-    var push = m.minimal.push_impulse_ns;
+    var push = +(+m.minimal.push_impulse_ns).toFixed(4);     // as the minimal-case panel shows it
     return h.head('TT-324 · Failure mode', esc(m.label), 'Mode ' + (i + 1) + ' of ' + c.modes.length + ' in ' + c.ref + ': ' + m.count + ' of the ' + c.result.reduced + ' reduced failures fell here.',
       '<span><a href="#/campaigns/' + c.ref + '">' + c.ref + '</a></span><span>found in simulation</span>' + liveTag(),
       (i > 0 ? h.btn('← Mode ' + i, { href: '/campaigns/' + c.ref + '/modes/' + (i - 1), line: true }) : '') + (i < c.modes.length - 1 ? h.btn('Mode ' + (i + 2) + ' →', { href: '/campaigns/' + c.ref + '/modes/' + (i + 1), line: true }) : '')) +

@@ -14,9 +14,9 @@ help, not promises.*
 | --- | --- |
 | Engine (`harness/`, faultline 0.3.0) | Works: seven axes, four signals, random and CEM search, reduction, failure modes, reports, deterministic replay. Four bugs fixed on 9 October (§6). |
 | Published campaign (`assets/data/campaign.json`) | Re-made by `tools/publish_campaign.py`; `--check` fails when the record and the engine disagree |
-| Website (`teeter/`) | Live on Vercel |
+| Website (`teeter/`) | Live on Vercel; the older pages are retired from it (`docs/decisions.md` §4) |
 | App (`teeter/app/`) | Live against the control plane when it serves the app; the labelled prototype everywhere else |
-| Control plane (`api/`), runner and CLI (`runner/`) | **v0, built** (§3) |
+| Control plane (`api/`), runner and CLI (`runner/`) | **v0, built** (§3), and ready to host: migrations, private Blob storage, WorkOS sign-in, roles and a read-only demo are built; provisioning needs the account owner (`docs/decisions.md`) |
 
 ---
 
@@ -72,12 +72,12 @@ help, not promises.*
 
 | Layer | v0 (now) | v1 |
 | --- | --- | --- |
-| API | FastAPI, SQLAlchemy 2 | same, with Alembic migrations |
-| Database | Postgres 16 (SQLite for tests and a no-install dev mode) | managed Postgres |
-| Queue | Postgres table, leases, `SKIP LOCKED` | same, plus `LISTEN/NOTIFY` to wake waiting runners |
-| Storage | local directory | S3-compatible (R2 or S3) |
+| API | FastAPI, SQLAlchemy 2, Alembic migrations | the same, on Vercel's Python runtime (`api/` as the project root) |
+| Database | Postgres 16 (SQLite for tests and a no-install dev mode) | Neon Postgres, through the Vercel Marketplace |
+| Queue | Postgres table, leases, `SKIP LOCKED`; long-poll, or `Retry-After` on Vercel | the same, plus `LISTEN/NOTIFY` where a long-lived server runs it |
+| Storage | local directory, or a private Vercel Blob store | private Vercel Blob; an S3 backend if the API leaves Vercel |
 | Live updates | polling with an index cursor | server-sent events |
-| Sign-in | workspace tokens | an identity provider (WorkOS, per the plan), SAML later |
+| Sign-in | one-time links; WorkOS AuthKit built, on once its keys are set; roles enforced | WorkOS AuthKit, SAML and directory sync through it later |
 | Runner | `teeter runner start`, from the checkout or `runner/Dockerfile` | the same, published as a pip package and an image |
 | Web app | static files served by the API | the same, or Next.js once routing and auth outgrow it |
 
@@ -129,9 +129,17 @@ Docker Compose. What was measured:
   `runner/Dockerfile`, and CI (`.github/workflows/ci.yml`): the three suites,
   the API's on Postgres too, the record check, and the stack with a gate.
 
-**Not in v0:** real accounts, SSO, billing, signed manifests, hosted
-runners, Isaac Lab, more than one region, migrations (tables are created at
-start-up), emailed sign-in links, object storage, enforced roles.
+**Added on 9 October, after v0** (the four decisions in `docs/decisions.md`):
+Alembic migrations, run by `teeter-api migrate` and by the production build;
+private Vercel Blob storage; the Vercel entrypoint, build step and
+serverless claim (`Retry-After`), rehearsed locally with Vercel's settings;
+roles enforced, with viewers read-only; a read-only demo workspace anyone can
+open from the sign-in page; WorkOS AuthKit sign-in for invited addresses,
+tested against a mocked WorkOS; and the older pages retired from the site.
+
+**Not in v0:** the hosted deployment itself (built, not provisioned), SSO
+connections, billing, signed manifests, hosted runners, Isaac Lab, more than
+one region, emailed sign-in links, a members screen in the app.
 
 ---
 
@@ -139,7 +147,7 @@ start-up), emailed sign-in links, object storage, enforced roles.
 
 | Milestone | Builds | Done when | Est. |
 | --- | --- | --- | --- |
-| **M1 · Deployable** | Hosted API, Postgres and object storage; sign-in through an identity provider; TLS and secrets; Alembic migrations; structured logs and error tracking; runner on PyPI and Docker Hub; server-sent events | A design partner signs in at a real URL and connects a runner without our help | 2–3 wk |
+| **M1 · Deployable** | Built: migrations, Blob storage, the Vercel project's configuration, WorkOS sign-in, roles, the demo workspace. Left: provisioning (`docs/decisions.md`, an hour of the owner's clicks), structured logs and error tracking, the runner on PyPI and as a published image, server-sent events, a members screen | A design partner signs in at a real URL and connects a runner without our help | 1–2 wk left |
 | **M2 · Onboarding** | The runner reports its allowlisted robots and policies with model cards and observation layouts; a smoke test as its own job type; ONNX and TorchScript checkpoints by file hash; URDF checklist; templates | A partner reaches a first finding on their own robot in a day | 3–4 wk |
 | **M3 · Gate in CI** | GitHub Action, pull-request status and comment, Slack, baselines ("last shipped"), checkpoint history | One partner's CI calls `teeter gate` on every policy change | 2–3 wk |
 | **M4 · Evidence** | Ed25519 runner keys sign manifests; evidence packs; assessor share links; archive download | An assessor re-runs one record from a pack | 4–6 wk |
@@ -192,18 +200,20 @@ record.
 
 - `seeds.sim` is recorded but nothing in the simulation draws on it.
 - `friction_mu` is applied to every geom, not only the floor.
-- The pages from the previous identity (`atlas/`, `surreal/`, `next/`,
-  `start/`, `archive/`, `faultline.html`) still quote the old numbers by hand.
+- The pages from the previous identity still quote the old numbers by hand.
+  They are retired from the deployed site and redirected (`docs/decisions.md`
+  §4), but still in the repository.
 
 ---
 
-## 7. Decisions that are yours
+## 7. Decisions
 
-1. **Hosting for M1.** Recommended: the API as a container (`api/Dockerfile`)
-   on Railway or Fly.io, Postgres on Neon, storage on Cloudflare R2. Vercel
-   keeps the website. Railway, Neon, Cloudflare and Sentry each have a Claude
-   connector, so once they are connected, deploys, migrations and errors can be
-   worked on from a session; Fly.io has none in the registry today.
-2. **Sign-in provider.** WorkOS, per the plan, or Clerk.
-3. **Isaac Lab or MuJoCo first** for the first partner (plan §12).
-4. **The old-identity pages:** retire them, or update their numbers.
+Decided on 9 October; the reasons, costs and setup are in `docs/decisions.md`.
+
+1. **Hosting:** Vercel for the control plane too, with Neon Postgres and a
+   private Vercel Blob store. The Docker image stays for self-hosting.
+2. **Sign-in:** WorkOS AuthKit, for invited addresses only.
+3. **Simulator:** MuJoCo first. Isaac-trained policies are tested in MuJoCo
+   through ONNX and a declared observation layout; an Isaac runner is M6.
+4. **The older pages:** retired from the site and redirected; kept in the
+   repository.

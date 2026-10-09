@@ -55,7 +55,12 @@ def _on_vercel() -> bool:
 
 
 def _state() -> Path:
-    return Path(os.environ.get("TEETER_STATE_DIR", str(REPO / ".teeter")))
+    explicit = os.environ.get("TEETER_STATE_DIR")
+    if explicit:
+        return Path(explicit)
+    # a Vercel function can write only under /tmp; a deployment without a
+    # database (a preview, say) then still starts, on a throwaway SQLite file
+    return Path("/tmp/teeter") if _on_vercel() else REPO / ".teeter"
 
 
 def normalise_db_url(url: str) -> str:

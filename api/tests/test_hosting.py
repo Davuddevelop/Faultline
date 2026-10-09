@@ -79,6 +79,10 @@ def test_on_vercel_claims_return_at_once_and_pools_are_small(monkeypatch):
     monkeypatch.setenv("VERCEL", "1")
     s = Settings()
     assert (s.claim_wait_max_s, s.claim_retry_s, s.db_pool_size) == (0.0, 10.0, 2)
+    monkeypatch.delenv("TEETER_STATE_DIR", raising=False)
+    monkeypatch.delenv("TEETER_DATABASE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    assert Settings().database_url == "sqlite:////tmp/teeter/dev.sqlite"   # writable on a function
     monkeypatch.delenv("VERCEL")
     s = Settings()
     assert (s.claim_wait_max_s, s.claim_retry_s, s.db_pool_size) == (25.0, 1.0, 10)

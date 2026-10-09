@@ -283,7 +283,9 @@
     };
     var runButtons = stage.querySelectorAll('[data-run]');
     var np = stage.querySelector('[data-note-push]'), nb = stage.querySelector('[data-note-breach]');
-    if (np) np.textContent = D.runs.minimal.push;
+    // the record keeps the push at full precision; four decimals is what any panel shows
+    function num(v) { return String(+(+v).toFixed(4)); }
+    if (np) np.textContent = num(D.runs.minimal.push);
     if (nb) nb.textContent = (D.runs.minimal.tilt.findIndex(function (x) { return x > D.threshold; }) / D.hz).toFixed(2);
     var runName = 'minimal', run = D.runs[runName];
     var START = .4;                          /* the first 0.4 s is the robot settling onto the floor */
@@ -349,7 +351,7 @@
       if (!breached) hud.rule.textContent = 'tilt_deg > ' + D.threshold + ' · holds' + (simT >= DUR ? ', peak ' + peak.toFixed(2) + '°' : '');
       hud.t.textContent = simT.toFixed(2);
       hud.tilt.textContent = tilt.toFixed(2);
-      hud.push.textContent = run.push > 0 ? String(run.push) : '0';
+      hud.push.textContent = run.push > 0 ? num(run.push) : '0';
       hud.bar.style.setProperty('--w', Math.min(100, tilt / 180 * 100).toFixed(2) + '%');
 
       // the camera follows the torso along x and drifts slowly around it
