@@ -1,0 +1,14 @@
+# Python build and test droppings
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# the dev environment scripts/dev.sh makes
+.venv/
+
+# local control-plane state: dev database, artifacts, tokens
+.teeter/
+
+# the copy of teeter/ that api/vercel_build.py makes for the hosted control plane
+api/teeter_api/site/

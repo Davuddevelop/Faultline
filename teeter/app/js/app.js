@@ -96,27 +96,41 @@
   }
 
   /* ── figures ───────────────────────────────────────────── */
+  // evaluations by two requested axes; failures solid, and the band they fell in hatched
+  function scatterSvg(c) {
+    var W = 520, H = 300, l = 40, r = W - 14, t = 30, b = H - 44, pid = id('hx'), pts = c.points;
+    var X0 = scale(c.xb[0], c.xb[1], l, r), Y0 = scale(c.yb[0], c.yb[1], b, t);
+    function cx(v) { return f1(Math.max(l, Math.min(r, X0(v)))); }
+    function cy(v) { return f1(Math.max(t, Math.min(b, Y0(v)))); }
+    var fails = pts.filter(function (p) { return p.f; });
+    var lo = fails.length ? Math.min.apply(null, fails.map(function (p) { return p.x; })) : null;
+    var hi = fails.length ? Math.max.apply(null, fails.map(function (p) { return p.x; })) : null;
+    var s = '<defs>' + hatchDef(pid) + '</defs>';
+    for (var k = 1; k < 3; k++) { var yy = f1(Y0(c.yb[0] + (c.yb[1] - c.yb[0]) * k / 3)); s += '<line class="grid" x1="' + l + '" y1="' + yy + '" x2="' + r + '" y2="' + yy + '"/>'; }
+    if (fails.length) {
+      var band = 'x="' + cx(lo) + '" y="' + t + '" width="' + Math.max(1, f1(cx(hi) - cx(lo))) + '" height="' + (b - t) + '"';
+      s += '<g class="zone"' + (c.hideZone ? ' style="opacity:0"' : '') + '><rect class="fail-zone" ' + band + ' fill="url(#' + pid + ')"/><rect class="fail-edge" ' + band + '/></g>';
+    }
+    s += '<line class="axis" x1="' + l + '" y1="' + t + '" x2="' + l + '" y2="' + b + '"/><line class="axis" x1="' + l + '" y1="' + b + '" x2="' + r + '" y2="' + b + '"/>';
+    s += '<g class="dots">' + pts.map(function (p, i) {
+      var cls = p.invalid ? 'dot dot--invalid' : p.f ? 'dot--fail' : 'dot';
+      if (p.fresh) cls += ' dot--new';
+      return '<circle class="' + cls + '" data-i="' + i + '" cx="' + cx(p.x) + '" cy="' + cy(p.y) + '" r="' + (p.f ? 3.1 : 2.5) + '"' + (c.hidden ? ' style="opacity:0"' : '') + '/>';
+    }).join('') + '</g>';
+    s += '<text class="tick" x="' + (l - 8) + '" y="' + (b + 3.5) + '" text-anchor="end">' + c.yb[0] + '</text><text class="tick" x="' + (l - 8) + '" y="' + (t + 3.5) + '" text-anchor="end">' + c.yb[1] + '</text>';
+    s += '<text class="tick" x="' + l + '" y="' + (b + 18) + '" text-anchor="middle">' + c.xb[0] + '</text><text class="tick" x="' + r + '" y="' + (b + 18) + '" text-anchor="middle">' + c.xb[1] + '</text>';
+    s += '<text class="unit" x="' + l + '" y="' + (t - 14) + '">' + esc(c.yAxis) + (c.yUnit ? ' · ' + esc(c.yUnit) : '') + '</text>';
+    s += '<text class="unit" x="' + r + '" y="' + (b + 36) + '" text-anchor="end">' + esc(c.xAxis) + (c.xRequested ? ' · requested' : '') + (c.xUnit ? ' · ' + esc(c.xUnit) : '') + '</text>';
+    if (fails.length) s += '<text class="lab hi zone"' + (c.hideZone ? ' style="opacity:0"' : '') + ' x="' + f1(Math.max(l + 120, cx(lo) - 10)) + '" y="' + (t + 16) + '" text-anchor="end">' + fails.length + ' violated, all at ≥ ' + n(lo, 3) + '</text>';
+    var label = c.label || ('All ' + pts.length + ' evaluations, by ' + c.xAxis + ' against ' + c.yAxis + '. ' + fails.length + ' violated a rule' + (fails.length ? ', between ' + n(lo, 3) + ' and ' + n(hi, 3) + '.' : '.'));
+    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' + s + '</svg>';
+  }
   // every evaluation of C-0001's directed seed-0 run, push against torque loss
   function scatterFig(o) {
-    o = o || {};
-    var sc = CAMP.scatter, W = 520, H = 300, l = 40, r = W - 14, t = 30, b = H - 44, pid = id('hx');
-    var X0 = scale(sc.x_bounds[0], sc.x_bounds[1], l, r), Y0 = scale(sc.y_bounds[0], sc.y_bounds[1], b, t);
-    var fails = sc.points.filter(function (p) { return p.f; });
-    var lo = Math.min.apply(null, fails.map(function (p) { return p.x; })), hi = Math.max.apply(null, fails.map(function (p) { return p.x; }));
-    var s = '<defs>' + hatchDef(pid) + '</defs>';
-    for (var k = 1; k < 3; k++) { var yy = f1(Y0(sc.y_bounds[1] * k / 3)); s += '<line class="grid" x1="' + l + '" y1="' + yy + '" x2="' + r + '" y2="' + yy + '"/>'; }
-    var band = 'x="' + f1(X0(lo)) + '" y="' + t + '" width="' + f1(X0(hi) - X0(lo)) + '" height="' + (b - t) + '"';
-    s += '<g class="zone"' + (o.live ? ' style="opacity:0"' : '') + '><rect class="fail-zone" ' + band + ' fill="url(#' + pid + ')"/><rect class="fail-edge" ' + band + '/></g>';
-    s += '<line class="axis" x1="' + l + '" y1="' + t + '" x2="' + l + '" y2="' + b + '"/><line class="axis" x1="' + l + '" y1="' + b + '" x2="' + r + '" y2="' + b + '"/>';
-    s += '<g class="dots">' + sc.points.map(function (p, i) {
-      return '<circle class="' + (p.f ? 'dot--fail' : 'dot') + '" data-i="' + i + '" cx="' + f1(X0(p.x)) + '" cy="' + f1(Y0(p.y)) + '" r="' + (p.f ? 3.1 : 2.5) + '"' + (o.live ? ' style="opacity:0"' : '') + '/>';
-    }).join('') + '</g>';
-    s += '<text class="tick" x="' + (l - 8) + '" y="' + (b + 3.5) + '" text-anchor="end">' + sc.y_bounds[0] + '</text><text class="tick" x="' + (l - 8) + '" y="' + (t + 3.5) + '" text-anchor="end">' + sc.y_bounds[1] + '</text>';
-    s += '<text class="tick" x="' + l + '" y="' + (b + 18) + '" text-anchor="middle">' + sc.x_bounds[0] + '</text><text class="tick" x="' + r + '" y="' + (b + 18) + '" text-anchor="middle">' + sc.x_bounds[1] + '</text>';
-    s += '<text class="unit" x="' + l + '" y="' + (t - 14) + '">' + sc.y_axis + ' · %</text>';
-    s += '<text class="unit" x="' + r + '" y="' + (b + 36) + '" text-anchor="end">' + sc.x_axis + ' · requested · N·s</text>';
-    s += '<text class="lab hi zone"' + (o.live ? ' style="opacity:0"' : '') + ' x="' + f1(X0(lo) - 10) + '" y="' + (t + 16) + '" text-anchor="end">' + fails.length + ' violated, all at ≥ ' + n(lo, 3) + '</text>';
-    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="All ' + sc.points.length + ' evaluations of the directed search, seed 0, by requested push against torque loss. The ' + fails.length + ' that violated a rule sit between ' + n(lo, 3) + ' and ' + n(hi, 3) + ' newton-seconds.">' + s + '</svg>';
+    var sc = CAMP.scatter;
+    return scatterSvg({ points: sc.points, xAxis: sc.x_axis, yAxis: sc.y_axis, xb: sc.x_bounds, yb: sc.y_bounds,
+      xUnit: 'N·s', yUnit: '%', xRequested: true, hidden: o && o.live, hideZone: o && o.live,
+      label: 'All ' + sc.points.length + ' evaluations of the directed search, seed 0, by requested push against torque loss.' });
   }
   // cumulative violations per seed, uniform against directed
   function effFig() {
@@ -138,23 +152,23 @@
     return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Cumulative violations against evaluations, ' + eff.cem.length + ' seeds of each method.">' + s + '</svg>';
   }
   // declared range against sampled range, per axis
-  function coverageFig() {
-    var per = REP.coverage.per_axis, names = Object.keys(per), W = 520, rowH = 34, l = 150, r = W - 70, t = 14;
+  function coverageSvg(per) {
+    var names = Object.keys(per), W = 520, rowH = 34, l = 150, r = W - 70, t = 14;
     var H = t + names.length * rowH + 8, s = '';
     names.forEach(function (nm, i) {
       var p = per[nm], y = t + i * rowH + 12, X0 = scale(p.declared_min, p.declared_max, l, r);
-      s += '<text class="lbl" x="0" y="' + (y + 4) + '">' + nm + '</text>';
+      s += '<text class="lbl" x="0" y="' + (y + 4) + '">' + esc(nm) + '</text>';
       s += '<rect class="bar-dec" x="' + l + '" y="' + (y - 5) + '" width="' + (r - l) + '" height="10"/>';
-      s += '<rect class="bar-smp" x="' + f1(X0(p.sampled_min)) + '" y="' + (y - 5) + '" width="' + f1(X0(p.sampled_max) - X0(p.sampled_min)) + '" height="10"/>';
+      s += '<rect class="bar-smp" x="' + f1(X0(p.sampled_min)) + '" y="' + (y - 5) + '" width="' + Math.max(1, f1(X0(p.sampled_max) - X0(p.sampled_min))) + '" height="10"/>';
       s += '<text class="tick" x="' + (r + 8) + '" y="' + (y + 4) + '">' + p.declared_min + '–' + p.declared_max + ' ' + unit(p.unit) + '</text>';
     });
     return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="For each searched axis, the declared range and the part of it the search sampled.">' + s + '</svg>';
   }
-  // recorded tilt: no push against the smallest failing push, with the rule
-  function traceFig(o) {
-    o = o || {};
+  function coverageFig() { return coverageSvg(REP.coverage.per_axis); }
+  // recorded tilt against the rule: the failing run, and the same robot unperturbed
+  function traceSvg(c) {
     var W = 640, H = 270, l = 40, r = W - 16, t = 26, b = H - 40, CAP = 90, pid = id('hx');
-    var hz = R.hz, nom = R.nominal_tilt, mn = R.minimal_tilt, dur = (mn.length - 1) / hz, thr = +V.threshold;
+    var hz = c.hz, nom = c.nominal, mn = c.minimal, len = (mn || nom).length, dur = (len - 1) / hz, thr = +c.threshold;
     var X0 = scale(0, dur, l, r), Y0 = scale(0, CAP, b, t);
     function path(arr) { return arr.map(function (v, i) { return (i ? 'L' : 'M') + f1(X0(i / hz)) + ',' + f1(Y0(Math.min(CAP, v))); }).join(''); }
     var s = '<defs>' + hatchDef(pid) + '<clipPath id="' + pid + 'c"><rect x="' + l + '" y="' + t + '" width="' + (r - l) + '" height="' + (b - t) + '"/></clipPath></defs>';
@@ -162,23 +176,33 @@
     s += '<rect class="fail-zone" x="' + l + '" y="' + t + '" width="' + (r - l) + '" height="' + f1(Y0(thr) - t) + '" fill="url(#' + pid + ')"/>';
     s += '<line class="limit" x1="' + l + '" y1="' + f1(Y0(thr)) + '" x2="' + r + '" y2="' + f1(Y0(thr)) + '"/>';
     s += '<line class="axis" x1="' + l + '" y1="' + t + '" x2="' + l + '" y2="' + b + '"/><line class="axis" x1="' + l + '" y1="' + b + '" x2="' + r + '" y2="' + b + '"/>';
-    if (o.nominal !== false) s += '<path class="tr-calm" data-trace="nom" d="' + path(nom) + '"/>';
-    if (o.minimal !== false) {
+    if (nom) s += '<path class="tr-calm" data-trace="nom" d="' + path(nom) + '"/>';
+    if (mn) {
       s += '<path class="tr-fail" data-trace="min" clip-path="url(#' + pid + 'c)" d="' + path(mn) + '"/>';
-      var bt = +V.breach_t;
-      s += '<circle class="breach" cx="' + f1(X0(bt)) + '" cy="' + f1(Y0(thr)) + '" r="4"/>';
-      s += '<text class="lab hi" x="' + f1(X0(bt) + 10) + '" y="' + f1(Y0(thr) + 16) + '">breach · t = ' + V.breach_t + ' s</text>';
-      s += '<text class="lab" x="' + (r - 4) + '" y="' + (t + 14) + '" text-anchor="end">clipped at ' + CAP + '°; the record reaches ' + Math.round(Math.max.apply(null, mn)) + '°</text>';
+      var bi = mn.findIndex(function (v) { return v > thr; });
+      if (bi >= 0) {
+        var bt = bi / hz;
+        s += '<circle class="breach" cx="' + f1(X0(bt)) + '" cy="' + f1(Y0(thr)) + '" r="4"/>';
+        s += '<text class="lab hi" x="' + f1(X0(bt) + 10) + '" y="' + f1(Y0(thr) + 16) + '">breach · t = ' + n(bt, 2) + ' s</text>';
+      }
+      var peak = Math.max.apply(null, mn);
+      if (peak > CAP) s += '<text class="lab" x="' + (r - 4) + '" y="' + (t + 14) + '" text-anchor="end">clipped at ' + CAP + '°; the record reaches ' + Math.round(peak) + '°</text>';
     }
-    s += '<text class="lab" x="' + (l + 6) + '" y="' + f1(Y0(thr) - 6) + '">tilt_deg &gt; ' + V.threshold + '</text>';
+    s += '<text class="lab" x="' + (l + 6) + '" y="' + f1(Y0(thr) - 6) + '">tilt_deg &gt; ' + c.threshold + '</text>';
     s += '<text class="tick" x="' + (l - 8) + '" y="' + (b + 3.5) + '" text-anchor="end">0</text><text class="tick" x="' + (l - 8) + '" y="' + (t + 3.5) + '" text-anchor="end">' + CAP + '</text>';
     for (var sec = 0; sec <= dur; sec++) s += '<text class="tick" x="' + f1(X0(sec)) + '" y="' + (b + 18) + '" text-anchor="middle">' + sec + '</text>';
     s += '<text class="unit" x="' + l + '" y="' + (t - 10) + '">tilt_deg · °</text><text class="unit" x="' + r + '" y="' + (b + 34) + '" text-anchor="end">t · s</text>';
-    if (o.nominal !== false && o.minimal !== false) {
-      s += '<line class="tr-fail" x1="' + (r - 220) + '" y1="' + (b - 30) + '" x2="' + (r - 196) + '" y2="' + (b - 30) + '"/><text class="lab hi" x="' + (r - 188) + '" y="' + (b - 26) + '">push ' + V.minimal_push + ' N·s requested</text>';
-      s += '<line class="tr-calm" x1="' + (r - 220) + '" y1="' + (b - 12) + '" x2="' + (r - 196) + '" y2="' + (b - 12) + '"/><text class="lab" x="' + (r - 188) + '" y="' + (b - 8) + '">no push</text>';
+    if (nom && mn) {
+      s += '<line class="tr-fail" x1="' + (r - 220) + '" y1="' + (b - 30) + '" x2="' + (r - 196) + '" y2="' + (b - 30) + '"/><text class="lab hi" x="' + (r - 188) + '" y="' + (b - 26) + '">' + esc(c.minimalLabel || 'the failing case') + '</text>';
+      s += '<line class="tr-calm" x1="' + (r - 220) + '" y1="' + (b - 12) + '" x2="' + (r - 196) + '" y2="' + (b - 12) + '"/><text class="lab" x="' + (r - 188) + '" y="' + (b - 8) + '">' + esc(c.nominalLabel || 'unperturbed') + '</text>';
     }
-    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Recorded tilt over five seconds at ' + hz + ' hertz. With no push the peak is ' + V.peak_nominal + ' degrees. With a requested push of ' + V.minimal_push + ' newton-seconds the tilt passes ' + V.threshold + ' degrees at ' + V.breach_t + ' seconds.">' + s + '</svg>';
+    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(c.label || 'Recorded tilt against the rule.') + '">' + s + '</svg>';
+  }
+  function traceFig(o) {
+    o = o || {};
+    return traceSvg({ hz: R.hz, threshold: V.threshold, nominal: o.nominal === false ? null : R.nominal_tilt,
+      minimal: o.minimal === false ? null : R.minimal_tilt, minimalLabel: 'push ' + V.minimal_push + ' N·s requested', nominalLabel: 'no push',
+      label: 'Recorded tilt over five seconds at ' + R.hz + ' hertz. With no push the peak is ' + V.peak_nominal + ' degrees. With a requested push of ' + V.minimal_push + ' newton-seconds the tilt passes ' + V.threshold + ' degrees at ' + V.breach_t + ' seconds.' });
   }
   // smallest failing push per checkpoint (example)
   function trendFig(cps, o) {
@@ -219,6 +243,19 @@
     });
     s += '<text class="unit" x="' + r + '" y="' + (t - 10) + '" text-anchor="end">smallest failing push · requested · N·s   ○ baseline  ● candidate</text>';
     return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Example: each failure mode\'s smallest failing push for the baseline and the candidate checkpoint.">' + s + '</svg>';
+  }
+
+  // the 3D replay's frame: canvas, crop marks, drafting notes and the HUD that js/machine.js drives
+  function stageHTML(c) {
+    return '<figure class="stage" data-replay aria-label="A 3D replay of the minimal case: the robot after a requested push of ' + esc(c.push) + ' newton-seconds">' +
+      '<div class="stage__view"><canvas class="stage__gl" aria-hidden="true"></canvas>' +
+      '<span class="cross cross--tl" aria-hidden="true"></span><span class="cross cross--tr" aria-hidden="true"></span><span class="cross cross--bl" aria-hidden="true"></span><span class="cross cross--br" aria-hidden="true"></span>' +
+      '<p class="micro stage__tag" aria-hidden="true">TT-324 · replay<br>' + esc(c.tag || 'media/sim.json') + '</p>' +
+      '<p class="note" data-note="push" aria-hidden="true"><span>push · <b data-note-push></b> N·s requested</span></p><p class="note" data-note="breach" aria-hidden="true"><span>pose at breach · t = <b data-note-breach></b> s</span></p>' +
+      '<div class="hud"><div class="hud__head"><span>Replay</span><span>MuJoCo ' + esc(c.mujoco) + '</span></div><div class="hud__runs" role="group" aria-label="Choose a run"><button type="button" data-run="nominal" aria-pressed="false">Unperturbed</button><button type="button" data-run="minimal" aria-pressed="true">Push ' + esc(c.push) + ' N·s</button></div>' +
+      '<dl class="hud__dl"><div><dt>t</dt><dd><span data-hud="t">0.00</span> s</dd></div><div><dt>push</dt><dd><span data-hud="push">' + esc(c.push) + '</span> N·s requested</dd></div><div><dt>tilt_deg</dt><dd><span data-hud="tilt">0.00</span>°</dd></div></dl>' +
+      '<div class="hud__bar" aria-hidden="true" style="--lim:' + (c.threshold / 180 * 100).toFixed(3) + '%;--w:0%"><span class="hud__over"></span><span class="hud__fill" data-hud="bar"></span><i class="hud__lim"></i></div>' +
+      '<p class="hud__rule" data-hud="rule">tilt_deg &gt; ' + esc(c.threshold) + '</p></div></div></figure>';
   }
 
   /* drawings scale; their lettering should not (as on the site) */
@@ -669,15 +706,7 @@
     if (p.id !== 'C-0001' || !m) return notFound();
     var space = Object.keys(CAMP.space), gone = space.filter(function (k) { return m.required.indexOf(k) < 0; });
     var hasReplay = i === 0 && Object.keys(m.minimal).length === 1 && Math.abs(m.minimal.push_impulse_ns - REPLAY.runs.minimal.push) < 1e-9;
-    var stage = hasReplay ? '<figure class="stage" data-replay aria-label="A 3D replay of the minimal case: the stand-in quadruped after a requested push of ' + V.minimal_push + ' newton-seconds">' +
-      '<div class="stage__view"><canvas class="stage__gl" aria-hidden="true"></canvas>' +
-      '<span class="cross cross--tl" aria-hidden="true"></span><span class="cross cross--tr" aria-hidden="true"></span><span class="cross cross--bl" aria-hidden="true"></span><span class="cross cross--br" aria-hidden="true"></span>' +
-      '<p class="micro stage__tag" aria-hidden="true">TT-324 · replay<br>media/sim.json</p>' +
-      '<p class="note" data-note="push" aria-hidden="true"><span>push · <b data-note-push></b> N·s requested</span></p><p class="note" data-note="breach" aria-hidden="true"><span>pose at breach · t = <b data-note-breach></b> s</span></p>' +
-      '<div class="hud"><div class="hud__head"><span>Replay</span><span>MuJoCo ' + V.mujoco + '</span></div><div class="hud__runs" role="group" aria-label="Choose a run"><button type="button" data-run="nominal" aria-pressed="false">No push</button><button type="button" data-run="minimal" aria-pressed="true">Push ' + V.minimal_push + ' N·s</button></div>' +
-      '<dl class="hud__dl"><div><dt>t</dt><dd><span data-hud="t">0.00</span> s</dd></div><div><dt>push</dt><dd><span data-hud="push">' + V.minimal_push + '</span> N·s requested</dd></div><div><dt>tilt_deg</dt><dd><span data-hud="tilt">0.00</span>°</dd></div></dl>' +
-      '<div class="hud__bar" aria-hidden="true" style="--lim:' + (V.threshold / 180 * 100).toFixed(3) + '%;--w:0%"><span class="hud__over"></span><span class="hud__fill" data-hud="bar"></span><i class="hud__lim"></i></div>' +
-      '<p class="hud__rule" data-hud="rule">tilt_deg &gt; ' + V.threshold + '</p></div></div></figure>' : '';
+    var stage = hasReplay ? stageHTML({ push: V.minimal_push, mujoco: V.mujoco, threshold: V.threshold }) : '';
     return head('TT-324 · Failure mode', esc(m.label), 'Mode ' + (i + 1) + ' of ' + REP.modes.length + ' in C-0001: ' + m.count + ' of the ' + REP.reduced + ' reduced failures fell here.',
       '<span>' + a('/campaigns/C-0001', 'C-0001') + '</span><span>found in simulation</span><span>' + src('record') + '</span>',
       (i > 0 ? btn('← Mode ' + i, { href: '/campaigns/C-0001/modes/' + (i - 1), line: true }) : '') + (i < REP.modes.length - 1 ? btn('Mode ' + (i + 2) + ' →', { href: '/campaigns/C-0001/modes/' + (i + 1), line: true }) : '')) +
@@ -938,8 +967,11 @@
     cleanup.splice(0).forEach(function (fn) { try { fn(); } catch (e) { /* keep going */ } });
     timers.splice(0).forEach(clearTimeout);
   }
-  var lastPath = null;
+  var lastPath = null, seq = 0;
+  // the live layer (js/live.js) sets these when the app is served by a control plane
+  var hooks = { nav: null, crumbs: null, title: 'Teeter app prototype', decorate: null };
   function render() {
+    seq++;
     teardown();
     var path = (location.hash || '#/').slice(1) || '/';
     if (path.length > 1 && path.charAt(path.length - 1) === '/') path = path.slice(0, -1);
@@ -947,10 +979,11 @@
     body.classList.toggle('is-bare', !!m.o.bare);
     var navKey = m.o.nav === 'program' ? (m.p.p ? 'p:' + m.p.p : (m.p.r === 'quadruped' || m.p.id === 'stand' ? 'p:standin' : 'p:q2')) : m.name === 'program' ? 'p:' + m.p.p : m.o.nav;
     if (m.name === 'program') navKey = 'p:' + m.p.p;
-    document.getElementById('nav').innerHTML = navHTML(navKey);
-    document.getElementById('crumbs').innerHTML = crumbs(m);
-    view.innerHTML = fn ? fn(m.p) : notFound();
-    document.title = (m.o.crumb || 'Teeter') + ' · Teeter app prototype';
+    document.getElementById('nav').innerHTML = (hooks.nav || navHTML)(navKey, m);
+    document.getElementById('crumbs').innerHTML = (hooks.crumbs || crumbs)(m);
+    var html = fn ? fn(m.p) : notFound();
+    view.innerHTML = hooks.decorate ? hooks.decorate(m, html) : html;
+    document.title = (m.o.crumb || 'Teeter') + ' · ' + hooks.title;
     if (fn && fn.after) fn.after(m.p);
     wire();
     fit();
@@ -984,11 +1017,12 @@
     ['Program · Stand-in quadruped', '/programs/standin'], ['Program · Q2 · walk', '/programs/q2'], ['Program · A7 arm', '/programs/a7'], ['Checkpoints · Q2', '/programs/q2/checkpoints'],
     ['Robot · quadruped.xml', '/robots/quadruped'], ['Robot · q2.xml', '/robots/q2'], ['Policy · stand', '/policies/stand'], ['Policy · q2-walk', '/policies/q2-walk'],
     ['Campaigns', '/campaigns'], ['New campaign', '/campaigns/new'], ['C-0001 · live', '/campaigns/C-0001/live'], ['C-0001 · result', '/campaigns/C-0001'],
-    ['C-0001 · mode 1', '/campaigns/C-0001/modes/0'], ['C-0001 · mode 2', '/campaigns/C-0001/modes/1'], ['Gates', '/gates'], ['G-0041 · v41 against v40', '/gates/G-0041'], ['G-0039 · refused', '/gates/G-0039'],
+    ['Gates', '/gates'], ['G-0041 · v41 against v40', '/gates/G-0041'], ['G-0039 · refused', '/gates/G-0039'],
     ['Evidence', '/evidence'], ['EP-0001', '/evidence/EP-0001'], ['EP-0002', '/evidence/EP-0002'], ['Assessor view · EP-0001', '/evidence/EP-0001/share'],
     ['Spaces and rules', '/library'], ['Runners', '/runners'], ['Integrations', '/integrations'],
     ['Settings · workspace', '/settings/workspace'], ['Settings · members', '/settings/members'], ['Settings · SSO', '/settings/sso'], ['Settings · plan', '/settings/plan'], ['Settings · data handling', '/settings/data'], ['Settings · audit log', '/settings/audit']
   ];
+  REP.modes.forEach(function (m, i) { PAL.splice(16 + i, 0, ['C-0001 · mode ' + (i + 1), '/campaigns/C-0001/modes/' + i]); });
   var pal = document.getElementById('palette'), pin = document.getElementById('palette-in'), plist = document.getElementById('palette-list'), sel = 0, shown = [];
   function palDraw() {
     var q = pin.value.toLowerCase().trim();
@@ -1011,6 +1045,25 @@
     else if (e.key === 'Enter' && shown[sel]) { go(shown[sel][1]); palClose(); }
   });
 
-  window.addEventListener('hashchange', render);
-  render();
+  var started = false;
+  function start() {
+    if (started) return;
+    started = true;
+    window.addEventListener('hashchange', render);
+    render();
+  }
+  function refresh() { wire(); fit(); }
+  window.TeeterApp = {
+    S: S, ROUTES: ROUTES, hooks: hooks, start: start, render: render, refresh: refresh, R: R, X: X, AX: AX,
+    seq: function () { return seq; }, view: view, cleanup: cleanup, later: later, navHTML: navHTML, crumbs: crumbs,
+    h: { esc: esc, $: $, $$: $$, go: go, n: n, unit: unit, id: id, panel: panel, head: head, verdict: verdict, kv: kv,
+         table: table, stat: stat, code: code, sh: sh, a: a, btn: btn, src: src, toast: toast, copyText: copyText,
+         ruleSentence: ruleSentence, REQUESTED: REQUESTED, notFound: notFound },
+    figs: { scatter: scatterSvg, coverage: coverageSvg, trace: traceSvg, stage: stageHTML, spark: sparkSvg },
+    isStarted: function () { return started; },
+    hold: function () { clearTimeout(fallback); }
+  };
+  // js/live.js decides whether a control plane is serving this page. If it
+  // never answers (not loaded, or blocked), run as the prototype anyway.
+  var fallback = setTimeout(start, 2500);
 }());

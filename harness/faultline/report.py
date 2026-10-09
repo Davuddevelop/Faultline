@@ -19,7 +19,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 
@@ -170,6 +170,7 @@ def build_report(
     max_reduce: int = 12,
     reduce_budget: int = 200,
     bins: int = 4,
+    on_reduced: Callable[[int, int], None] | None = None,
 ) -> Report:
     """Reduce the most severe failures, group them by what they actually need.
 
@@ -177,6 +178,9 @@ def build_report(
     costs a couple of dozen simulations each, and reducing all 300 failures of
     a campaign would cost more than the campaign did. The report states how
     many were reduced so the grouping is never mistaken for exhaustive.
+
+    ``on_reduced(done, total)`` is called after each reduction; a runner
+    reports progress with it, and raising from it stops the report.
     """
     if max_reduce < 1:
         raise ValueError("max_reduce must be at least 1")
@@ -185,7 +189,7 @@ def build_report(
     chosen = failures[:max_reduce]
 
     grouped: dict[tuple[str, tuple[str, ...]], FailureMode] = {}
-    for sample in chosen:
+    for done, sample in enumerate(chosen, 1):
         reduced = reduce_failure(
             spec.with_perturbation(**sample.perturbation),
             policy,
@@ -199,6 +203,8 @@ def build_report(
             grouped[key] = FailureMode(
                 predicate=key[0], required=key[1], members=[sample], exemplar=reduced
             )
+        if on_reduced is not None:
+            on_reduced(done, len(chosen))
 
     modes = sorted(grouped.values(), key=lambda m: len(m.members), reverse=True)
 

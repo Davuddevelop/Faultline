@@ -383,3 +383,16 @@ html.js body.app .stage{opacity:1}
   .app .stage__view{height:400px}
   .t--stack td.r{text-align:left}
 }
+
+/* live: data from this workspace, through the API */
+.src--live{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.src--live::before{background:var(--bg)}
+.fig .dot--invalid{fill:none;stroke:var(--ink-3);stroke-dasharray:1.5 1.5}
+.app.is-live .nav__n{font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.app.is-live .ws__plan{font-family:var(--sans);font-variant-numeric:tabular-nums}
+
+/* a read-only member or a demo visitor: the server refuses writes anyway;
+   the controls that would make them are not shown */
+.app.is-readonly [data-act="start"], .app.is-readonly [data-act="cancel"], .app.is-readonly [data-act="rerun"],
+.app.is-readonly [data-act="addrunner"], .app.is-readonly [data-act^="gate:"], .app.is-readonly [data-act^="run:"],
+.app.is-readonly a[href="#/campaigns/new"], .app.is-readonly .top__new { display: none !important; }

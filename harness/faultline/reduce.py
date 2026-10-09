@@ -235,18 +235,23 @@ def reduce_failure(
             if value is None:                       # friction left unset
                 continue
             nominal = ax.nominal if ax.nominal is not None else _model_friction(current.model_path)
-            if abs(value - nominal) <= ax.tolerance:
+            if value == nominal:
                 continue
 
             if used >= budget:
                 exhausted = True
                 break
 
-            # can the axis go away entirely?
+            # can the axis go away entirely? Asked even when the value is
+            # already within tolerance of nominal: too close to bisect is not
+            # the same as needed, and the report calls whatever is left
+            # "required"
             if probe(current.with_perturbation(**{ax.field: ax.nominal})) is not None:
                 current = current.with_perturbation(**{ax.field: ax.nominal})
                 moved = True
                 continue
+            if abs(value - nominal) <= ax.tolerance:
+                continue                            # needed, and as small as it resolves
 
             # otherwise bisect: lo does not fire, hi does
             lo, hi = nominal, value

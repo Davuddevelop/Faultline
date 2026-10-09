@@ -131,13 +131,22 @@ def load(path: str | Path) -> Campaign:
         doc = yaml.safe_load(path.read_text())
     except yaml.YAMLError as exc:
         raise ConfigError(f"{path}: not valid YAML — {exc}") from exc
+    return parse(doc, base_dir=path.parent, source=path)
+
+
+def parse(doc: Any, *, base_dir: str | Path, source: str | Path = "<campaign>") -> Campaign:
+    """The same validation as ``load``, for a campaign that arrives as data
+    rather than as a file — from the control plane, say. Relative paths in it
+    resolve against ``base_dir``; ``source`` names it in error messages."""
+    path = Path(source)
+    base_dir = Path(base_dir)
     if not isinstance(doc, dict):
         raise ConfigError(f"{path}: expected a mapping at the top level")
     _check_keys(doc, TOP_LEVEL, "the top level", path)
 
     robot = Path(_require(doc, "robot", path))
     if not robot.is_absolute():
-        robot = (path.parent / robot).resolve()
+        robot = (base_dir / robot).resolve()
     if not robot.exists():
         raise ConfigError(f"{path}: robot model not found: {robot}")
 
@@ -199,7 +208,7 @@ def load(path: str | Path) -> Campaign:
 
     out = Path(report_cfg.get("out", "deliverables"))
     if not out.is_absolute():
-        out = path.parent / out
+        out = base_dir / out
 
     return Campaign(
         spec=spec, space=space, policy_ref=str(doc["policy"]),
