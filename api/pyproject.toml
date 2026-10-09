@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "teeter-api"
+dynamic = ["version"]
+description = "Teeter control plane: workspaces, campaigns, the runner job queue, gates"
+requires-python = ">=3.10"
+license = {text = "UNLICENSED"}
+
+# The API never imports the engine. It validates campaigns against the
+# contract in teeter_api.contracts, which tests bind to the engine's own
+# tables, so it deploys without MuJoCo.
+dependencies = [
+  "fastapi>=0.115,<0.116",
+  "uvicorn>=0.32,<0.33",
+  "sqlalchemy>=2.0.36,<2.1",
+  "psycopg[binary]>=3.2,<3.3",
+  "pydantic>=2.9,<3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.28"]
+
+[project.scripts]
+teeter-api = "teeter_api.cli:main"
+
+[tool.setuptools]
+packages = ["teeter_api", "teeter_api.routes"]
+
+[tool.setuptools.dynamic]
+version = {attr = "teeter_api.__version__"}

@@ -1,0 +1,8 @@
+# Python build and test droppings
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# local control-plane state: dev database, artifacts, tokens
+.teeter/
