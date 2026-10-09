@@ -105,7 +105,7 @@ Docker Compose. What was measured:
   the published record's directed seed 0, number for number.
 - Gating tall-v2 against stand-v1 **blocked**, exit 1: the push mode widened,
   its minimal push 7.875 → 6.89 N·s (requested). The CI job `stack` asserts
-  this on every pull request and every push to main.
+  this on every push.
 - Gating crouch-v3 **passed**, exit 0: its campaign found no violation in
   150 evaluations, so the baseline's mode is `not_found`, which is not
   evidence that crouch-v3 cannot fall.
