@@ -154,8 +154,9 @@ one region, emailed sign-in links, a members screen in the app.
 | **M5 · Scale** | One campaign split across runners (CEM rounds as fan-out job batches); `LISTEN/NOTIFY`; evaluations partitioned by month; retention; quotas; metering into invoices | 10 runners on one campaign finish ~10× faster, with identical results | when needed |
 | **M6 · Beyond MuJoCo** | Isaac Lab runner type; manipulation signals and axes; calibration against paired hardware runs | A campaign runs on an Isaac-trained policy in its own simulator | after a partner asks |
 
-M1 to M4 together are **v1**. That is about 11 to 16 weeks after v0 (an
-estimate).
+M1 to M4 together are **v1**. That was estimated at 11 to 16 weeks after v0;
+with most of M1 built, about 10 to 15 weeks remain as of 9 October (an
+estimate, the sum of the column above).
 
 ---
 
