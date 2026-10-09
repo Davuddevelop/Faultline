@@ -4,5 +4,8 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 
+# the dev environment scripts/dev.sh makes
+.venv/
+
 # local control-plane state: dev database, artifacts, tokens
 .teeter/

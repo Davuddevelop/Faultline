@@ -1,6 +1,35 @@
-# Faultline
+# Teeter
 
-Landing page for Faultline — adversarial testing for learned robot policies.
+Adversarial testing for learned robot control policies. The engine searches a
+declared space of physical conditions for the ones that make a frozen policy
+break a rule the customer wrote, and hands back evidence someone else can
+re-run. It finds failures; it cannot show their absence. The company is
+Teeter; the engine keeps its working name, `faultline`.
+
+| Path | What |
+| --- | --- |
+| `harness/` | the engine: MuJoCo, seven axes, four signals, search, reduction, replay |
+| `api/` | the control plane: workspaces, the job queue, results, gates; serves the app |
+| `runner/` | runs campaigns on the customer's machines, and the `teeter` CLI |
+| `teeter/` | the website, and the app in `teeter/app/` |
+| `docs/` | the primer, the product plan, the roadmap to v1 (`docs/v1-roadmap.md`) |
+
+```sh
+make dev                        # the product on this machine: the API, the app, a runner
+docker compose up --build -d    # the same in Docker, on Postgres
+make test                       # every test suite
+```
+
+Either prints a one-time sign-in link to the app. The robot in the demo is a
+stand-in quadruped and its checkpoints are held poses, not trained policies.
+
+---
+
+# The older Faultline site
+
+Everything below describes the pages built under the previous identity
+(`faultline.html`, `start/`, `configure/`, `report/` and the design
+explorations), written before the control plane and runner existed.
 
 Static HTML and CSS. No build step, no framework, no external requests at
 runtime: fonts are self-hosted and every image is local.
@@ -11,7 +40,7 @@ python3 -m http.server 8000     # then open http://localhost:8000
 
 ## The page
 
-`index.html` is the site. Imagery carries the hero, one mid-page plate and the
+`faultline.html` was the site; the root `index.html` is now Teeter's front page, generated from `teeter/index.html`. Imagery carries the hero, one mid-page plate and the
 contact screen; everything between them is a spec sheet.
 
 | Section | What it does |

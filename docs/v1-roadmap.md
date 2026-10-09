@@ -15,8 +15,8 @@ help, not promises.*
 | Engine (`harness/`, faultline 0.3.0) | Works: seven axes, four signals, random and CEM search, reduction, failure modes, reports, deterministic replay. Four bugs fixed on 9 October (§6). |
 | Published campaign (`assets/data/campaign.json`) | Re-made by `tools/publish_campaign.py`; `--check` fails when the record and the engine disagree |
 | Website (`teeter/`) | Live on Vercel |
-| App (`teeter/app/`) | Clickable prototype on the published record and example data |
-| Control plane, runner, live app | **v0, this milestone** (§3) |
+| App (`teeter/app/`) | Live against the control plane when it serves the app; the labelled prototype everywhere else |
+| Control plane (`api/`), runner and CLI (`runner/`) | **v0, built** (§3) |
 
 ---
 
@@ -78,12 +78,12 @@ help, not promises.*
 | Storage | local directory | S3-compatible (R2 or S3) |
 | Live updates | polling with an index cursor | server-sent events |
 | Sign-in | workspace tokens | an identity provider (WorkOS, per the plan), SAML later |
-| Runner | `teeter runner start` | the same, as a pip package and a Docker image |
+| Runner | `teeter runner start`, from the checkout or `runner/Dockerfile` | the same, published as a pip package and an image |
 | Web app | static files served by the API | the same, or Next.js once routing and auth outgrow it |
 
 ---
 
-## 3. v0: the working demo (now)
+## 3. v0: the working demo (built)
 
 **Done when** a person can, on one laptop or across two machines:
 
@@ -97,22 +97,41 @@ help, not promises.*
    or **passed**, with exit code 1 when blocked. The two checkpoints are
    built-in demo poses, not trained policies, and the app says so.
 
+All four were done on 9 October, natively against Postgres 16 and again in
+Docker Compose. What was measured:
+
+- The demo's stand-v1 campaign, through the API and the runner, found 38
+  violations in 150 evaluations and a minimal push of 7.875 N·s (requested):
+  the published record's directed seed 0, number for number.
+- Gating tall-v2 against stand-v1 **blocked**, exit 1: the push mode widened,
+  its minimal push 7.875 → 6.89 N·s (requested). The CI job `stack` asserts
+  this on every pull request and every push to main.
+- Gating crouch-v3 **passed**, exit 0: its campaign found no violation in
+  150 evaluations, so the baseline's mode is `not_found`, which is not
+  evidence that crouch-v3 cannot fall.
+
 **Built in v0**
 
 - `api/`: workspaces, tokens, runners, programs, checkpoints, campaigns, the
-  job queue, evaluation ingest, failure modes, artifacts, gates, audit log.
+  job queue with leases, evaluation ingest, failure modes, artifacts, gates,
+  audit log. See `api/README.md`.
 - `runner/`: register; long-poll for a job; renew its lease; run the engine
   with streaming; reduce; capture replays; upload; complete or fail. Plus the
-  `teeter` CLI (`login`, `runner start`, `campaign run`, `gate`).
-- The engine side of the gate: two campaigns compare only if robot, space,
-  rules, search and seeds match. Otherwise the gate is refused, and the
-  differing field is named.
-- Live mode in `teeter/app/` when the API serves it. The static site stays a
-  labelled prototype.
-- `make dev`, Docker Compose, CI.
+  `teeter` CLI (`runner start`, `campaign run`, `gate`, `status`). See
+  `runner/README.md`.
+- The gate: two campaigns compare only if everything but the policy matches,
+  robot file and MuJoCo version included. Otherwise the gate is refused, and
+  the differing field is named.
+- Live mode in `teeter/app/` (`js/live.js`) when the API serves it. The static
+  site stays a labelled prototype, and screens not built yet keep the
+  prototype's example data under a strip that says so.
+- `make dev` (`scripts/dev.sh`), `docker compose up`, `api/Dockerfile`,
+  `runner/Dockerfile`, and CI (`.github/workflows/ci.yml`): the three suites,
+  the API's on Postgres too, the record check, and the stack with a gate.
 
 **Not in v0:** real accounts, SSO, billing, signed manifests, hosted
-runners, Isaac Lab, more than one region.
+runners, Isaac Lab, more than one region, migrations (tables are created at
+start-up), emailed sign-in links, object storage, enforced roles.
 
 ---
 
@@ -140,6 +159,7 @@ estimate).
 | Their security team refuses outbound traffic | Ends the hosted model | Fully self-hosted control plane, the same container (plan §2) |
 | Requested is not delivered | Push and lag quantise on the control grid, so a requested 7.875 N·s push delivers 1.2× that at the default timing | M2 records delivered values beside requested ones |
 | Long campaigns | Real policies run slower than the stand-in | Fan-out (M5); estimated wall time measured after the first evaluations |
+| Our package names are unclaimed | `faultline-harness`, `teeter-api` and `teeter-runner` are not on PyPI; anyone could publish them, and an install that misses the local copy would fetch theirs | Local packages install first everywhere (Makefile, CI, Dockerfiles); claim the names before M1 |
 
 ---
 
@@ -179,9 +199,11 @@ record.
 
 ## 7. Decisions that are yours
 
-1. **Hosting for M1.** Recommended: the API as a container on Fly.io or
-   Railway, Postgres on Neon, storage on Cloudflare R2. Vercel keeps the
-   website.
+1. **Hosting for M1.** Recommended: the API as a container (`api/Dockerfile`)
+   on Railway or Fly.io, Postgres on Neon, storage on Cloudflare R2. Vercel
+   keeps the website. Railway, Neon, Cloudflare and Sentry each have a Claude
+   connector, so once they are connected, deploys, migrations and errors can be
+   worked on from a session; Fly.io has none in the registry today.
 2. **Sign-in provider.** WorkOS, per the plan, or Clerk.
 3. **Isaac Lab or MuJoCo first** for the first partner (plan §12).
 4. **The old-identity pages:** retire them, or update their numbers.
