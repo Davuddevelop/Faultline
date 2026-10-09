@@ -7,7 +7,7 @@ built from. The software and its command-line tool keep the working name
 | Path | What |
 | --- | --- |
 | `index.html` | the site, sections TT-101 to TT-109; the builder also writes it to the repository root as the front page |
-| `app/` | the product prototype (TT-301 to TT-360), every screen in `docs/product-plan.md`; open `app/index.html` |
+| `app/` | the product (TT-301 to TT-360), every screen in `docs/product-plan.md`: live against the API when it serves the page (`app/js/live.js`), the prototype anywhere else |
 | `brand/index.html` | the identity standard, eleven sheets TT-000 to TT-010 |
 | `brand/*.svg`, `brand/geometry.json` | the mark, wordmark, lockups and favicon, and the numbers they are drawn from |
 | `css/`, `js/`, `assets/fonts/` | styles, the motion script, the 3D replay (`js/machine.js`, shared with `app/`), Archivo and B612 Mono (SIL OFL), self-hosted |
@@ -42,14 +42,25 @@ signal list drifts from the harness.
 
 ## The app prototype
 
-`app/` is a clickable design of the product, not the product: nothing is
-connected. Every panel carries a tag. **record** panels are drawn from
-`app/js/record.js`, which `tools/build_teeter_app.py` writes from the campaign
-record and the harness source; `harness/tests/test_teeter_app.py` fails if it
-drifts from the harness. **example** panels come from `app/js/example.js`, which
-is illustrative throughout: the workspace, Q2, its checkpoints and gates, the
-runners, people and keys do not exist. Record content only appears under the
-record's own names (C-0001, EP-0001), never under an example's.
+`app/` runs two ways.
+
+**Served by the control plane** (`teeter-api serve`, see `api/README.md`),
+`app/js/live.js` finds `/v1/health` and the app runs against the API: sign-in
+by link, campaigns planned, streamed, reduced and replayed, runners, programs
+and gates, all from the workspace's own database. Every live panel carries a
+**live** tag. Screens that are not built yet (evidence, spaces and rules,
+integrations, first-day setup) stay the prototype's, under a strip that says
+they show example data.
+
+**Anywhere else** (the static site), no API answers and it is a clickable design
+of the product, not the product: nothing is connected. Every panel carries a
+tag. **record** panels are drawn from `app/js/record.js`, which
+`tools/build_teeter_app.py` writes from the campaign record and the harness
+source; `harness/tests/test_teeter_app.py` fails if it drifts from the harness.
+**example** panels come from `app/js/example.js`, which is illustrative
+throughout: the workspace, Q2, its checkpoints and gates, the runners, people
+and keys do not exist. Record content only appears under the record's own names
+(C-0001, EP-0001), never under an example's.
 
 ## Placeholders
 
