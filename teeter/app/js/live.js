@@ -13,7 +13,8 @@
   if (!A) return;
   var h = A.h, S = A.S, F = A.figs, esc = h.esc, $ = h.$, $$ = h.$$;
   var KEY = 'teeter.token';
-  var st = { me: null, programs: [], host: location.host };
+  var st = { me: null, programs: [], host: location.host, methods: { link: true, workos: false, demo: null } };
+  function canWrite() { return !st.me || st.me.can_write !== false; }
 
   /* ── the token, and the API ───────────────────────────── */
   function getToken() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
@@ -126,14 +127,24 @@
       '<p class="hero-side__q">Find the conditions that break your policy, before your customers do.</p></aside>' +
       '<div class="gate-form"><span class="gate-form__lock">' + A.R.brand.lockup + '</span>' +
       '<div><p class="micro">TT-301 · Sign in · ' + esc(st.host) + '</p><h1 class="ph__title" style="margin-top:8px">Sign in to your workspace</h1></div>' +
-      '<p class="fine">Follow a sign-in link to sign in. Whoever runs this server makes one with <code>teeter-api link --email you@example.com</code>; each link works once, within 30 minutes.</p>' +
+      (st.methods.workos ? '<a class="btn" href="/v1/auth/workos/login">Sign in</a><p class="fine">Through WorkOS, with the address your workspace invited.</p><div class="or">or with a link</div>' : '') +
+      '<p class="fine">Follow a sign-in link to sign in. Whoever runs this server makes one with <code>teeter-api link --email you@example.com</code>; each link works once, within 30 minutes by default.</p>' +
       '<div class="or">or paste a token</div>' +
       '<form class="f" data-form="token"><label class="f__l" for="tok">Token</label><input class="in" id="tok" type="password" placeholder="tt_usr_…" autocomplete="off" required>' +
       '<p class="f__h" data-hint>A user or CI token for this workspace. It is kept in this browser only.</p>' +
-      '<button class="btn" type="submit">Sign in</button></form>' +
-      '<p class="fine">This is v0 sign-in. An identity provider (Google, GitHub, SSO) replaces it in M1; see <code>docs/v1-roadmap.md</code>.</p></div></div>';
+      '<button class="btn' + (st.methods.workos ? ' btn--line' : '') + '" type="submit">Sign in with the token</button></form>' +
+      (st.methods.demo ? '<div class="or">or look around</div><button class="btn btn--line" type="button" data-demo>Explore ' + esc(st.methods.demo.workspace) + ', read-only</button>' +
+        '<p class="fine">Real campaigns, run by a real runner, on a stand-in quadruped whose checkpoints hold a pose: they are not trained policies. Nothing you do there changes it, and the pass lasts twelve hours.</p>' : '') +
+      (st.methods.workos ? '' : '<p class="fine">Sign-in through an identity provider is built (WorkOS AuthKit) and starts once this server is given its keys; see <code>docs/decisions.md</code>.</p>') + '</div></div>';
   };
   S.login.after = function () {
+    var demo = $('[data-demo]');
+    if (demo) demo.addEventListener('click', function () {
+      demo.disabled = true;
+      fetch('/v1/auth/demo', { method: 'POST' }).then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('no demo workspace here')); })
+        .then(function (v) { setToken(v.token); history.replaceState(null, '', location.pathname + '#/'); boot(); })
+        .catch(function (err) { demo.disabled = false; h.toast(err.message); });
+    });
     var form = $('[data-form="token"]');
     form.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -291,6 +302,15 @@
     refreshForm();
   });
 
+
+  // a read-only member or a demo visitor gets an explanation, not the form
+  var planScreen = S.newCampaign;
+  S.newCampaign = function (p) {
+    return canWrite() ? planScreen(p) : h.head('TT-322 · New campaign', 'This visit is read-only',
+      'You can open every campaign, failure mode, replay and gate in ' + esc(st.me.workspace.name) + ', but not plan new ones. Planning needs a member who is not a viewer.',
+      null, h.btn('Campaigns', { href: '/campaigns' }));
+  };
+  S.newCampaign.after = function (p) { if (canWrite()) planScreen.after(p); };
   /* live run */
   var SHORT = { push_impulse_ns: 'push', slope_deg: 'slope', sensor_lag_ms: 'lag', torque_loss_pct: 'torque', payload_kg: 'load', payload_offset_m: 'offset', friction_mu: 'mu' };
   function axesOf(spec) { return Object.keys(spec.axes); }
@@ -593,8 +613,8 @@
     function item(href, label, key, note) { return '<a href="#' + href + '"' + (cur === key ? ' class="is-here" aria-current="page"' : '') + '>' + label + (note ? '<span class="nav__n">' + note + '</span>' : '') + '</a>'; }
     return item('/', 'Overview', 'overview') +
       '<p class="nav__grp">Programs</p>' + (st.programs.length ? st.programs.map(function (p) { return item('/programs/' + p.slug, esc(p.name), 'p:' + p.slug); }).join('') : '<p class="note-line" style="padding:0 8px">none yet</p>') +
-      '<p class="nav__grp">Work</p>' + item('/campaigns', 'Campaigns', 'campaigns') + item('/campaigns/new', 'New campaign', 'campaigns-new') + item('/gates', 'Gates', 'gates') +
-      '<p class="nav__grp">Workspace</p>' + item('/runners', 'Runners', 'runners') + item('/settings/audit', 'Audit log', 'settings') +
+      '<p class="nav__grp">Work</p>' + item('/campaigns', 'Campaigns', 'campaigns') + (canWrite() ? item('/campaigns/new', 'New campaign', 'campaigns-new') : '') + item('/gates', 'Gates', 'gates') +
+      '<p class="nav__grp">Workspace</p>' + item('/runners', 'Runners', 'runners') + (canWrite() ? item('/settings/audit', 'Audit log', 'settings') : '') +
       '<p class="nav__grp">Not built yet</p>' + item('/evidence', 'Evidence', 'evidence', 'proto') + item('/library', 'Spaces and rules', 'library', 'proto') + item('/integrations', 'Integrations', 'integrations', 'proto') + item('/onboarding/1', 'First-day setup', 'onboarding', 'proto');
   };
   A.hooks.crumbs = function (m) {
@@ -609,8 +629,12 @@
   function shell() {
     var me = st.me, banner = document.querySelector('.proto');
     if (banner) {
-      banner.innerHTML = '<span class="proto__tag">Live</span><span class="proto__text">' + (me ? 'Connected to <b>' + esc(st.host) + '</b> as <b>' + esc(me.user ? me.user.email : me.token.name) + '</b> in ' + esc(me.workspace.name) + '. Screens marked <i>proto</i> are designed, not built yet.' : 'Connected to <b>' + esc(st.host) + '</b>. Sign in to continue.') +
-        '</span>' + (me ? '<button class="proto__link" type="button" data-signout style="background:none;border:0;cursor:pointer">Sign out</button>' : '');
+      var who = me && me.user ? me.user.email : me ? me.token.name : '';
+      var text = !me ? 'Connected to <b>' + esc(st.host) + '</b>. Sign in to continue.'
+        : !canWrite() ? 'Read-only visit to <b>' + esc(me.workspace.name) + '</b> on ' + esc(st.host) + ': real campaigns from a real runner, on a stand-in quadruped whose checkpoints hold a pose and are not trained policies.'
+        : 'Connected to <b>' + esc(st.host) + '</b> as <b>' + esc(who) + '</b> in ' + esc(me.workspace.name) + '. Screens marked <i>proto</i> are designed, not built yet.';
+      banner.innerHTML = '<span class="proto__tag">' + (me && !canWrite() ? 'Read-only' : 'Live') + '</span><span class="proto__text">' + text +
+        '</span>' + (me ? '<button class="proto__link" type="button" data-signout style="background:none;border:0;cursor:pointer">' + (canWrite() ? 'Sign out' : 'Leave') + '</button>' : '');
       var so = banner.querySelector('[data-signout]');
       if (so) so.addEventListener('click', function () { setToken(''); st.me = null; shell(); h.go('/login'); });
     }
@@ -621,6 +645,7 @@
       ws.setAttribute('data-go', '/');
     }
     document.body.classList.add('is-live');
+    document.body.classList.toggle('is-readonly', !!me && !canWrite());
   }
 
   // render once: start the app if it has not started, otherwise draw again
@@ -653,7 +678,11 @@
       A.ROUTES.unshift(['/auth/:token', 'auth', { bare: 1, crumb: 'Signing in' }]);
       A.ROUTES.unshift(['/campaigns/new', 'newCampaign', { nav: 'campaigns-new', crumb: 'New campaign' }]);
       if (auth) { setToken(auth[1]); history.replaceState(null, '', location.pathname + '#/'); }
-      boot();
+      // what the sign-in page should offer: links and tokens always; an
+      // identity provider and a read-only demo when this server has them
+      fetch('/v1/auth/methods', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (m) { if (m) st.methods = m; }, function () { /* keep the defaults */ })
+        .then(boot);
     })
     .catch(function () { clearTimeout(timer); A.start(); });
 }());

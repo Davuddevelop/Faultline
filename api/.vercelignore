@@ -1,0 +1,7 @@
+# The control plane's Vercel project (root directory api/) deploys the
+# teeter_api package; vercel_build.py copies the site into it.
+tests/
+Dockerfile
+*.egg-info/
+__pycache__/
+.pytest_cache/

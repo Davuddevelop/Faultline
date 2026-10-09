@@ -19,7 +19,7 @@ from .. import audit, service
 from ..contracts import CampaignSpec
 from ..errors import ApiError, not_found
 from ..models import Campaign, Checkpoint, Gate, Program
-from ..security import Principal, get_session, people, people_or_ci
+from ..security import Principal, editors, editors_or_ci, get_session, people_or_ci
 from ..serialize import iso
 
 router = APIRouter(prefix="/v1")
@@ -82,7 +82,7 @@ def list_programs(p: Principal = Depends(people_or_ci), session: Session = Depen
 
 
 @router.post("/programs", status_code=201)
-def create_program(body: NewProgram, request: Request, p: Principal = Depends(people),
+def create_program(body: NewProgram, request: Request, p: Principal = Depends(editors),
                    session: Session = Depends(get_session)) -> dict:
     if session.scalar(select(Program).where(Program.workspace_id == p.workspace.id, Program.slug == body.slug)):
         raise ApiError(409, "exists", f"a program called {body.slug!r} already exists")
@@ -100,7 +100,7 @@ def get_program(slug: str, p: Principal = Depends(people_or_ci), session: Sessio
 
 
 @router.post("/programs/{slug}/checkpoints", status_code=201)
-def add_checkpoint(slug: str, body: NewCheckpoint, request: Request, p: Principal = Depends(people_or_ci),
+def add_checkpoint(slug: str, body: NewCheckpoint, request: Request, p: Principal = Depends(editors_or_ci),
                    session: Session = Depends(get_session)) -> dict:
     prog = service.find_program(session, p.workspace.id, slug)
     if session.scalar(select(Checkpoint).where(Checkpoint.program_id == prog.id, Checkpoint.label == body.label)):
@@ -118,7 +118,7 @@ def add_checkpoint(slug: str, body: NewCheckpoint, request: Request, p: Principa
 
 
 @router.put("/programs/{slug}/baseline")
-def set_baseline(slug: str, body: GateCheckpoint, request: Request, p: Principal = Depends(people),
+def set_baseline(slug: str, body: GateCheckpoint, request: Request, p: Principal = Depends(editors),
                  session: Session = Depends(get_session)) -> dict:
     prog = service.find_program(session, p.workspace.id, slug)
     ck = session.scalar(select(Checkpoint).where(Checkpoint.program_id == prog.id, Checkpoint.label == body.checkpoint))
@@ -131,7 +131,7 @@ def set_baseline(slug: str, body: GateCheckpoint, request: Request, p: Principal
 
 
 @router.post("/programs/{slug}/gate", status_code=201)
-def gate_checkpoint(slug: str, body: GateCheckpoint, request: Request, p: Principal = Depends(people_or_ci),
+def gate_checkpoint(slug: str, body: GateCheckpoint, request: Request, p: Principal = Depends(editors_or_ci),
                     session: Session = Depends(get_session)) -> dict:
     """What CI calls: run the program's experiment on this checkpoint and
     compare it with the baseline's."""
@@ -164,7 +164,7 @@ def gate_checkpoint(slug: str, body: GateCheckpoint, request: Request, p: Princi
 
 
 @router.post("/gates", status_code=201)
-def create_gate(body: NewGate, request: Request, p: Principal = Depends(people_or_ci),
+def create_gate(body: NewGate, request: Request, p: Principal = Depends(editors_or_ci),
                 session: Session = Depends(get_session)) -> dict:
     base = service.find_campaign(session, p.workspace.id, body.baseline)
     cand = service.find_campaign(session, p.workspace.id, body.candidate)

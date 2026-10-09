@@ -81,8 +81,9 @@ def _job_out(session: Session, job: Job, settings) -> dict:
 
 @router.post("/claim")
 async def claim(body: Claim, request: Request) -> Response:
-    """Wait up to ``wait_s`` for a job. Async, so a waiting runner holds no
-    thread; each try is one indexed query."""
+    """Wait up to ``wait_s`` for a job (at most TEETER_CLAIM_WAIT_S). Async, so
+    a waiting runner holds no thread; each try is one indexed query. Empty
+    handed, the answer is 204 with Retry-After."""
     app = request.app
     settings, db = app.state.settings, app.state.db
 
@@ -107,7 +108,9 @@ async def claim(body: Claim, request: Request) -> Response:
         if got is not None:
             return Response(json.dumps(got), media_type="application/json")
         if time.monotonic() >= deadline or await request.is_disconnected():
-            return Response(status_code=204)
+            # no work: when to ask again. A long-polling server has already
+            # waited, so soon; a serverless one returned at once, so later.
+            return Response(status_code=204, headers={"Retry-After": f"{settings.claim_retry_s:g}"})
         await asyncio.sleep(1.0)
 
 
@@ -168,7 +171,7 @@ async def put_artifact(job_id: str, name: str, request: Request) -> dict:
                 raise ApiError(403, "forbidden", "upload artifacts with the runner token that holds the job")
             job = _held(session, p, job_id)
             key = f"{job.workspace_id}/{job.campaign_id}/{name}"
-            sha = request.app.state.storage.put(key, data)
+            sha = request.app.state.storage.put(key, data, ctype)
             session.execute(delete(Artifact).where(Artifact.campaign_id == job.campaign_id, Artifact.name == name))
             session.add(Artifact(workspace_id=job.workspace_id, campaign_id=job.campaign_id, name=name,
                                  content_type=ctype, size=len(data), sha256=sha, storage_key=key))

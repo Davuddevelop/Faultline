@@ -1,4 +1,5 @@
-"""What answers without a token: health, and following a sign-in link."""
+"""What answers without a token: health, how to sign in, following a sign-in
+link, and starting a read-only visit to the demo workspace."""
 
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ from ..contracts import AXES, SIGNALS, SPEC_VERSION
 from ..db import utcnow
 from ..errors import ApiError
 from ..models import SignInLink, User, Workspace
-from ..security import digest, get_session, mint
+from ..security import demo_token, digest, get_session, mint
 
 router = APIRouter(prefix="/v1")
 
@@ -45,3 +46,29 @@ def follow_link(code: str, session: Session = Depends(get_session)) -> RedirectR
     _, secret = mint(session, ws, "user", f"browser sign-in, {user.email}", user=user)
     session.commit()
     return RedirectResponse(f"/app/#/auth/{secret}", status_code=303)
+
+
+@router.get("/auth/methods")
+def auth_methods(request: Request, session: Session = Depends(get_session)) -> dict:
+    """What the sign-in page should offer."""
+    settings = request.app.state.settings
+    demo = None
+    if settings.demo_enabled:
+        ws = session.scalar(select(Workspace).where(Workspace.slug == settings.demo_workspace))
+        if ws is not None:
+            demo = {"workspace": ws.name}
+    return {"link": True, "workos": settings.workos_enabled, "demo": demo}
+
+
+@router.post("/auth/demo")
+def demo_visit(request: Request, session: Session = Depends(get_session)) -> dict:
+    """A read-only pass to the demo workspace, for anyone, for twelve hours.
+    Signed rather than stored (security.demo_token), so visits leave no rows."""
+    settings = request.app.state.settings
+    ws = (session.scalar(select(Workspace).where(Workspace.slug == settings.demo_workspace))
+          if settings.demo_enabled else None)
+    if ws is None:
+        raise ApiError(404, "no_demo", "this server has no demo workspace")
+    token, exp = demo_token(settings.secret, ws)
+    return {"token": token, "expires": exp, "workspace": ws.name, "role": "viewer"}
+

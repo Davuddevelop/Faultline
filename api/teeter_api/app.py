@@ -21,18 +21,20 @@ from .db import Database
 from .errors import ApiError, api_error_handler, validation_handler
 from .routes import ROUTERS
 from .settings import Settings, get_settings
-from .storage import LocalStorage
+from .storage import make_storage
 
 
 def create_app(settings: Settings | None = None, db: Database | None = None) -> FastAPI:
     settings = settings or get_settings()
-    db = db or Database(settings.database_url)
-    db.create_all()
+    db = db or Database(settings.database_url, pool_size=settings.db_pool_size,
+                        direct_url=settings.database_url_direct)
+    if not db.is_postgres:
+        db.create_all()       # SQLite, for tests and dev; Postgres is migrated (teeter-api migrate)
 
     app = FastAPI(title="Teeter API", version=__version__, docs_url="/v1/docs",
                   openapi_url="/v1/openapi.json", redoc_url=None)
     app.state.settings, app.state.db = settings, db
-    app.state.storage = LocalStorage(settings.storage_dir)
+    app.state.storage = make_storage(settings)
     app.add_exception_handler(ApiError, api_error_handler)
     app.add_exception_handler(RequestValidationError, validation_handler)
     if settings.cors_origins:

@@ -137,6 +137,7 @@ class Agent:
             if job is None:
                 if once:
                     return 0
+                self.stopping.wait(self.client.retry_after)      # wakes early on Ctrl-C
                 continue
             self.run_job(job)
             if once:

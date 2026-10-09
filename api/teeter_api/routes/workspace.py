@@ -11,7 +11,7 @@ from .. import audit
 from ..db import utcnow
 from ..errors import ApiError, not_found
 from ..models import AuditEvent, Campaign, Gate, Runner, Token
-from ..security import Principal, get_session, mint, people, people_or_ci
+from ..security import Principal, editors, get_session, mint, people_or_ci
 from ..serialize import iso, online_cutoff, ref, runner_out, token_out
 
 router = APIRouter(prefix="/v1")
@@ -20,8 +20,10 @@ router = APIRouter(prefix="/v1")
 @router.get("/me")
 def me(p: Principal = Depends(people_or_ci)) -> dict:
     return {"workspace": {"id": p.workspace.id, "slug": p.workspace.slug, "name": p.workspace.name},
-            "token": {"kind": p.kind, "prefix": p.token.prefix + "…", "name": p.token.name},
-            "user": {"email": p.user.email, "name": p.user.name} if p.user else None}
+            "token": {"kind": p.kind, "prefix": p.token.prefix + "…", "name": p.token.name,
+                      "expires_at": iso(p.token.expires_at) if p.token.expires_at else None},
+            "user": {"email": p.user.email, "name": p.user.name} if p.user else None,
+            "role": p.role, "can_write": p.can_write}
 
 
 @router.get("/overview")
@@ -51,7 +53,7 @@ class NewToken(BaseModel):
 
 
 @router.post("/tokens", status_code=201)
-def create_token(body: NewToken, request: Request, p: Principal = Depends(people),
+def create_token(body: NewToken, request: Request, p: Principal = Depends(editors),
                  session: Session = Depends(get_session)) -> dict:
     """Shown once. A runner token lets a machine run this workspace's jobs and
     nothing else; a CI token creates campaigns and gates."""
@@ -69,14 +71,14 @@ def create_token(body: NewToken, request: Request, p: Principal = Depends(people
 
 
 @router.get("/tokens")
-def list_tokens(p: Principal = Depends(people), session: Session = Depends(get_session)) -> dict:
+def list_tokens(p: Principal = Depends(editors), session: Session = Depends(get_session)) -> dict:
     rows = session.scalars(select(Token).where(Token.workspace_id == p.workspace.id)
                            .order_by(Token.created_at.desc())).all()
     return {"tokens": [token_out(t) for t in rows]}
 
 
 @router.delete("/tokens/{token_id}")
-def revoke_token(token_id: str, request: Request, p: Principal = Depends(people),
+def revoke_token(token_id: str, request: Request, p: Principal = Depends(editors),
                  session: Session = Depends(get_session)) -> dict:
     tok = session.get(Token, token_id)
     if tok is None or tok.workspace_id != p.workspace.id:
@@ -90,7 +92,7 @@ def revoke_token(token_id: str, request: Request, p: Principal = Depends(people)
 
 
 @router.get("/audit")
-def audit_log(limit: int = 100, p: Principal = Depends(people), session: Session = Depends(get_session)) -> dict:
+def audit_log(limit: int = 100, p: Principal = Depends(editors), session: Session = Depends(get_session)) -> dict:
     rows = session.scalars(select(AuditEvent).where(AuditEvent.workspace_id == p.workspace.id)
                            .order_by(AuditEvent.id.desc()).limit(max(1, min(limit, 500)))).all()
     return {"events": [{"at": iso(e.at), "actor": e.actor, "action": e.action, "target": e.target,

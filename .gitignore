@@ -9,3 +9,6 @@ __pycache__/
 
 # local control-plane state: dev database, artifacts, tokens
 .teeter/
+
+# the copy of teeter/ that api/vercel_build.py makes for the hosted control plane
+api/teeter_api/site/

@@ -36,14 +36,16 @@ def test_a_revoked_token_stops_working(client, world):
 
 
 def test_another_workspaces_campaign_is_invisible(client, world, db):
-    from teeter_api.models import Workspace
+    from teeter_api.models import Membership, User, Workspace
     from teeter_api.security import mint
     client.post("/v1/campaigns", headers=World.h(world.user), json={"spec": SPEC})
     with db.scope() as s:
         other = Workspace(slug="other", name="Other (example)")
-        s.add(other)
+        them = User(email="them@example.com")
+        s.add_all([other, them])
         s.flush()
-        _, tok = mint(s, other, "user", "them")
+        s.add(Membership(workspace_id=other.id, user_id=them.id, role="owner"))
+        _, tok = mint(s, other, "user", "them", user=them)
         s.commit()
     assert client.get("/v1/campaigns/C-0001", headers=World.h(tok)).status_code == 404
     assert client.get("/v1/campaigns", headers=World.h(tok)).json()["campaigns"] == []

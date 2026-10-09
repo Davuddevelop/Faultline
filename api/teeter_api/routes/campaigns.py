@@ -12,7 +12,7 @@ from .. import audit, queue, service
 from ..contracts import CampaignSpec
 from ..errors import ApiError, not_found
 from ..models import Artifact, Campaign, Evaluation, Job
-from ..security import Principal, get_session, people, people_or_ci
+from ..security import Principal, editors, editors_or_ci, get_session, people_or_ci
 
 router = APIRouter(prefix="/v1")
 
@@ -22,7 +22,7 @@ class NewCampaign(BaseModel):
 
 
 @router.post("/campaigns", status_code=201)
-def create(body: NewCampaign, request: Request, p: Principal = Depends(people_or_ci),
+def create(body: NewCampaign, request: Request, p: Principal = Depends(editors_or_ci),
            session: Session = Depends(get_session)) -> dict:
     settings = request.app.state.settings
     c = service.create_campaign(session, p, body.spec, max_attempts=settings.max_attempts, request=request)
@@ -76,7 +76,7 @@ def artifact(ref: str, name: str, request: Request, p: Principal = Depends(peopl
 
 
 @router.post("/campaigns/{ref}/cancel")
-def cancel(ref: str, request: Request, p: Principal = Depends(people),
+def cancel(ref: str, request: Request, p: Principal = Depends(editors),
            session: Session = Depends(get_session)) -> dict:
     c = service.find_campaign(session, p.workspace.id, ref)
     if c.state in ("done", "failed", "canceled"):

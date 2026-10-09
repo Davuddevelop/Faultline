@@ -7,6 +7,8 @@
 
 Every command takes --api and --token (or --token-file), or reads TEETER_API
 and TEETER_TOKEN from the environment, which is how CI should pass them.
+--header adds a header to every request, for a control plane behind an
+access proxy.
 """
 
 from __future__ import annotations
@@ -24,6 +26,9 @@ from .client import ApiError, Client
 
 
 def _auth(args) -> tuple[str, str]:
+    if getattr(args, "header", None):
+        # every client this process makes reads them (client.extra_headers)
+        os.environ["TEETER_HEADERS"] = "\n".join(filter(None, [os.environ.get("TEETER_HEADERS", ""), *args.header]))
     api = args.api or os.environ.get("TEETER_API")
     token = args.token or os.environ.get("TEETER_TOKEN")
     if not token and args.token_file:
@@ -125,6 +130,9 @@ def main(argv: list[str] | None = None) -> int:
     common.add_argument("--api", help="control plane URL (or TEETER_API)")
     common.add_argument("--token", help="token (or TEETER_TOKEN)")
     common.add_argument("--token-file", help="read the token from a file")
+    common.add_argument("--header", action="append", metavar="'NAME: VALUE'",
+                        help="send this header with every request too, for a control plane behind an "
+                             "access proxy (repeatable; or TEETER_HEADERS, one per line)")
     sub = p.add_subparsers(dest="command", required=True)
 
     r = sub.add_parser("runner", help="run campaigns on this machine")

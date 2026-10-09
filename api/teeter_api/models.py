@@ -39,14 +39,22 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
     email: Mapped[str] = mapped_column(String(320), unique=True)
     name: Mapped[str] = mapped_column(String(200), default="")
+    # the identity provider's id for this person, set the first time they sign
+    # in through it; an invitation is a user row without one yet
+    workos_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+ROLES = ("owner", "admin", "engineer", "viewer")
+# who may change things; a viewer reads, and so does the demo visitor
+WRITERS = ("owner", "admin", "engineer")
 
 
 class Membership(Base):
     __tablename__ = "memberships"
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), primary_key=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    role: Mapped[str] = mapped_column(String(16))          # owner | admin | engineer | viewer
+    role: Mapped[str] = mapped_column(String(16))          # one of ROLES
 
 
 class Token(Base):
@@ -63,6 +71,8 @@ class Token(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # set for tokens that should lapse on their own, such as a demo visit's
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class SignInLink(Base):
