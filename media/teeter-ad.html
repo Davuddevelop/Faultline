@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Teeter · motion ad, 1:1</title>
+<link rel="stylesheet" href="../teeter/css/fonts.css">
+<!--
+  Teeter, an 18 s film in four sheets (TT-401 to TT-404), 1080 × 1080.
+
+  Nothing on screen is typed that the record holds. The robot is the site's own
+  machine (teeter/js/machine.js) replaying the poses MuJoCo recorded for the
+  published minimal case (the replay document embedded in teeter/index.html);
+  the search, the space, the rules and the minimal case are read from
+  assets/data/campaign.json. The one typed block is the gate's output, copied
+  from the run on the v0 demo stack on 9 October 2026 (runner/teeter_runner/cli.py
+  prints it in this form).
+
+  seek(t) draws the film at time t. The overlay is a pure function of t; the
+  machine runs on a clock this page steps, so frames come out the same every
+  render, provided they are asked for in order (media/shoot-teeter-ad.py does).
+  Serve the repository root, e.g. python3 -m http.server, and open
+  /media/teeter-ad.html?play to watch it in real time.
+-->
+<style>
+:root{
+  --g950:#0B0B0A; --g900:#111110; --g850:#171716; --g800:#21211F; --g700:#34332F;
+  --g500:#5F5D57; --g400:#8E8B83; --g300:#B5B1A8; --v100:#E9E6DE; --v50:#F5F3EE;
+  --sans:'Archivo',sans-serif; --mono:'B612 Mono',monospace;
+  --hatch:repeating-linear-gradient(145deg,var(--v100) 0 1px,transparent 1px 6px);
+  --hatch-dark:repeating-linear-gradient(145deg,var(--g950) 0 1.5px,transparent 1.5px 7px);
+}
+/* frames are stepped, not played: nothing may move on its own clock */
+*,*::before,*::after{box-sizing:border-box;transition:none!important;animation:none!important}
+html,body{margin:0;background:var(--g950)}
+#ad{position:relative;width:1080px;height:1080px;overflow:hidden;background:var(--g950);color:var(--g300);
+  font-family:var(--sans);font-stretch:100%;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.mono{font-family:var(--mono)}
+.label{font-family:var(--sans);font-stretch:125%;font-weight:600;font-size:12px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--g400)}
+.display{margin:0;font-family:var(--sans);font-stretch:118%;font-weight:500;font-size:52px;line-height:1.08;
+  letter-spacing:-.005em;color:var(--v100)}
+.display span{display:block;will-change:opacity,transform}
+.display .dim{color:var(--g400)}
+.cap{margin:0;font-family:var(--mono);font-size:13px;line-height:1.65;color:var(--g400)}
+
+/* ── the sheet: border, zones, title block ───────────────── */
+.sheet__frame{position:absolute;inset:20px;border:1px solid var(--g700)}
+.sheet__inner{position:absolute;inset:46px;border:1px solid var(--g700)}
+.zones{position:absolute;display:grid;font-family:var(--mono);font-size:11px;color:var(--g400)}
+.zones--top{left:46px;right:46px;top:20px;height:26px;grid-template-columns:repeat(8,minmax(0,1fr))}
+.zones--top span{text-align:center;line-height:26px;border-left:1px solid var(--g800)}
+.zones--top span:first-child{border-left:0}
+.zones--left{top:46px;bottom:46px;left:20px;width:26px;grid-template-rows:repeat(4,minmax(0,1fr))}
+.zones--left span{display:flex;align-items:center;justify-content:center;border-top:1px solid var(--g800)}
+.zones--left span:first-child{border-top:0}
+.tb{position:absolute;right:46px;bottom:46px;display:flex;border-top:1px solid var(--g700);border-left:1px solid var(--g700);
+  background:var(--g950)}
+.tb > div{padding:7px 12px 8px;border-right:1px solid var(--g800);min-width:0}
+.tb > div:last-child{border-right:0}
+.tb b{display:block;font-family:var(--sans);font-stretch:125%;font-weight:600;font-size:8.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--g400);margin-bottom:3px}
+.tb span{font-family:var(--mono);font-size:12px;color:var(--v100);white-space:nowrap}
+.tb .tb__mark{display:flex;align-items:center;padding:0 14px;color:var(--v100)}
+.tb .tb__mark svg{width:64px;height:auto;display:block}
+.tb #tb-title{display:inline-block;min-width:52px}
+
+/* ── TT-401: the replay ──────────────────────────────────── */
+#stage{position:absolute;left:46px;top:46px;width:988px;height:640px}
+.stage__view{position:absolute;inset:0;overflow:hidden;background:var(--g950)}
+.stage__gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cross{position:absolute;width:15px;height:15px}
+.cross::before,.cross::after{content:"";position:absolute;background:var(--g500)}
+.cross::before{left:7px;top:0;width:1px;height:15px}
+.cross::after{top:7px;left:0;height:1px;width:15px}
+.stage__tag{position:absolute;right:26px;top:24px;text-align:right;line-height:1.7}
+.stage__tag .mono{font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--g400)}
+.hud{position:absolute;left:26px;top:24px;width:352px;font-family:var(--mono);font-size:13px;color:var(--g300);
+  background:rgba(11,11,10,.86);border:1px solid var(--g700);padding:14px 16px 14px}
+.hud__head{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--g400);padding-bottom:10px;border-bottom:1px solid var(--g800)}
+.hud__head > span:first-child{color:var(--v100)}
+.hud__head > span:first-child::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--v100);margin-right:8px;vertical-align:1px}
+.hud dl{margin:10px 0 0;display:grid;gap:7px}
+.hud dl div{display:flex;justify-content:space-between}
+.hud dt{color:var(--g400)}
+.hud dd{margin:0;color:var(--v100)}
+.hud__bar{position:relative;height:7px;margin-top:13px;background:var(--g800);--w:0%}
+.hud__fill{position:absolute;left:0;top:0;bottom:0;width:min(var(--w),var(--lim));background:var(--v100)}
+.hud__over{position:absolute;left:var(--lim);top:0;bottom:0;width:max(0%,calc(var(--w) - var(--lim)));
+  background:var(--hatch);box-shadow:inset 0 0 0 1px var(--v100)}
+.hud__lim{position:absolute;left:var(--lim);top:-4px;bottom:-4px;width:1px;background:var(--g300)}
+.hud__rule{margin:13px 0 0;padding:6px 9px;border:1px solid var(--g700);color:var(--v100);font-size:12.5px}
+.hud__rule.is-fail{background:var(--v100);color:var(--g950);border-color:var(--v100)}
+.hud__rule.is-fail::before{content:"";display:inline-block;width:12px;height:12px;margin-right:9px;vertical-align:-1px;
+  background:var(--hatch-dark);box-shadow:inset 0 0 0 1px var(--g950)}
+.note{position:absolute;left:0;top:0;font-family:var(--mono);font-size:13px;color:var(--v100);opacity:0;white-space:nowrap}
+.note.is-on{opacity:1}
+.note::before{content:"";position:absolute;left:0;top:0;width:26px;height:1px;background:var(--g300)}
+.note span{display:block;transform:translate(26px,-12px);background:rgba(11,11,10,.86);padding:3px 8px;
+  border:1px solid var(--g700)}
+.note[data-note="push"]::before{left:-26px}
+.note[data-note="push"] span{transform:translate(calc(-100% - 26px),-12px)}
+#hA{left:72px;top:712px}
+#capA{left:72px;top:914px;width:560px}
+
+/* ── TT-402: the search ──────────────────────────────────── */
+#hB{left:72px;top:84px;font-size:44px}
+#space{left:72px;top:244px;width:316px}
+#space .label{margin-bottom:12px}
+.row{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:14.5px;
+  padding:7px 0;border-bottom:1px solid var(--g800)}
+.row i{font-style:normal;color:var(--g300)}
+.row em{font-style:normal;color:var(--v100)}
+#rules{left:72px;top:552px;width:316px}
+#rules .label{margin-bottom:12px}
+.rule{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:14.5px;color:var(--v100);padding:7px 0;
+  border-bottom:1px solid var(--g800)}
+.rule::before{content:"";width:13px;height:13px;flex:none;background:var(--hatch);box-shadow:inset 0 0 0 1px var(--v100)}
+#plot{left:414px;top:244px;width:610px;height:476px;overflow:visible}
+#plot text{font-family:var(--mono);font-size:12px;fill:var(--g400)}
+#plot .ax{stroke:var(--g500);stroke-width:1}
+#plot .grid{stroke:var(--g800);stroke-width:1}
+#plot .held{fill:none;stroke:var(--g400);stroke-width:1.1}
+#plot .hit{fill:url(#hx);stroke:var(--v100);stroke-width:1}
+#plot .limit{stroke:var(--v100);stroke-width:1.2;stroke-dasharray:7 5}
+#plot .dim{stroke:var(--g300);stroke-width:1}
+#plot .halo{paint-order:stroke;stroke:var(--g950);stroke-width:5px;stroke-linejoin:round}
+#plot .min-lab{fill:var(--v100);font-size:13px}
+#plot .lab-bg{fill:rgba(11,11,10,.9)}
+#plot .dim-lab{fill:var(--g300);font-size:11px}
+#tally{left:470px;top:742px;width:550px}
+#tally .big{font-family:var(--mono);font-size:15px;color:var(--v100)}
+#tally .cap{margin-top:6px}
+.key{display:flex;gap:22px;margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--g400)}
+.key span{display:flex;align-items:center;gap:8px}
+.key .k-hit{width:11px;height:11px;background:var(--hatch);box-shadow:inset 0 0 0 1px var(--v100)}
+.key .k-held{width:9px;height:9px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--g400)}
+#capB{left:72px;top:904px;width:540px}
+
+/* ── TT-403: the gate ────────────────────────────────────── */
+#hC{left:72px;top:84px;font-size:44px}
+#term{left:72px;top:226px;width:936px;height:332px;background:var(--g850);border:1px solid var(--g700)}
+.term__head{display:flex;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--g800);
+  font-family:var(--mono);font-size:11.5px;color:var(--g400)}
+.term__body{padding:16px 22px;font-family:var(--mono);font-size:16px;line-height:1.72;color:var(--g300);white-space:pre}
+.term__body .p{color:var(--g400)}
+.term__body .w{color:var(--v100)}
+.term__body .caret{display:inline-block;width:9px;height:18px;background:var(--v100);vertical-align:-3px;margin-left:1px}
+#banner{left:72px;top:584px;width:936px;height:104px;background:var(--v100);color:var(--g950);display:flex;
+  align-items:center;gap:26px;padding:0 30px}
+#banner .sw{width:62px;height:62px;flex:none;background:var(--hatch-dark);box-shadow:inset 0 0 0 1.5px var(--g950)}
+#banner .word{font-family:var(--sans);font-stretch:125%;font-weight:700;font-size:54px;letter-spacing:.02em;line-height:1}
+#banner .exit{margin-left:auto;text-align:right;font-family:var(--mono);font-size:14px;line-height:1.5}
+#banner .exit b{display:block;font-size:24px}
+#noteC{left:72px;top:722px;width:936px;margin:0;font-family:var(--sans);font-stretch:112.5%;font-weight:500;font-size:27px;
+  line-height:1.3;color:var(--v100)}
+#capC{left:72px;top:904px;width:560px}
+
+/* ── TT-404: the end ─────────────────────────────────────── */
+#lock{left:240px;top:368px;width:600px;color:var(--v100)}
+#lock svg{display:block;width:100%;height:auto}
+#endA{left:0;width:1080px;top:556px;text-align:center;margin:0;font-family:var(--sans);font-stretch:112.5%;
+  font-weight:500;font-size:32px;color:var(--v100)}
+#endB{left:0;width:1080px;top:612px;text-align:center;margin:0;font-family:var(--sans);font-size:22px;color:var(--g300)}
+#endC{left:0;width:1080px;top:806px;text-align:center;margin:0;font-family:var(--mono);font-size:14px;color:var(--g400)}
+</style>
+</head>
+<body>
+<div id="ad" aria-label="Teeter: an 18 second film">
+
+  <!-- the sheet stays; what is drawn on it changes -->
+  <div class="sheet__frame"></div>
+  <div class="zones zones--top"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
+  <div class="zones zones--left"><span>A</span><span>B</span><span>C</span><span>D</span></div>
+  <div class="sheet__inner"></div>
+
+  <!-- TT-401 · the replay -->
+  <figure id="stage" data-replay style="margin:0">
+    <div class="stage__view">
+      <canvas class="stage__gl"></canvas>
+      <span class="cross" style="left:10px;top:10px"></span><span class="cross" style="right:10px;top:10px"></span>
+      <span class="cross" style="left:10px;bottom:10px"></span><span class="cross" style="right:10px;bottom:10px"></span>
+      <p class="note" data-note="push"><span>push · <b data-note-push></b> N·s requested</span></p>
+      <p class="note" data-note="breach"><span>pose at breach · t = <b data-note-breach></b> s</span></p>
+    </div>
+    <div class="hud">
+      <div class="hud__head"><span>Replay</span><span>MuJoCo <span id="v-mujoco"></span></span></div>
+      <dl>
+        <div><dt>t</dt><dd><span data-hud="t">0.00</span> s</dd></div>
+        <div><dt>push</dt><dd><span data-hud="push"></span> N·s requested</dd></div>
+        <div><dt>tilt_deg</dt><dd><span data-hud="tilt">0.00</span>°</dd></div>
+      </dl>
+      <div class="hud__bar" data-hud="bar"><span class="hud__fill"></span><span class="hud__over"></span><i class="hud__lim"></i></div>
+      <p class="hud__rule" data-hud="rule"></p>
+    </div>
+    <div class="stage__tag label">Replay of recorded simulation<br><span class="mono" id="v-speed"></span></div>
+  </figure>
+  <h1 class="display abs" id="hA">
+    <span class="dim">Robots are learning to move.</span>
+    <span>We find the exact condition</span>
+    <span>where they fall.</span>
+  </h1>
+  <p class="cap abs" id="capA">The stand-in quadruped from the published campaign, replayed from MuJoCo's own record. Every pose is recorded; the body drawn around the poses is illustrative.</p>
+
+  <!-- TT-402 · the search -->
+  <h2 class="display abs" id="hB">
+    <span>It searches the conditions you declare</span>
+    <span>for the ones that break your rules.</span>
+  </h2>
+  <div class="abs" id="space"><div class="label">Declared space</div><div id="space-rows"></div></div>
+  <div class="abs" id="rules"><div class="label">Rules</div><div id="rule-rows"></div></div>
+  <svg class="abs" id="plot" viewBox="0 0 610 476" aria-hidden="true">
+    <defs><pattern id="hx" width="4.5" height="4.5" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)">
+      <line x1="0" y1="0.5" x2="4.5" y2="0.5" stroke="#E9E6DE" stroke-width="1"/></pattern></defs>
+    <g id="plot-frame"></g>
+    <g id="plot-pts"></g>
+    <g id="plot-min"></g>
+  </svg>
+  <div class="abs" id="tally">
+    <div class="big" id="tally-n"></div>
+    <div class="key"><span><i class="k-hit"></i>violated a rule</span><span><i class="k-held"></i>held</span></div>
+    <p class="cap">Directed search, seed 0: a count of what the search evaluated, not a failure rate.</p>
+  </div>
+  <p class="cap abs" id="capB"></p>
+
+  <!-- TT-403 · the gate -->
+  <h2 class="display abs" id="hC">
+    <span>Then it gates every checkpoint</span>
+    <span>your CI sends it.</span>
+  </h2>
+  <div class="abs" id="term">
+    <div class="term__head"><span>ci · quadruped</span><span>teeter gate</span></div>
+    <div class="term__body" id="term-body"></div>
+  </div>
+  <div class="abs" id="banner"><i class="sw"></i><span class="word">BLOCKED</span>
+    <span class="exit">exit code<b>1</b></span></div>
+  <p class="abs" id="noteC"></p>
+  <p class="cap abs" id="capC">Recorded on 9 October 2026 from the v0 demo stack. Its checkpoints hold poses; none is a trained policy.</p>
+
+  <!-- TT-404 · the end -->
+  <div class="abs" id="lock" aria-hidden="true"></div>
+  <p class="abs" id="endA">Adversarial testing for learned robot policies.</p>
+  <p class="abs" id="endB">Every result re-runs from its seeds.</p>
+  <p class="abs" id="endC">teeter, v.: to sway at the edge of falling</p>
+
+  <!-- title block -->
+  <div class="tb">
+    <div class="tb__mark" id="tb-mark"></div>
+    <div><b>Title</b><span id="tb-title">Replay</span></div>
+    <div><b>Dwg no</b><span id="tb-dwg">TT-401</span></div>
+    <div><b>Rev</b><span>A</span></div>
+    <div><b>Scale</b><span>NTS</span></div>
+    <div><b>Sheet</b><span id="tb-sheet">1 of 4</span></div>
+    <div><b>Date</b><span>2026-10-12</span></div>
+  </div>
+</div>
+
+<script src="../teeter/vendor/three.min.js"></script>
+<script>
+/* The machine steps on this page's clock, not the display's: requestAnimationFrame is a
+   queue this page drains once per film frame, and nothing the machine observes ever hides it. */
+(function () {
+  window.__realRAF = window.requestAnimationFrame.bind(window);
+  window.__queue = [];
+  window.requestAnimationFrame = function (cb) { window.__queue.push(cb); return window.__queue.length; };
+  window.cancelAnimationFrame = function () {};
+  window.IntersectionObserver = function (cb) { this.observe = function () { cb([{ isIntersecting: true }]); }; this.disconnect = function () {}; };
+  window.ResizeObserver = function () { this.observe = function () {}; this.disconnect = function () {}; };
+}());
+</script>
+<script src="../teeter/js/machine.js"></script>
+<script>
+(function () {
+  'use strict';
+  var FPS = 30, DUR = 18, PRE = 0.8;        // PRE: the machine runs this long before frame 0, so the push lands early
+  var W = 1080;
+  var $ = function (s) { return document.querySelector(s); };
+  function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+  function inv(t, a, b) { return clamp((t - a) / (b - a), 0, 1); }
+  function out(k) { return 1 - Math.pow(1 - k, 3); }
+  function inout(k) { return k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; }
+  function enter(t, t0, d) { return out(inv(t, t0, t0 + (d || .45))); }
+  function leave(t, t1, d) { return 1 - inout(inv(t, t1, t1 + (d || .3))); }
+  function show(el, a, dy) {
+    el.style.opacity = a.toFixed(3);
+    el.style.transform = dy ? 'translateY(' + (dy * (1 - Math.min(1, a))).toFixed(2) + 'px)' : '';
+    el.style.visibility = a <= 0.001 ? 'hidden' : 'visible';
+  }
+  function num(v) { return String(+(+v).toFixed(4)); }       // as machine.js and every panel show it
+
+  // scene windows, in seconds of film
+  var A1 = 4.3, B0 = 4.5, B1 = 10.3, C0 = 10.7, C1 = 14.3, D0 = 14.7;
+
+  var D, C, stopMachine = null, mNow = -1, stage = $('#stage');
+
+  /* ── the machine, on our clock ─────────────────────────── */
+  function mountMachine() {
+    if (stopMachine) stopMachine();
+    window.__queue = []; mNow = -1;
+    stopMachine = window.TeeterMachine.mount(stage, D, { offset: [-0.2, -0.11] });
+  }
+  function stepAt(ms) { mNow = ms; var q = window.__queue; window.__queue = []; q.forEach(function (cb) { cb(ms); }); }
+  function machineTo(t) {
+    var target = (PRE + t) * 1000, step = 1000 / FPS;
+    if (target < mNow - 1e-6) mountMachine();
+    if (mNow < 0) stepAt(0);
+    while (mNow + step <= target + 1e-6) stepAt(mNow + step);
+  }
+
+  // the machine places its notes by projection; a label that would run past the frame is slid back inside
+  function keepNotesIn() {
+    var box = stage.getBoundingClientRect();
+    Array.prototype.forEach.call(stage.querySelectorAll('.note[data-note="breach"] span'), function (sp) {
+      sp.style.transform = '';
+      var r = sp.getBoundingClientRect(), over = r.right - (box.right - 14);
+      if (over > 0) sp.style.transform = 'translate(' + (26 - over).toFixed(1) + 'px,-12px)';
+    });
+  }
+
+  /* ── TT-402: build the plot from the record ────────────── */
+  var PX0 = 64, PX1 = 590, PY0 = 26, PY1 = 404, pts = [], minG, walkLine, walkDim, walkTicks, walkLab, labBg,
+      minLab, minLab2, minMark, failLo;
+  function sizeLabelGround() {                    // after the fonts load, so the box fits the words
+    var a = minLab.getBBox(), b = minLab2.getBBox(), x0 = Math.min(a.x, b.x) - 8, x1 = Math.max(a.x + a.width, b.x + b.width) + 8;
+    labBg.setAttribute('x', x0); labBg.setAttribute('width', x1 - x0);
+    labBg.setAttribute('y', a.y - 5); labBg.setAttribute('height', b.y + b.height - a.y + 10);
+  }
+  function X(v) { return PX0 + (v - C.scatter.x_bounds[0]) / (C.scatter.x_bounds[1] - C.scatter.x_bounds[0]) * (PX1 - PX0); }
+  function Y(v) { return PY1 - (v - C.scatter.y_bounds[0]) / (C.scatter.y_bounds[1] - C.scatter.y_bounds[0]) * (PY1 - PY0); }
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(name, attrs, parent, text) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function buildPlot() {
+    var sc = C.scatter, f = $('#plot-frame');
+    var xt = [0, 3, 6, 9], yt = [0, 5, 10, 15];
+    xt.forEach(function (v) {
+      el('line', { class: 'grid', x1: X(v), x2: X(v), y1: PY0, y2: PY1 }, f);
+      el('text', { x: X(v), y: PY1 + 22, 'text-anchor': 'middle' }, f, String(v));
+    });
+    yt.forEach(function (v) {
+      el('line', { class: 'grid', x1: PX0, x2: PX1, y1: Y(v), y2: Y(v) }, f);
+      el('text', { x: PX0 - 12, y: Y(v) + 4, 'text-anchor': 'end' }, f, String(v));
+    });
+    el('line', { class: 'ax', x1: PX0, x2: PX1, y1: PY1, y2: PY1 }, f);
+    el('line', { class: 'ax', x1: PX0, x2: PX0, y1: PY0, y2: PY1 }, f);
+    el('text', { x: PX1, y: PY1 + 50, 'text-anchor': 'end' }, f, sc.x_axis + ' · N·s requested');
+    el('text', { x: PX0, y: PY0 - 12 }, f, sc.y_axis + ' · %');
+    var g = $('#plot-pts');
+    sc.points.forEach(function (p) {
+      var e = p.f ? el('rect', { class: 'hit', x: X(p.x) - 5.5, y: Y(p.y) - 5.5, width: 11, height: 11 }, g)
+                  : el('circle', { class: 'held', cx: X(p.x), cy: Y(p.y), r: 4 }, g);
+      e.style.opacity = 0;
+      pts.push({ e: e, f: p.f });
+    });
+    failLo = Math.min.apply(null, sc.points.filter(function (p) { return p.f; }).map(function (p) { return p.x; }));
+    var mn = C.report.modes[0].minimal.push_impulse_ns;
+    minG = $('#plot-min');
+    walkDim = el('line', { class: 'dim', x1: X(failLo), x2: X(failLo), y1: PY0 + 40, y2: PY0 + 40 }, minG);
+    walkTicks = [el('line', { class: 'dim', x1: X(failLo), x2: X(failLo), y1: PY0 + 34, y2: PY0 + 46 }, minG),
+                 el('line', { class: 'dim', x1: X(mn), x2: X(mn), y1: PY0 + 34, y2: PY0 + 46 }, minG)];
+    walkLab = el('text', { class: 'dim-lab halo', x: X(mn) - 7, y: PY0 + 44, 'text-anchor': 'end' }, minG, 'reduced');
+    labBg = el('rect', { class: 'lab-bg' }, minG);
+    walkLine = el('line', { class: 'limit', x1: X(failLo), x2: X(failLo), y1: PY0, y2: PY1 }, minG);
+    minMark = el('path', { class: 'hit', d: 'M' + X(mn) + ' ' + (PY1 - 9) + 'l9 9l-9 9l-9 -9z' }, minG);
+    minLab = el('text', { class: 'min-lab halo', x: X(mn) - 14, y: PY1 - 52, 'text-anchor': 'end' }, minG,
+      'the smallest condition that still breaks it');
+    minLab2 = el('text', { class: 'min-lab halo', x: X(mn) - 14, y: PY1 - 32, 'text-anchor': 'end' }, minG,
+      'push ' + num(mn) + ' N·s requested, all else at nominal');
+    minG.appendChild(minLab); minG.appendChild(minLab2);              // words over their ground
+    [minMark, minLab, minLab2, labBg, walkLab].concat(walkTicks).forEach(function (e) { e.style.opacity = 0; });
+  }
+
+  /* ── TT-403: the gate's output, as the CLI printed it ──── */
+  var CMD = 'teeter gate --program quadruped --checkpoint tall-v2';
+  var OUT = [   // recorded on the v0 demo stack, 9 October 2026; the form is cmd_gate's in runner/teeter_runner/cli.py
+    ['G-0001: tall-v2 (C-0002) against the baseline stand (C-0001)', 12.05],
+    ['', 12.05],
+    ['<span class="w">BLOCKED:</span> the candidate fails in a way the baseline did not,', 12.4],
+    ['         or under a smaller condition', 12.4],
+    ['  widened    tilt_limit via push_impulse_ns', 12.55],
+    ['             push_impulse_ns 7.875 -&gt; 6.89323', 12.55]
+  ];
+  function termAt(t) {
+    var typed = Math.floor(clamp((t - 11.0) / 0.8, 0, 1) * CMD.length);
+    var html = '<span class="p">$ </span><span class="w">' + CMD.slice(0, typed) + '</span>';
+    if (typed < CMD.length && t >= 10.9) html += '<i class="caret"></i>';
+    OUT.forEach(function (l) { if (t >= l[1]) html += '\n' + l[0]; });
+    if (t >= 12.85) {
+      var e = 'echo $?', k = Math.floor(clamp((t - 12.85) / 0.15, 0, 1) * e.length);
+      html += '\n<span class="p">$ </span><span class="w">' + e.slice(0, k) + '</span>';
+      if (t >= 13.05) html += '\n1';
+    }
+    $('#term-body').innerHTML = html;
+  }
+
+  /* ── the film ──────────────────────────────────────────── */
+  function sheetAt(t) {
+    var n = t < B0 - .05 ? 1 : t < C0 - .05 ? 2 : t < D0 - .05 ? 3 : 4;
+    $('#tb-dwg').textContent = 'TT-40' + n;
+    $('#tb-title').textContent = ['Replay', 'Search', 'Gate', 'Teeter'][n - 1];
+    $('#tb-sheet').textContent = n + ' of 4';
+  }
+  function seek(t) {
+    t = clamp(t, 0, DUR);
+    sheetAt(t);
+
+    // TT-401
+    var a = leave(t, A1);
+    if (t < A1 + .4) { machineTo(t); keepNotesIn(); }
+    show(stage, a);
+    var hA = $('#hA').children;
+    show(hA[0], a);
+    show(hA[1], Math.min(a, enter(t, 1.25)), 14);
+    show(hA[2], Math.min(a, enter(t, 1.55)), 14);
+    show($('#capA'), a);
+
+    // TT-402
+    var b = leave(t, B1), hB = $('#hB').children;
+    show(hB[0], Math.min(b, enter(t, B0)), 14);
+    show(hB[1], Math.min(b, enter(t, 6.6)), 14);
+    show($('#space .label'), Math.min(b, enter(t, B0 + .2)));
+    Array.prototype.forEach.call($('#space-rows').children, function (r, i) { show(r, Math.min(b, enter(t, B0 + .25 + i * .07)), 8); });
+    show($('#rules'), Math.min(b, enter(t, 6.7)), 8);
+    show($('#plot'), Math.min(b, enter(t, B0 + .4, .5)));
+    var k = 0, v = 0, T0 = 5.3, T1 = 7.9;
+    pts.forEach(function (p, i) {
+      var ti = T0 + i / pts.length * (T1 - T0), o = enter(t, ti, .12);
+      p.e.style.opacity = o.toFixed(3);
+      if (t >= ti) { k++; if (p.f) v++; }
+    });
+    show($('#tally'), Math.min(b, enter(t, T0 - .1)));
+    $('#tally-n').textContent = 'evaluation ' + String(k).padStart(3, '0') + ' of ' + pts.length + ' · ' + v + ' violated a rule';
+    var mn = C.report.modes[0].minimal.push_impulse_ns, w = inout(inv(t, 8.2, 9.0)), xw = X(failLo) + (X(mn) - X(failLo)) * w;
+    walkLine.setAttribute('x1', xw); walkLine.setAttribute('x2', xw);
+    walkLine.style.opacity = enter(t, 8.05, .25).toFixed(3);
+    walkDim.setAttribute('x2', xw);
+    walkDim.style.opacity = enter(t, 8.2, .2).toFixed(3);
+    walkTicks[0].style.opacity = walkLab.style.opacity = enter(t, 9.0, .25).toFixed(3);
+    walkTicks[1].style.opacity = enter(t, 9.0, .25).toFixed(3);
+    labBg.style.opacity = enter(t, 9.0, .35).toFixed(3);
+    minMark.style.opacity = enter(t, 8.95, .25).toFixed(3);
+    minLab.style.opacity = enter(t, 9.0, .35).toFixed(3);
+    minLab2.style.opacity = enter(t, 9.1, .35).toFixed(3);
+    show($('#capB'), Math.min(b, enter(t, B0 + .4)));
+
+    // TT-403
+    var c = leave(t, C1), hC = $('#hC').children;
+    show(hC[0], Math.min(c, enter(t, C0)), 14);
+    show(hC[1], Math.min(c, enter(t, C0 + .15)), 14);
+    show($('#term'), Math.min(c, enter(t, C0 + .15)));
+    termAt(t);
+    var bn = Math.min(c, enter(t, 12.6, .35));
+    show($('#banner'), bn);
+    $('#banner').style.clipPath = 'inset(0 ' + ((1 - out(inv(t, 12.6, 13.0))) * 100).toFixed(2) + '% 0 0)';
+    show($('#noteC'), Math.min(c, enter(t, 13.1)), 10);
+    show($('#capC'), Math.min(c, enter(t, C0 + .3)));
+
+    // TT-404
+    show($('#lock'), enter(t, D0, .7), 18);
+    show($('#endA'), enter(t, D0 + .5), 12);
+    show($('#endB'), enter(t, D0 + .85), 12);
+    show($('#endC'), enter(t, D0 + 1.2));
+  }
+
+  /* ── load the record, then the machine ─────────────────── */
+  function txt(u) { return fetch(u).then(function (r) { if (!r.ok) throw new Error(u + ' ' + r.status); return r.text(); }); }
+  function inline(svg) {
+    return svg.replace(/<title[^>]*>[\s\S]*?<\/title>/g, '').replace(/ aria-labelledby="[^"]*"/g, '').replace(/ role="img"/g, '');
+  }
+  Promise.all([txt('../teeter/index.html'), txt('../assets/data/campaign.json'),
+               txt('../teeter/brand/teeter-lockup.svg'), txt('../teeter/brand/teeter-wordmark.svg')])
+    .then(function (r) {
+      var m = r[0].match(/<script type="application\/json" id="replay-data">([\s\S]*?)<\/script>/);
+      D = JSON.parse(m[1]);
+      C = JSON.parse(r[1]);
+      $('#lock').innerHTML = inline(r[2]);
+      $('#tb-mark').innerHTML = inline(r[3]);
+
+      // the replay's settings, from the replay document and the record
+      $('#v-mujoco').textContent = C.report.environment.mujoco;
+      $('#v-speed').textContent = D.speed + '× speed · media/sim.json';
+      $('.hud__bar').style.setProperty('--lim', (D.threshold / 180 * 100).toFixed(3) + '%');
+
+      // the declared space and the rules, from the record
+      var unit = { push_impulse_ns: 'N·s', slope_deg: '°', sensor_lag_ms: 'ms', torque_loss_pct: '%', payload_kg: 'kg', payload_offset_m: 'm' };
+      $('#space-rows').innerHTML = Object.keys(C.space).map(function (k) {
+        var s = C.space[k], u = unit[k] || '';
+        return '<div class="row"><i>' + k + '</i><em>' + s[0] + '–' + s[1] + (u === '°' || u === '%' ? u : ' ' + u) + '</em></div>';
+      }).join('');
+      $('#rule-rows').innerHTML = C.report.predicates.map(function (p) {
+        return '<div class="rule">' + p.signal + ' ' + p.op + ' ' + num(p.threshold) + (String(p.threshold).indexOf('.') < 0 ? '.0' : '') + '</div>';
+      }).join('');
+      $('#capB').textContent = 'The published campaign of ' + C.generated + ': ' + C.budget + ' directed evaluations in the order they ran, '
+        + 'drawn on two of its ' + (['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'][Object.keys(C.space).length] || Object.keys(C.space).length) + ' axes.';
+      var mn = C.report.modes[0].minimal.push_impulse_ns;
+      $('#noteC').innerHTML = 'tall-v2 goes over at a smaller push than its baseline: 6.89 N·s instead of ' + num(mn) + ' N·s, both requested.';
+
+      buildPlot();
+      return document.fonts.ready;
+    })
+    .then(function () {
+      sizeLabelGround();
+      mountMachine();
+      seek(0);
+      window.META = { FPS: FPS, DUR: DUR, FRAMES: Math.round(FPS * DUR), W: W, H: W };
+      window.seek = seek;
+      window.READY = true;
+      if (/[?&]play\b/.test(location.search)) {
+        var start = null;
+        var tick = function (now) {
+          if (start === null) start = now;
+          var t = ((now - start) / 1000) % DUR;
+          if (t < 0.05) mountMachine();
+          seek(t);
+          window.__realRAF(tick);
+        };
+        window.__realRAF(tick);
+      }
+    })
+    .catch(function (e) { window.ERROR = String(e); console.error(e); });
+}());
+</script>
+</body>
+</html>

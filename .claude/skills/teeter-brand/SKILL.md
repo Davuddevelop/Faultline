@@ -117,7 +117,8 @@ Also: the free-body-diagram fixed-support symbol, the quartered-circle
 centre-of-gravity symbol, numbered balloons, zones 1–8 across and A–D down, a
 title block on every sheet (Title, Dwg no, Rev, Scale, Sheet, Date), NTS where
 not to scale. Drawing numbers: TT-000–TT-010 the identity standard, TT-100–TT-109
-the website and its sections, TT-201 a report cover.
+the website and its sections, TT-201 a report cover, TT-401–TT-404 the sheets of
+the motion ad (`media/teeter-ad.html`).
 
 ## Figures are generated, never typed
 

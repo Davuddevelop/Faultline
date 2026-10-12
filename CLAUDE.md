@@ -66,6 +66,7 @@ Verify before quoting; they drift.
 | `teeter/` | the Teeter website, filled by `tools/build_teeter_site.py` from the campaign record |
 | `teeter/app/` | the app: every screen in `docs/product-plan.md`. Served by the API, `js/live.js` runs it on the workspace's data; anywhere else it is the prototype, record panels from `tools/build_teeter_app.py`, the rest from `js/example.js` (illustrative, tagged on screen) |
 | `teeter/brand/` | the identity standard (TT-000 to TT-010) and every logo file, drawn by `tools/build_brand.py` |
+| `media/` | the captured physics (`sim.json`, `capture_sim.py`) and the brand films: `teeter-ad-1x1.mp4` (TT-401 to TT-404), rendered from `teeter-ad.html` by `shoot-teeter-ad.py`; the `faultline-*` films are the withdrawn identity's. Not deployed |
 | `index.html` | the front page: generated from `teeter/index.html` by `tools/build_teeter_site.py`; never edit it directly |
 | `faultline.html`, `ink/`, `configure/`, `app/`, `start/`, `report/`, `atlas/`, `surreal/`, `next/`, `archive/`, `v1/`-`v3/` | the older site, under the previous identity: retired, kept for reference, not deployed (`.vercelignore`), its addresses redirected to the Teeter site (`vercel.json`). Some quote old numbers by hand; never cite them |
 | `.vercelignore`, `vercel.json` | what the `faultline` Vercel project deploys: the front page and `teeter/` only |
