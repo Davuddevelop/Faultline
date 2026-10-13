@@ -138,4 +138,5 @@ def create_gate(session: Session, who: Principal, base: Campaign, cand: Campaign
 def gate_detail(session: Session, g: Gate) -> dict[str, Any]:
     base, cand = session.get(Campaign, g.baseline_campaign_id), session.get(Campaign, g.candidate_campaign_id)
     program = session.get(Program, g.program_id) if g.program_id else None
-    return gate_out(g, base, cand, program)
+    ck = lambda c: session.get(Checkpoint, c.checkpoint_id) if c.checkpoint_id else None   # noqa: E731
+    return gate_out(g, base, cand, program, ck(base), ck(cand))

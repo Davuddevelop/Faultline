@@ -65,6 +65,7 @@ def test_gating_a_checkpoint_through_its_program(client, world):
     assert g.status_code == 201, g.text
     g = g.json()
     assert g["state"] == "waiting" and g["baseline"]["policy"] == "stand" and g["candidate"]["policy"] == "tall"
+    assert (g["baseline"]["checkpoint"], g["candidate"]["checkpoint"], g["program_name"]) == ("v40", "v41", "Q2")
 
     register(client, world.runner)
     run_fake(client, world.runner, modes=[mode(7.9)])          # the baseline, queued first

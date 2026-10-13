@@ -63,11 +63,14 @@ def campaign_out(c: Campaign, *, runner: Runner | None = None, program: Program 
     return d
 
 
-def gate_out(g: Gate, base: Campaign, cand: Campaign, program: Program | None = None) -> dict[str, Any]:
+def gate_out(g: Gate, base: Campaign, cand: Campaign, program: Program | None = None,
+             base_ck: Checkpoint | None = None, cand_ck: Checkpoint | None = None) -> dict[str, Any]:
     return {"id": g.id, "ref": ref("G", g.number), "number": g.number, "state": g.state, "verdict": g.verdict,
-            "program": program.slug if program else None,
-            "baseline": {"ref": ref("C", base.number), "policy": base.spec["policy"], "state": base.state},
-            "candidate": {"ref": ref("C", cand.number), "policy": cand.spec["policy"], "state": cand.state},
+            "program": program.slug if program else None, "program_name": program.name if program else None,
+            "baseline": {"ref": ref("C", base.number), "policy": base.spec["policy"], "state": base.state,
+                         "checkpoint": base_ck.label if base_ck else None},
+            "candidate": {"ref": ref("C", cand.number), "policy": cand.spec["policy"], "state": cand.state,
+                          "checkpoint": cand_ck.label if cand_ck else None},
             "comparison": g.comparison, "created_by": g.created_by,
             "created_at": iso(g.created_at), "decided_at": iso(g.decided_at)}
 

@@ -160,7 +160,7 @@
       s += '<text class="lbl" x="0" y="' + (y + 4) + '">' + esc(nm) + '</text>';
       s += '<rect class="bar-dec" x="' + l + '" y="' + (y - 5) + '" width="' + (r - l) + '" height="10"/>';
       s += '<rect class="bar-smp" x="' + f1(X0(p.sampled_min)) + '" y="' + (y - 5) + '" width="' + Math.max(1, f1(X0(p.sampled_max) - X0(p.sampled_min))) + '" height="10"/>';
-      s += '<text class="tick" x="' + (r + 8) + '" y="' + (y + 4) + '">' + p.declared_min + '–' + p.declared_max + ' ' + unit(p.unit) + '</text>';
+      s += '<text class="tick" x="' + (r + 8) + '" y="' + (y + 4) + '">' + p.declared_min + '–' + p.declared_max + (unit(p.unit) === '°' ? '' : ' ') + unit(p.unit) + '</text>';
     });
     return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="For each searched axis, the declared range and the part of it the search sampled.">' + s + '</svg>';
   }
@@ -173,7 +173,9 @@
     function path(arr) { return arr.map(function (v, i) { return (i ? 'L' : 'M') + f1(X0(i / hz)) + ',' + f1(Y0(Math.min(CAP, v))); }).join(''); }
     var s = '<defs>' + hatchDef(pid) + '<clipPath id="' + pid + 'c"><rect x="' + l + '" y="' + t + '" width="' + (r - l) + '" height="' + (b - t) + '"/></clipPath></defs>';
     [30, 60].forEach(function (v) { s += '<line class="grid" x1="' + l + '" y1="' + f1(Y0(v)) + '" x2="' + r + '" y2="' + f1(Y0(v)) + '"/>'; });
-    s += '<rect class="fail-zone" x="' + l + '" y="' + t + '" width="' + (r - l) + '" height="' + f1(Y0(thr) - t) + '" fill="url(#' + pid + ')"/>';
+    // past the rule is hatched as a band along the limit, not as the whole field above it
+    var bandH = Math.min(14, f1(Y0(thr) - t));
+    s += '<rect class="fail-zone" x="' + l + '" y="' + f1(Y0(thr) - bandH) + '" width="' + (r - l) + '" height="' + bandH + '" fill="url(#' + pid + ')"/>';
     s += '<line class="limit" x1="' + l + '" y1="' + f1(Y0(thr)) + '" x2="' + r + '" y2="' + f1(Y0(thr)) + '"/>';
     s += '<line class="axis" x1="' + l + '" y1="' + t + '" x2="' + l + '" y2="' + b + '"/><line class="axis" x1="' + l + '" y1="' + b + '" x2="' + r + '" y2="' + b + '"/>';
     if (nom) s += '<path class="tr-calm" data-trace="nom" d="' + path(nom) + '"/>';
@@ -295,7 +297,7 @@
       '<p class="hero-side__q">' + q + '</p></aside>';
   }
   S.login = function () {
-    return '<div class="gate-page">' + heroSide('Find the conditions that break your policy, before your customers do.') +
+    return '<div class="gate-page">' + heroSide('Robots are learning to move. We find the exact condition where they fall.') +
       '<div class="gate-form"><span class="gate-form__lock">' + R.brand.lockup + '</span>' +
       '<div><p class="micro">TT-301 · Sign in</p><h1 class="ph__title" style="margin-top:8px">Sign in to your workspace</h1></div>' +
       '<p class="fine">Teeter is invite-only while pilots run. Every workspace is set up with us on a call.</p>' +
@@ -442,7 +444,7 @@
     var online = X.runners.filter(function (r) { return r.state !== 'offline'; }).length;
     var cards = X.programs.map(function (p) {
       var inner;
-      if (p.id === 'standin') inner = kv([['latest', a('/campaigns/C-0001', 'C-0001')], ['modes', REP.modes.length + ' failure modes'], ['smallest push', '<span class="m">' + V.minimal_push + ' N·s</span> requested'], ['gate', 'not set up: one campaign, no checkpoints']]);
+      if (p.id === 'standin') inner = kv([['latest', a('/campaigns/C-0001', 'C-0001')], ['modes', REP.modes.length + (REP.modes.length === 1 ? ' failure mode' : ' failure modes')], ['smallest push', '<span class="m">' + V.minimal_push + ' N·s</span> requested'], ['gate', 'not set up: one campaign, no checkpoints']]);
       else if (p.id === 'q2') inner = '<div><p class="f__l">smallest failing push · v36 → v41</p>' + sparkSvg(q2.slice().reverse().map(function (c) { return c.min_push; })) + '</div>' +
         kv([['latest', a('/gates/G-0041', 'G-0041') + ' · v41 against v40'], ['gate', verdict('blocked') + ' 1 new mode, 1 widened'], ['smallest push', '<span class="m">6.2 N·s</span> requested, was 7.9']]);
       else inner = '<p class="note-line">' + p.note + '</p>' + kv([['state', verdict('setup', 'Waiting on the roadmap')]]);
@@ -455,12 +457,12 @@
       { href: '#/evidence/EP-0001', cells: [verdict('done', 'Draft'), 'EP-0001 is unsigned: signing is not built yet', 'Evidence'] }
     ]);
     return head('TT-310 · Overview', 'Example Robotics', 'Every program\'s latest gate, what needs a decision, and what is running now.',
-      '<span>Pilot</span><span>3 programs</span><span>' + online + ' of ' + X.runners.length + ' runners online</span>', btn('New campaign', { href: '/campaigns/new' })) +
+      '<span>Pilot</span><span>3 programs</span><span>' + online + ' of ' + X.runners.length + ' runners online</span>') +
       '<div class="stats" style="margin-bottom:18px">' + stat('Open regressions', '1', 'G-0041, Q2 · walk · example') + stat('Running now', String(running.length), running.map(function (c) { return c.id + ' · ' + c.done + '/' + c.budget; }).join(', ') + ' · example') +
       stat('Failure modes, C-0001', String(REP.modes.length), REP.failures_total + ' violations in ' + CAMP.budget + ' directed evaluations · record') + stat('Uniform rate, C-0001', V.unif_lo + '–' + V.unif_hi + '%', '95% interval, ' + V.unif_k + ' of ' + V.unif_n + ' uniform samples · record') + '</div>' +
       '<div class="grid grid--3" style="margin-bottom:18px">' + cards + '</div>' +
       '<div class="grid grid--21">' + panel('Needs a decision', 'example', attention, { flush: true }) +
-      panel('Activity', 'example', '<ul class="check">' + X.audit.slice(0, 5).map(function (e) { return '<li class="is-wait"><span><span class="m" style="color:var(--ink-3)">' + e.at.slice(5) + '</span> ' + esc(e.what) + '</span></li>'; }).join('') + '</ul>', { foot: a('/settings/audit', 'Audit log →') }) + '</div>';
+      panel('Activity', 'example', '<ul class="check">' + X.audit.slice(0, 5).map(function (e) { return '<li class="is-log"><span><span class="m" style="color:var(--ink-3)">' + e.at.slice(5) + '</span> ' + esc(e.what) + '</span></li>'; }).join('') + '</ul>', { foot: a('/settings/audit', 'Audit log →') }) + '</div>';
   };
 
   /* TT-311 program */
@@ -468,7 +470,7 @@
     var pr = prog(p.p);
     if (!pr) return notFound();
     if (pr.id === 'standin') {
-      return head('TT-311 · Program', pr.name, pr.note, '<span>robot ' + a('/robots/quadruped', 'quadruped.xml') + '</span><span>policy ' + a('/policies/stand', 'stand') + '</span><span>' + src('record') + '</span>', btn('New campaign', { href: '/campaigns/new' })) +
+      return head('TT-311 · Program', pr.name, pr.note, '<span>robot ' + a('/robots/quadruped', 'quadruped.xml') + '</span><span>policy ' + a('/policies/stand', 'stand') + '</span><span>' + src('record') + '</span>') +
         '<div class="grid grid--2">' + panel('Latest campaign', 'record', kv([['campaign', a('/campaigns/C-0001', 'C-0001')], ['date', CAMP.generated], ['search', 'CEM · ' + CAMP.budget + ' evaluations · seed 0'], ['violations', REP.failures_total + ' of ' + CAMP.budget + ' · describes the search, not the robot'], ['modes', REP.modes.map(function (m, i) { return a('/campaigns/C-0001/modes/' + i, esc(m.label)); }).join('<br>')]])) +
         panel('Standard campaign', 'record', code(esc(R.yaml), { copy: true })) + '</div>' +
         '<div class="grid" style="margin-top:18px">' + panel('Checkpoints', 'record', '<p class="note-line">One policy, the built-in <code>stand</code>, and no checkpoints: there is nothing to gate. A gate needs a policy that changes. ' + a('/programs/q2', 'Q2 · walk') + ' shows one (example).</p>') + '</div>';
@@ -479,7 +481,7 @@
     }
     var cps = X.checkpoints;
     return head('TT-311 · Program', pr.name, pr.note, '<span>robot ' + a('/robots/q2', 'q2.xml') + '</span><span>policy ' + a('/policies/q2-walk', 'q2-walk') + '</span><span>baseline <b>v40</b> (shipped)</span><span>' + src('example') + '</span>',
-      btn('Checkpoints', { href: '/programs/q2/checkpoints', line: true }) + btn('New campaign', { href: '/campaigns/new' })) +
+      btn('Checkpoints', { href: '/programs/q2/checkpoints', line: true })) +
       '<div class="banner" style="margin-bottom:18px"><span class="banner__sw" aria-hidden="true"></span><div class="banner__body"><p class="banner__t">v41 is blocked</p><p class="banner__d">Against the shipped v40: 1 failure mode widened, 1 new, 1 fixed, 1 unchanged. Example values.</p></div>' + btn('Open the gate', { href: '/gates/G-0041' }) + '</div>' +
       '<div class="grid grid--21">' + panel('Smallest failing push, by checkpoint', 'example', trendFig(cps) + '<p class="note-line">Each point is the minimal case of the <code>tilt_limit via push_impulse_ns</code> mode in that checkpoint\'s standard campaign. Higher holds a bigger push. Comparable only because robot, space, rules and seeds match (v39 is excluded from comparison: its space differs).</p>') +
       panel('Standard campaign', 'example', kv([['space', a('/library', 'q2-standard v3') + ' · 6 axes'], ['rules', a('/library', 'q2-safety v2') + ' · 2 rules'], ['search', 'CEM · 600 evaluations'], ['seeds', 'sampler 0xA13F · sim 0 · policy 0'], ['runs on', 'lab-gpu-02, ci-runner-01'], ['called by', 'GitHub Actions on every PR that changes policies/']])) + '</div>';
@@ -527,7 +529,7 @@
       var pr = prog(c.program), href = c.id === 'C-0001' ? '/campaigns/C-0001' : c.state === 'running' ? '/campaigns/C-0001/live' : c.state === 'refused' ? '/gates/G-0039' : '/gates/G-0041';
       return { href: '#' + href, cells: ['<span class="ink">' + c.id + '</span>', pr.name, c.checkpoint, c.method, c.state === 'running' ? c.done + ' / ' + c.budget : String(c.budget), c.violations == null ? '—' : String(c.violations), c.modes == null ? '—' : String(c.modes), verdict(c.state), src(c.source)] };
     });
-    return head('TT-320 · Campaigns', 'Campaigns', 'Every search, newest first. A violation count from a directed search describes the search, not the robot.', null, btn('New campaign', { href: '/campaigns/new' })) +
+    return head('TT-320 · Campaigns', 'Campaigns', 'Every search, newest first. A violation count from a directed search describes the search, not the robot.') +
       '<div class="acts" style="margin-bottom:12px"><div class="seg" role="group" aria-label="Filter"><button type="button" aria-pressed="true">All</button><button type="button" aria-pressed="false">Running</button><button type="button" aria-pressed="false">Blocked</button><button type="button" aria-pressed="false">Gates</button></div></div>' +
       panel('Campaigns', null, table(['id', 'program', 'checkpoint', 'method', { t: 'evaluations', r: 1, m: 1 }, { t: 'violations', r: 1, m: 1 }, { t: 'modes', r: 1, m: 1 }, 'state', 'data'], rows, { stack: true }), { flush: true,
         foot: 'C-0001 is the published campaign of ' + CAMP.generated + ' (directed, seed 0). Running C-0413 opens a replay of C-0001\'s evaluations, since nothing here runs.' });
@@ -688,7 +690,7 @@
     return head('TT-323 · Campaign result', 'C-0001', 'The published campaign: the stand-in quadruped and its stance policy, searched over six axes for ' + CAMP.budget + ' evaluations.',
       '<span>' + CAMP.generated + '</span><span>CEM · seed 0</span><span>robot <span class="m">' + R.robot.sha256.slice(0, 12) + '…</span></span><span>' + src('record') + '</span>',
       btn('Replay the run', { href: '/campaigns/C-0001/live', line: true }) + btn('Build evidence', { href: '/evidence/EP-0001' })) +
-      '<div class="banner banner--inv" style="margin-bottom:18px"><span class="banner__sw" aria-hidden="true"></span><div class="banner__body"><p class="banner__t">' + REP.modes.length + ' failure modes found</p>' +
+      '<div class="banner banner--inv" style="margin-bottom:18px"><span class="banner__sw" aria-hidden="true"></span><div class="banner__body"><p class="banner__t">' + REP.modes.length + (REP.modes.length === 1 ? ' failure mode' : ' failure modes') + ' found</p>' +
       '<p class="banner__d">Smallest: a requested push of ' + V.minimal_push + ' N·s, all else nominal, breaches <code style="color:inherit">tilt_deg &gt; ' + V.threshold + '</code> at ' + V.breach_t + ' s. Found in simulation, MuJoCo ' + V.mujoco + '; nothing here was run on hardware.</p></div></div>' +
       '<div class="grid">' + panel('Failure modes · the ' + REP.reduced + ' most severe of ' + REP.failures_total + ' violations, reduced and grouped', 'record', modes, { flush: true,
         foot: 'Reduction applies to the most severe failures (<code>reduce.max = ' + REP.reduced + '</code>), not every one. Each minimal case is locally minimal: no single axis can be relaxed further. It is not proven globally smallest.' }) + '</div>' +
@@ -901,7 +903,7 @@
     });
   };
 
-  function notFound() { return head('TT-399', 'Nothing here', 'This screen does not exist in the prototype.', null, btn('Overview', { href: '/' })); }
+  function notFound() { return head('TT-399', 'Nothing at this address', 'Check the link, or start again from the overview.', null, btn('Overview', { href: '/', line: true })); }
 
   /* ── routes ────────────────────────────────────────────── */
   var ROUTES = [
@@ -937,7 +939,7 @@
       var ok = pat.every(function (s, j) { if (s.charAt(0) === ':') { p[s.slice(1)] = decodeURIComponent(seg[j]); return !!seg[j]; } return s === seg[j]; });
       if (ok) return { name: ROUTES[i][1], o: ROUTES[i][2], p: p, path: path };
     }
-    return { name: null, o: { crumb: '—' }, p: {}, path: path };
+    return { name: null, o: { crumb: 'Not found' }, p: {}, path: path };
   }
 
   /* ── navigation, breadcrumbs ───────────────────────────── */
@@ -969,7 +971,7 @@
   }
   var lastPath = null, seq = 0;
   // the live layer (js/live.js) sets these when the app is served by a control plane
-  var hooks = { nav: null, crumbs: null, title: 'Teeter app prototype', decorate: null };
+  var hooks = { nav: null, crumbs: null, title: 'Teeter app prototype', decorate: null, palette: null };
   function render() {
     seq++;
     teardown();
@@ -1024,9 +1026,11 @@
   ];
   REP.modes.forEach(function (m, i) { PAL.splice(16 + i, 0, ['C-0001 · mode ' + (i + 1), '/campaigns/C-0001/modes/' + i]); });
   var pal = document.getElementById('palette'), pin = document.getElementById('palette-in'), plist = document.getElementById('palette-list'), sel = 0, shown = [];
+  var kbd = document.querySelector('[data-kbd]');
+  if (kbd && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) kbd.textContent = '⌘K';
   function palDraw() {
     var q = pin.value.toLowerCase().trim();
-    shown = PAL.filter(function (x) { return !q || (x[0] + ' ' + x[1]).toLowerCase().indexOf(q) >= 0; });
+    shown = (hooks.palette ? hooks.palette() : PAL).filter(function (x) { return !q || (x[0] + ' ' + x[1]).toLowerCase().indexOf(q) >= 0; });
     sel = Math.min(sel, Math.max(0, shown.length - 1));
     plist.innerHTML = shown.map(function (x, i) { return '<li role="option" data-i="' + i + '" aria-selected="' + (i === sel) + '">' + esc(x[0]) + '<small>' + esc(x[1]) + '</small></li>'; }).join('') || '<li>No match</li>';
   }

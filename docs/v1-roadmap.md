@@ -139,7 +139,7 @@ tested against a mocked WorkOS; and the older pages retired from the site.
 
 **Not in v0:** the hosted deployment itself (built, not provisioned), SSO
 connections, billing, signed manifests, hosted runners, Isaac Lab, more than
-one region, emailed sign-in links, a members screen in the app.
+one region, emailed sign-in links.
 
 ---
 
@@ -147,7 +147,7 @@ one region, emailed sign-in links, a members screen in the app.
 
 | Milestone | Builds | Done when | Est. |
 | --- | --- | --- | --- |
-| **M1 · Deployable** | Built: migrations, Blob storage, the Vercel project's configuration, WorkOS sign-in, roles, the demo workspace. Left: provisioning (`docs/decisions.md`, an hour of the owner's clicks), structured logs and error tracking, the runner on PyPI and as a published image, server-sent events, a members screen | A design partner signs in at a real URL and connects a runner without our help | 1–2 wk left |
+| **M1 · Deployable** | Built: migrations, Blob storage, the Vercel project's configuration, WorkOS sign-in, roles, the demo workspace, the members screen. Left: provisioning (`docs/decisions.md`, an hour of the owner's clicks), structured logs and error tracking, the runner on PyPI and as a published image, server-sent events | A design partner signs in at a real URL and connects a runner without our help | 1–2 wk left |
 | **M2 · Onboarding** | The runner reports its allowlisted robots and policies with model cards and observation layouts; a smoke test as its own job type; ONNX and TorchScript checkpoints by file hash; URDF checklist; templates | A partner reaches a first finding on their own robot in a day | 3–4 wk |
 | **M3 · Gate in CI** | GitHub Action, pull-request status and comment, Slack, baselines ("last shipped"), checkpoint history | One partner's CI calls `teeter gate` on every policy change | 2–3 wk |
 | **M4 · Evidence** | Ed25519 runner keys sign manifests; evidence packs; assessor share links; archive download | An assessor re-runs one record from a pack | 4–6 wk |

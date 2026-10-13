@@ -113,8 +113,6 @@ Each is in `docs/v1-roadmap.md`, with the milestone that brings it.
 - **Live updates.** The app polls with an index cursor; server-sent events are M1.
 - **Logs and error tracking.** Plain logs to stdout; structured logs and Sentry
   are M1.
-- **A members screen.** Members are managed through the API and
-  `teeter-api member`; the app's settings screen for it is still the prototype.
 
 ## Package names
 
