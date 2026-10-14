@@ -62,3 +62,20 @@ def test_a_token_on_the_command_line_beats_the_environment(tmp_path, monkeypatch
     assert _auth(Namespace(**{**args, "token_file": str(f)}))[1] == "tt_usr_file"
     assert _auth(Namespace(**{**args, "token": "tt_usr_flag", "token_file": str(f)}))[1] == "tt_usr_flag"
     assert _auth(Namespace(**args))[1] == "tt_ci_env"
+
+
+def test_an_error_exits_2_never_1_which_means_violations_or_blocked(tmp_path, monkeypatch):
+    import pytest
+
+    from teeter_runner.cli import main as teeter
+
+    monkeypatch.delenv("TEETER_API", raising=False)
+    monkeypatch.delenv("TEETER_TOKEN", raising=False)
+    with pytest.raises(SystemExit) as no_credentials:
+        teeter(["gate", "--program", "p", "--checkpoint", "c"])
+    assert no_credentials.value.code == 2
+    spec = tmp_path / "spec.yaml"
+    spec.write_text("robot: quadruped\npolicy: stand\n")
+    unreachable = ["--api", "http://127.0.0.1:1", "--token", "tt_ci_x"]
+    assert teeter(["campaign", "run", str(spec), *unreachable]) == 2
+    assert teeter(["gate", "--program", "p", "--checkpoint", "c", *unreachable]) == 2

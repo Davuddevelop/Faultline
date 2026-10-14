@@ -21,10 +21,18 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import NoReturn
 
 import yaml
 
 from .client import ApiError, Client
+
+
+def _fail(message: str) -> NoReturn:
+    """Exit 2: 1 means violations found or a gate blocked, so an error must not
+    look like either to CI."""
+    print(f"error: {message}", file=sys.stderr)
+    raise SystemExit(2)
 
 
 def _auth(args) -> tuple[str, str]:
@@ -36,7 +44,7 @@ def _auth(args) -> tuple[str, str]:
     token = args.token or (Path(args.token_file).read_text().strip() if args.token_file else None) \
         or os.environ.get("TEETER_TOKEN")
     if not api or not token:
-        sys.exit("error: give --api and --token (or --token-file), or set TEETER_API and TEETER_TOKEN")
+        _fail("give --api and --token (or --token-file), or set TEETER_API and TEETER_TOKEN")
     return api, token
 
 
@@ -47,7 +55,7 @@ def cmd_runner_start(args) -> int:
     try:
         cfg = load(args.config)
     except RunnerConfigError as exc:
-        sys.exit(f"error: {exc}")
+        _fail(str(exc))
     return Agent(api, token, cfg, name=args.name, log=lambda m: print(m, flush=True)).run_forever(once=args.once)
 
 
@@ -82,10 +90,7 @@ def cmd_campaign_run(args) -> int:
     api, token = _auth(args)
     spec = _read_spec(args.spec)
     client = Client(api, token)
-    try:
-        c = client.post("/v1/campaigns", {"spec": spec})
-    except ApiError as exc:
-        sys.exit(f"error: {exc.message}")
+    c = client.post("/v1/campaigns", {"spec": spec})        # an ApiError exits 2, in main
     print(f"{c['ref']} queued: {spec.get('robot')} / {spec.get('policy')}")
     if not args.wait:
         return 0
