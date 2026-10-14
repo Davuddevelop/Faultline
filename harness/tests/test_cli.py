@@ -184,6 +184,10 @@ def test_run_writes_all_three_deliverables_and_exits_1_on_violations(tmp_path):
     doc = json.loads((out / "archive" / "report.json").read_text())
     assert doc["modes"]
 
+    # the archive names the policy that was loaded, not the reference that found it
+    row = json.loads((out / "archive" / "manifest.jsonl").read_text().splitlines()[0])
+    assert row["policy_id"] == load_policy("stand", MODEL).id != "stand"
+
 
 def test_run_exits_0_when_nothing_violates(tmp_path):
     """Exit codes are what make this composable in CI."""

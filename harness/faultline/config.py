@@ -9,7 +9,7 @@ valid axis or predicate is.
 from __future__ import annotations
 
 import importlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -120,6 +120,14 @@ class Campaign:
 
     def policy(self) -> Policy:
         return load_policy(self.policy_ref, self.spec.model_path)
+
+    def loaded(self) -> tuple[Campaign, Policy]:
+        """The policy, and this campaign with its spec naming the policy by
+        what was loaded, not by the reference that found it. A file at a path
+        gets overwritten; an archive keyed on the path would say the wrong
+        network produced its results."""
+        policy = self.policy()
+        return replace(self, spec=replace(self.spec, policy_id=policy.id)), policy
 
 
 def load(path: str | Path) -> Campaign:

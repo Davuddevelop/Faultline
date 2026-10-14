@@ -136,8 +136,7 @@ def _trace_csv(traj) -> bytes:
 
 def execute(client: Client, job: dict[str, Any], cfg: RunnerConfig, control: Control, log: Log) -> dict:
     spec, jid, ref = job["campaign"]["spec"], job["job"]["id"], job["campaign"]["ref"]
-    camp = build(spec, cfg, source=f"{ref} from {client.api}")
-    policy = camp.policy()
+    camp, policy = build(spec, cfg, source=f"{ref} from {client.api}").loaded()
     robot = load_model(camp.spec.model_path, base_body=camp.spec.base_body)
     log(f"{ref}: {robot.summary()}; policy {policy.id}; {camp.method}, {camp.budget} evaluations, "
         f"{camp.workers} worker(s)")

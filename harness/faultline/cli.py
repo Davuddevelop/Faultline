@@ -90,13 +90,13 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 
 def _run_campaign(c: Campaign, quiet: bool = False) -> tuple[int, Path | None]:
-    policy = c.policy()
+    c, policy = c.loaded()
     search = cem_search if c.method == "cem" else random_search
 
     if not quiet:
         print(f"campaign  {c.source}")
         print(f"  robot     {c.spec.model_path}")
-        print(f"  policy    {c.policy_ref}")
+        print(f"  policy    {c.policy_ref}  ({policy.id})")
         print(f"  space     {c.space.dims} axes")
         par = "" if c.workers == 1 else f", {c.workers} workers"
         print(f"  search    {c.method}, {c.budget} simulations{par}")
