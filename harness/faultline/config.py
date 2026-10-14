@@ -130,6 +130,15 @@ class Campaign:
         return replace(self, spec=replace(self.spec, policy_id=policy.id)), policy
 
 
+def _resolve_policy(ref: str, base_dir: Path) -> str:
+    """A policy file's relative path resolves against the config, as the
+    robot's does, so a campaign runs the same from any directory."""
+    kind, sep, path = ref.partition(":")
+    if sep and kind in ("onnx", "torchscript") and not Path(path).is_absolute():
+        return f"{kind}:{(base_dir / path).resolve()}"
+    return ref
+
+
 def load(path: str | Path) -> Campaign:
     path = Path(path)
     if not path.exists():
@@ -219,7 +228,7 @@ def parse(doc: Any, *, base_dir: str | Path, source: str | Path = "<campaign>") 
         out = base_dir / out
 
     return Campaign(
-        spec=spec, space=space, policy_ref=str(doc["policy"]),
+        spec=spec, space=space, policy_ref=_resolve_policy(str(doc["policy"]), base_dir),
         method=method, budget=budget, target=target,
         workers=int(search.get("workers", 1)),
         reduce_enabled=bool(reduce_cfg.get("enabled", True)),

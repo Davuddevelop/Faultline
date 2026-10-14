@@ -70,6 +70,13 @@ def test_relative_robot_path_resolves_against_the_config(tmp_path):
     assert load(cfg).spec.model_path == str(model_copy.resolve())
 
 
+def test_a_relative_policy_file_resolves_against_the_config_too(tmp_path):
+    (tmp_path / "sub").mkdir()
+    cfg = write(tmp_path / "sub", MINIMAL.replace("policy: stand", "policy: onnx:policies/p.onnx"))
+    assert load(cfg).policy_ref == f"onnx:{(tmp_path / 'sub' / 'policies' / 'p.onnx').resolve()}"
+    assert load(write(tmp_path, MINIMAL)).policy_ref == "stand"
+
+
 # ------------------------------------------------------- loud, specific errors
 
 def test_missing_robot_is_named(tmp_path):
