@@ -48,6 +48,7 @@ python examples/run_one.py       # one run, recorded, replayed
 python examples/reduce_one.py    # a five-axis failure, minimised
 python examples/search_one.py    # search a space, compare methods, reduce the worst
 python examples/report_one.py    # a whole campaign into the three deliverables
+python examples/stand_in_onnx.py my-policy.onnx   # a random ONNX network to try the file path with (needs onnx)
 ```
 
 ## Deliverables
