@@ -117,8 +117,9 @@ Docker Compose. What was measured:
   audit log. See `api/README.md`.
 - `runner/`: register; long-poll for a job; renew its lease; run the engine
   with streaming; reduce; capture replays; upload; complete or fail. Plus the
-  `teeter` CLI (`runner start`, `campaign run`, `gate`, `status`). See
-  `runner/README.md`.
+  `teeter` CLI (`runner start`, `campaign run`, `program create`,
+  `checkpoint add`, `gate`, `status`). See `runner/README.md`, and
+  `docs/walkthrough.md` for all of it used in order.
 - The gate: two campaigns compare only if everything but the policy matches,
   robot file and MuJoCo version included. Otherwise the gate is refused, and
   the differing field is named.

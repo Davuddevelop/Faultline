@@ -58,6 +58,7 @@ Verify before quoting; they drift.
 | `scripts/dev.sh`, `Makefile`, `docker-compose.yml` | the whole product locally, natively or in Docker; `make test` runs every suite |
 | `.github/workflows/ci.yml` | CI: the three suites (the API's on Postgres too), the record check, the stack with a gate |
 | `docs/primer.md` | the domain from scratch, written to be learned from |
+| `docs/walkthrough.md` | every part of the product, step by step from a fresh clone, rehearsed with what each step printed; re-run it when the product changes |
 | `docs/strategy.md`, `product-spec.md`, `roadmap.md` | business case, spec, sequencing |
 | `docs/v1-roadmap.md` | engineering roadmap: architecture, v0 as built, milestones to v1 |
 | `docs/decisions.md` | the four decisions of 9 October (hosting, sign-in, simulator, the older pages) and the hosted setup only the account owner can do |

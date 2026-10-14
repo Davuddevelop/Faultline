@@ -22,6 +22,8 @@ make test                       # every test suite
 
 Either prints a one-time sign-in link to the app. The robot in the demo is a
 stand-in quadruped and its checkpoints are held poses, not trained policies.
+`docs/walkthrough.md` goes through every part of the product, step by step,
+from a fresh clone to your own policy gated in CI, with what each step prints.
 
 ---
 
