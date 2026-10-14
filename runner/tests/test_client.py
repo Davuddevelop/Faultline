@@ -45,3 +45,20 @@ def test_extra_headers_come_from_options_and_the_environment(monkeypatch):
     c.register(name="r")
     assert seen["authorization"] == "Bearer tt_run_x"           # the token cannot be overridden
     assert seen["cf-access-client-id"] == "abc"
+
+
+def test_a_token_on_the_command_line_beats_the_environment(tmp_path, monkeypatch):
+    """CI exports its token; a member running one command with their own
+    token file must not be acting as CI without knowing it."""
+    from argparse import Namespace
+
+    from teeter_runner.cli import _auth
+
+    f = tmp_path / "user-token"
+    f.write_text("tt_usr_file\n")
+    monkeypatch.setenv("TEETER_API", "http://127.0.0.1:8000")
+    monkeypatch.setenv("TEETER_TOKEN", "tt_ci_env")
+    args = dict(api=None, token=None, token_file=None, header=None)
+    assert _auth(Namespace(**{**args, "token_file": str(f)}))[1] == "tt_usr_file"
+    assert _auth(Namespace(**{**args, "token": "tt_usr_flag", "token_file": str(f)}))[1] == "tt_usr_flag"
+    assert _auth(Namespace(**args))[1] == "tt_ci_env"

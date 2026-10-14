@@ -32,9 +32,9 @@ def _auth(args) -> tuple[str, str]:
         # every client this process makes reads them (client.extra_headers)
         os.environ["TEETER_HEADERS"] = "\n".join(filter(None, [os.environ.get("TEETER_HEADERS", ""), *args.header]))
     api = args.api or os.environ.get("TEETER_API")
-    token = args.token or os.environ.get("TEETER_TOKEN")
-    if not token and args.token_file:
-        token = Path(args.token_file).read_text().strip()
+    # what is on the command line beats the environment, a file included
+    token = args.token or (Path(args.token_file).read_text().strip() if args.token_file else None) \
+        or os.environ.get("TEETER_TOKEN")
     if not api or not token:
         sys.exit("error: give --api and --token (or --token-file), or set TEETER_API and TEETER_TOKEN")
     return api, token

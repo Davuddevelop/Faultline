@@ -77,7 +77,8 @@ same numbers.
 ## The CLI
 
 Every command takes `--api` and `--token` or `--token-file`, or reads
-`TEETER_API` and `TEETER_TOKEN`, which is how CI should pass them. `--header
+`TEETER_API` and `TEETER_TOKEN`, which is how CI should pass them; a flag on
+the command line wins over the variable. `--header
 'Name: value'` (repeatable, or `TEETER_HEADERS`, one per line) adds a header to
 every request, for a control plane behind an access proxy such as Cloudflare
 Access, or a protected preview deployment.
