@@ -2,6 +2,8 @@
 
     teeter runner start --config runner.yaml       run campaigns on this machine
     teeter campaign run spec.yaml                  plan one, follow it, print what it found
+    teeter program create --slug P --name N spec   fix a program's experiment (a member's token)
+    teeter checkpoint add --program P --label C --policy NAME   a new checkpoint (CI may)
     teeter gate --program P --checkpoint C         CI: exit 0 passed, 1 blocked, 2 refused or error
     teeter status                                  the workspace at a glance
 
@@ -49,6 +51,19 @@ def cmd_runner_start(args) -> int:
     return Agent(api, token, cfg, name=args.name, log=lambda m: print(m, flush=True)).run_forever(once=args.once)
 
 
+def _amount(axis: str, value: float) -> str:
+    """A value with its unit. Push and lag land on the control grid, so the
+    robot received a quantised amount: they are quoted as requested."""
+    from faultline.reduce import SEVERITY_AXES          # the engine's table, imported only to print
+    ax = next(a for a in SEVERITY_AXES if a.field == axis)
+    return f"{value:g} {ax.unit}" + (" requested" if ax.quantised else "")
+
+
+def _read_spec(path: str) -> dict:
+    text = Path(path).read_text()
+    return json.loads(text) if path.endswith(".json") else yaml.safe_load(text)
+
+
 def _follow(client: Client, ref: str, quiet: bool = False) -> dict:
     last = None
     while True:
@@ -65,8 +80,7 @@ def _follow(client: Client, ref: str, quiet: bool = False) -> dict:
 
 def cmd_campaign_run(args) -> int:
     api, token = _auth(args)
-    text = Path(args.spec).read_text()
-    spec = json.loads(text) if args.spec.endswith(".json") else yaml.safe_load(text)
+    spec = _read_spec(args.spec)
     client = Client(api, token)
     try:
         c = client.post("/v1/campaigns", {"spec": spec})
@@ -80,11 +94,35 @@ def cmd_campaign_run(args) -> int:
         print(f"{c['ref']} {c['state']}: {c.get('error') or ''}")
         return 2
     for m in c["modes"]:
-        mins = ", ".join(f"{a} {m['minimal'][a]:g}" for a in m["required"])
+        mins = ", ".join(f"{a} {_amount(a, m['minimal'][a])}" for a in m["required"])
         print(f"  {m['count']:>3} x  {m['label']}   minimal: {mins}   first breach {m['first_t']:.2f} s")
     if not c["modes"]:
         print("no violations found. That bounds nothing: this budget, in this space, did not find one.")
     return 1 if c["failures"] else 0
+
+
+def cmd_program_create(args) -> int:
+    """The experiment every checkpoint of the program will run: a campaign
+    spec without its policy. A full spec is accepted and its policy left out."""
+    api, token = _auth(args)
+    spec = _read_spec(args.spec)
+    policy = spec.pop("policy", None)
+    prog = Client(api, token).post("/v1/programs", {"slug": args.slug, "name": args.name, "standard_spec": spec})
+    std = prog["standard_spec"]
+    print(f"program {prog['slug']}: robot {std['robot']}, {len(std['axes'])} axis(es), "
+          f"{std['search']['method']}, {std['search']['budget']} evaluations")
+    if policy:
+        print(f"  the spec's policy ({policy}) is left out: each checkpoint names its own")
+    return 0
+
+
+def cmd_checkpoint_add(args) -> int:
+    api, token = _auth(args)
+    prog = Client(api, token).post(f"/v1/programs/{args.program}/checkpoints", {
+        "label": args.label, "policy": args.policy, "note": args.note, "baseline": args.baseline})
+    ck = next(c for c in prog["checkpoints"] if c["label"] == args.label)
+    print(f"{prog['slug']}/{ck['label']}: policy {ck['policy']}" + (", the baseline" if ck["baseline"] else ""))
+    return 0
 
 
 def cmd_gate(args) -> int:
@@ -109,7 +147,7 @@ def cmd_gate(args) -> int:
     comp = g["comparison"]
     print(f"\n{g['verdict'].upper()}: {comp['reason']}")
     for m in comp.get("modes", []):
-        axes = "; ".join(f"{a['axis']} {a['baseline']:g} -> {a['candidate']:g}" for a in m.get("axes", []))
+        axes = "; ".join(f"{a['axis']} {a['baseline']:g} -> {_amount(a['axis'], a['candidate'])}" for a in m.get("axes", []))
         print(f"  {m['change']:<10} {m['label']}{'   ' + axes if axes else ''}")
     return {"passed": 0, "blocked": 1}.get(g["verdict"], 2)
 
@@ -150,6 +188,24 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("spec", help="a teeter.campaign/1 spec, YAML or JSON")
     run.add_argument("--no-wait", dest="wait", action="store_false", help="queue it and return")
     run.set_defaults(func=cmd_campaign_run)
+
+    pr = sub.add_parser("program", help="programs: one experiment, many checkpoints")
+    prs = pr.add_subparsers(dest="sub", required=True)
+    pc = prs.add_parser("create", parents=[common], help="fix a program's experiment from a campaign spec")
+    pc.add_argument("--slug", required=True, help="lower case, digits and hyphens, e.g. q2-walk")
+    pc.add_argument("--name", required=True)
+    pc.add_argument("spec", help="a teeter.campaign/1 spec, YAML or JSON; its policy is left out")
+    pc.set_defaults(func=cmd_program_create)
+
+    ckp = sub.add_parser("checkpoint", help="checkpoints of a program")
+    cks = ckp.add_subparsers(dest="sub", required=True)
+    ca = cks.add_parser("add", parents=[common], help="add a checkpoint: a policy name a runner allows")
+    ca.add_argument("--program", required=True)
+    ca.add_argument("--label", required=True, help="e.g. v42")
+    ca.add_argument("--policy", required=True, help="the name in the runner's allowlist")
+    ca.add_argument("--note", default="")
+    ca.add_argument("--baseline", action="store_true", help="make it the program's baseline")
+    ca.set_defaults(func=cmd_checkpoint_add)
 
     g = sub.add_parser("gate", parents=[common], help="gate a checkpoint against its program's baseline")
     g.add_argument("--program", required=True)

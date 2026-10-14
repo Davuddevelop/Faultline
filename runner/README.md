@@ -84,9 +84,17 @@ Access, or a protected preview deployment.
 
 ```sh
 teeter campaign run spec.yaml        # plan a campaign (teeter.campaign/1) and follow it
+teeter program create --slug q2 --name Q2 spec.yaml          # fix a program's experiment
+teeter checkpoint add --program q2 --label v42 --policy q2-v42   # after exporting one
 teeter gate --program quadruped --checkpoint tall-v2
 teeter status                        # the workspace at a glance
 ```
+
+`program create` takes a campaign spec and leaves its policy out: each
+checkpoint names its own. It needs a member's token (a viewer's is refused);
+`checkpoint add` and `gate` also take a CI token, so a training pipeline can
+add the checkpoint it just exported and gate it. The policy name must be in a
+runner's allowlist, and a runner reports its allowlist when it starts.
 
 `teeter gate` runs the program's experiment on the checkpoint, and on the
 baseline if it has not been run, then compares them. Exit code **0** passed,

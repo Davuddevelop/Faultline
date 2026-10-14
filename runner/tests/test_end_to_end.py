@@ -118,6 +118,23 @@ def test_the_runner_refuses_what_its_allowlist_does_not_name(server):
     assert c["state"] == "failed" and "robot model not found" in c["error"]
 
 
+def test_a_program_and_its_checkpoints_from_the_command_line(server, tmp_path, capsys):
+    """What CI does after exporting a checkpoint, before it gates it."""
+    spec = tmp_path / "spec.yaml"
+    spec.write_text(json.dumps({**SPEC, "policy": "stand"}))      # JSON is YAML too
+    common = ["--api", server["api"]]
+    assert teeter(["program", "create", *common, "--token", server["user"], "--slug", "q2", "--name", "Q2", str(spec)]) == 0
+    for label, policy in (("v40", "stand"), ("v41", "tall")):
+        assert teeter(["checkpoint", "add", *common, "--token", server["ci"],
+                       "--program", "q2", "--label", label, "--policy", policy]) == 0
+    out = capsys.readouterr().out
+    assert "policy (stand) is left out" in out and "q2/v40: policy stand, the baseline" in out
+    prog = httpx.get(f"{server['api']}/v1/programs/q2", headers={"Authorization": f"Bearer {server['ci']}"}).json()
+    assert [(c["label"], c["baseline"]) for c in prog["checkpoints"]] == [("v40", True), ("v41", False)]
+    # CI adds checkpoints; fixing a program's experiment takes a member
+    assert teeter(["program", "create", *common, "--token", server["ci"], "--slug", "q3", "--name", "Q3", str(spec)]) == 2
+
+
 def test_teeter_gate_blocks_a_checkpoint_that_got_worse(server, capsys):
     """stand-v1 is the baseline; tall-v2 holds a pose with a higher centre of
     mass and topples under a smaller push. The gate must say so, and exit 1."""
@@ -143,3 +160,4 @@ def test_teeter_gate_blocks_a_checkpoint_that_got_worse(server, capsys):
     out = capsys.readouterr().out
     assert code == 1, (out, logs)
     assert "BLOCKED" in out and "widened" in out
+    assert "N.s requested" in out, "the push lands on the control grid: quoted as requested"
