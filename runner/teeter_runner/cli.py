@@ -95,8 +95,9 @@ def cmd_gate(args) -> int:
     except ApiError as exc:
         print(f"error: {exc.message}", file=sys.stderr)
         return 2
+    base = g["baseline"]
     print(f"{g['ref']}: {args.checkpoint} ({g['candidate']['ref']}) against the baseline "
-          f"{g['baseline']['policy']} ({g['baseline']['ref']})", flush=True)
+          f"{base.get('checkpoint') or base['policy']} ({base['ref']})", flush=True)
     deadline = time.monotonic() + args.timeout
     while g["state"] != "decided":
         if time.monotonic() > deadline:
