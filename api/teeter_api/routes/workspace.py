@@ -63,9 +63,13 @@ def create_token(body: NewToken, request: Request, p: Principal = Depends(editor
     api = str(request.base_url).rstrip("/")
     out = {**token_out(tok), "secret": secret}
     if body.kind == "runner":
+        # the secret stays off the command line, where shell history and ps would keep it
         out["install"] = [
-            "pip install -e harness -e runner   # from a checkout; a package in M1",
-            f"teeter runner start --api {api} --token {secret} --name <machine name>",
+            "# from a checkout; a package in M1",
+            "pip install -e harness -e runner",
+            "# paste the token, then Enter and Ctrl-D",
+            "cat > runner-token && chmod 600 runner-token",
+            f"teeter runner start --api {api} --token-file runner-token --name <machine name>",
         ]
     return out
 

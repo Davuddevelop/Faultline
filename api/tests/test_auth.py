@@ -27,7 +27,8 @@ def test_a_ci_token_cannot_claim_or_administer(client, world):
 def test_a_revoked_token_stops_working(client, world):
     u = World.h(world.user)
     made = client.post("/v1/tokens", headers=u, json={"name": "lab-3", "kind": "runner"}).json()
-    assert made["secret"].startswith("tt_run_") and "teeter runner start" in made["install"][1]
+    assert made["secret"].startswith("tt_run_") and "teeter runner start" in made["install"][-1]
+    assert made["secret"] not in "\n".join(made["install"]), "a token on a command line lands in shell history"
     register(client, made["secret"], name="lab-3")
     client.delete(f"/v1/tokens/{made['id']}", headers=u)
     assert client.post("/v1/runner/claim", headers=World.h(made["secret"]), json={"wait_s": 0}).status_code == 401
