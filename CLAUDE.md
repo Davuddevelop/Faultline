@@ -66,7 +66,7 @@ Verify before quoting; they drift.
 | `docs/decisions.md` | the four decisions of 9 October (hosting, sign-in, simulator, the older pages) and the hosted setup only the account owner can do |
 | `docs/product-plan.md` | the product: architecture, every screen, sign-in, what cannot be copied, build phases |
 | `tools/publish_campaign.py` | re-makes the published campaign record from the engine; `--check` compares |
-| `teeter/` | the Teeter website, filled by `tools/build_teeter_site.py` from the campaign record |
+| `teeter/` | the Teeter website, filled by `tools/build_teeter_site.py` from the campaign record. How big things are on each kind of screen (phone, tablet, laptop, desktop, wide) is set once, in the "device sizes" block at the top of `css/site.css` (the app's own in `app/css/app.css`); the replay frames the robot in whatever the layout leaves free |
 | `teeter/app/` | the app: every screen in `docs/product-plan.md`. Served by the API, `js/live.js` runs it on the workspace's data; anywhere else it is the prototype, record panels from `tools/build_teeter_app.py`, the rest from `js/example.js` (illustrative, tagged on screen) |
 | `teeter/brand/` | the identity standard (TT-000 to TT-010) and every logo file, drawn by `tools/build_brand.py` |
 | `media/` | the captured physics (`sim.json`, `capture_sim.py`) and the brand films: `teeter-ad-1x1.mp4` (TT-401 to TT-404), rendered from `teeter-ad.html` by `shoot-teeter-ad.py`; the `faultline-*` films are the withdrawn identity's. Not deployed |

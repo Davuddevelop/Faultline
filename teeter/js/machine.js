@@ -459,16 +459,60 @@
        A camera that chases a falling body, or turns while it falls, adds its own
        motion to the body's. Each camera is fixed for the whole pass: it is set so
        that every point the record holds for the run, start to rest, lands inside
-       the part of the stage the panels leave free (opts.box, fractions of the
-       view). Only a drag moves it, and it settles back.
+       the part of the stage the panels leave free. Only a drag moves it, and it
+       settles back.
        A: three-quarter view. B: side elevation, on a long lens, square to the
        plane the push acts in. */
     var CAMS = { A: { az: .34, el: .3, fov: 30 }, B: { az: 0, el: .07, fov: 15 } };
     var cam = CAMS.A, aim = new T.Vector3(), ext = null, camD = 2;
-    function boxOf(w, h) {
+
+    /* Where the run may be drawn is the stylesheet's to say, at every screen size:
+       the largest rectangle inside the view's --frame-inset that keeps
+       --frame-gap clear of each panel laid over the view (the HUD, the tag, the
+       drag hint, and whatever opts.clear names, such as a headline set over the
+       stage). Largest means the one that draws the run biggest, for the shape
+       the run makes on screen. opts.box, fractions of the view or a function of
+       its size, overrides all of this; the film frames itself. */
+    var extraClear = !opts.clear ? [] : [].slice.call(typeof opts.clear === 'string' ? document.querySelectorAll(opts.clear) : opts.clear);
+    var clearEls = [].slice.call(stage.querySelectorAll('.hud, .stage__tag, .stage__drag')).concat(extraClear);
+    function insetOf(s, w, h) {                  // the inset shorthand, px or %, as [top, right, bottom, left] in px
+      var p = String(s || '').trim().split(/\s+/).filter(Boolean);
+      if (!p.length) p = ['6%'];
+      function px(v, of) { var n = parseFloat(v) || 0; return /%$/.test(v) ? n / 100 * of : n; }
+      return [px(p[0], h), px(p[1] || p[0], w), px(p[2] || p[0], h), px(p[3] || p[1] || p[0], w)];
+    }
+    function freeBox(w, h, aspect) {
+      var vr = view.getBoundingClientRect(), cs = getComputedStyle(view);
+      var I = insetOf(cs.getPropertyValue('--frame-inset'), w, h), g = parseFloat(cs.getPropertyValue('--frame-gap'));
+      if (isNaN(g)) g = 16;
+      var sx = w / (vr.width || w), sy = h / (vr.height || h);         // screen pixels to the view's own
+      var A = [I[3], I[0], w - I[1], h - I[2]], obs = [], xs = [A[0], A[2]], ys = [A[1], A[3]];
+      clearEls.forEach(function (el) {
+        if (!el.getClientRects().length) return;                       // not shown at this size
+        var r = el.getBoundingClientRect();
+        var o = [(r.left - vr.left) * sx - g, (r.top - vr.top) * sy - g, (r.right - vr.left) * sx + g, (r.bottom - vr.top) * sy + g];
+        if (o[2] <= A[0] || o[0] >= A[2] || o[3] <= A[1] || o[1] >= A[3]) return;   // already clear of the frame
+        obs.push(o);
+        [o[0], o[2]].forEach(function (x) { if (x > A[0] && x < A[2]) xs.push(x); });
+        [o[1], o[3]].forEach(function (y) { if (y > A[1] && y < A[3]) ys.push(y); });
+      });
+      // a largest empty rectangle has each side on the frame or on a panel's edge, so those are the candidates
+      var best = A, top = 0;
+      for (var a = 0; a < xs.length; a++) for (var b = 0; b < xs.length; b++) {
+        if (xs[b] <= xs[a]) continue;
+        for (var c = 0; c < ys.length; c++) for (var d = 0; d < ys.length; d++) {
+          if (ys[d] <= ys[c]) continue;
+          var R = [xs[a], ys[c], xs[b], ys[d]], s = Math.min((R[2] - R[0]) / aspect, R[3] - R[1]);
+          if (s <= top || obs.some(function (o) { return o[0] < R[2] && o[2] > R[0] && o[1] < R[3] && o[3] > R[1]; })) continue;
+          top = s; best = R;
+        }
+      }
+      return [best[0] / w, best[1] / h, best[2] / w, best[3] / h];
+    }
+    function boxOf(w, h, aspect) {
       if (typeof opts.box === 'function') return opts.box(w, h);
       if (opts.box) return opts.box;
-      return w >= 1000 ? [.46, .3, .985, .8] : w >= 700 ? [.03, .14, Math.max(.45, 1 - 330 / w), .92] : [.06, .1, .94, .9];
+      return freeBox(w, h, aspect);
     }
     // the run's extent in MuJoCo's frame: every torso corner and leg point recorded, the push arrow, the gizmo
     function frameRun(run) {
@@ -519,9 +563,10 @@
     function fit() {
       var w = view.clientWidth, h = view.clientHeight;
       if (!w || !h || !ext) return;
-      var B = boxOf(w, h), bw = (B[2] - B[0]) * w, bh = (B[3] - B[1]) * h;
       camera.aspect = w / h; camera.fov = cam.fov; camera.clearViewOffset(); camera.updateProjectionMatrix();
       var d = 2, r;
+      setPose(d, cam.az); r = projected(w, h);          // the run's shape on screen picks the frame
+      var B = boxOf(w, h, Math.max(.25, (r[2] - r[0]) / Math.max(1, r[3] - r[1]))), bw = (B[2] - B[0]) * w, bh = (B[3] - B[1]) * h;
       for (var it = 0; it < 6; it++) {                 // a projected size falls off as 1 / distance
         setPose(d, cam.az); r = projected(w, h);
         d *= Math.max((r[2] - r[0]) / bw, (r[3] - r[1]) / bh);
@@ -684,8 +729,10 @@
       fit();
     }
     var ro = 'ResizeObserver' in window ? new ResizeObserver(resize) : null;
-    if (ro) ro.observe(view);
+    if (ro) { ro.observe(view); extraClear.forEach(function (el) { ro.observe(el); }); }
     resize();
+    // the panels' sizes settle when the fonts arrive; the HUD is not watched, since its text changes as it plays
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (alive) fit(); });
 
     var visible = true, lastNow = null, raf = null;
     function loop(now) {

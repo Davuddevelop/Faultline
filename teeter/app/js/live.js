@@ -506,7 +506,7 @@
     if (!stage || !d.replay) return;
     var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches, stop = null;
     if (window.TeeterMachine && !reduced) {
-      try { stop = window.TeeterMachine.mount(stage, d.replay, { box: F.replayBox }); } catch (e) { stop = null; }
+      try { stop = window.TeeterMachine.mount(stage, d.replay); } catch (e) { stop = null; }
     }
     if (stop) A.cleanup.push(stop);
     else {
@@ -725,7 +725,7 @@
         banner.innerHTML = '<span class="proto__tag">Read-only</span><span class="proto__text">A visit to <b>' + esc(me.workspace.name) + '</b>: real campaigns from a real runner, on a stand-in quadruped whose checkpoints hold a pose rather than run a trained policy.</span>';
       }
     }
-    document.documentElement.style.setProperty('--strip', ro ? '34px' : '0px');
+    if (A.strip) A.strip();                 // the strip changed: the bars that stick under it follow (js/app.js)
     var ws = document.querySelector('.ws');
     if (ws && me) {
       ws.querySelector('.ws__mark').textContent = me.workspace.name.replace(/[^A-Za-z ]/g, '').split(' ').map(function (w) { return w.charAt(0); }).join('').slice(0, 2).toUpperCase() || 'TT';

@@ -59,9 +59,11 @@
   function kv(rows) {
     return '<dl class="kv">' + rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('') + '</dl>';
   }
+  // on a phone a table of four or more columns becomes one card per row (app.css, .t--stack)
   function table(heads, rows, o) {
     o = o || {};
-    return '<div class="tw"><table class="t' + (o.stack ? ' t--stack' : '') + '"><thead><tr>' +
+    var stack = o.stack != null ? o.stack : heads.length > 3;
+    return '<div class="tw"><table class="t' + (stack ? ' t--stack' : '') + '"><thead><tr>' +
       heads.map(function (h) { return '<th' + (h.r ? ' class="r"' : '') + '>' + (h.t || h) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       rows.map(function (r) {
         var href = r.href ? ' data-href="' + r.href + '"' : '';
@@ -151,23 +153,27 @@
     s += '<line class="run-calm" x1="' + (l + 12) + '" y1="' + (t + 32) + '" x2="' + (l + 34) + '" y2="' + (t + 32) + '"/><text class="lab" x="' + (l + 42) + '" y="' + (t + 36) + '">uniform · random</text>';
     return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Cumulative violations against evaluations, ' + eff.cem.length + ' seeds of each method.">' + s + '</svg>';
   }
-  // declared range against sampled range, per axis
-  function coverageSvg(per) {
-    var names = Object.keys(per), W = 520, rowH = 34, l = 150, r = W - 70, t = 14;
+  // declared range against sampled range, per axis; the narrow drawing puts each bar under its name
+  function coverageSvg(per, o) {
+    o = o || {};
+    var names = Object.keys(per), nw = !!o.narrow, W = nw ? 360 : 520, rowH = nw ? 44 : 34, l = nw ? 0 : 150, r = nw ? W : W - 70, t = 14;
     var H = t + names.length * rowH + 8, s = '';
     names.forEach(function (nm, i) {
-      var p = per[nm], y = t + i * rowH + 12, X0 = scale(p.declared_min, p.declared_max, l, r);
+      var p = per[nm], y = t + i * rowH + 12, by = nw ? y + 14 : y, X0 = scale(p.declared_min, p.declared_max, l, r);
+      var range = p.declared_min + '–' + p.declared_max + (unit(p.unit) === '°' ? '' : ' ') + unit(p.unit);
       s += '<text class="lbl" x="0" y="' + (y + 4) + '">' + esc(nm) + '</text>';
-      s += '<rect class="bar-dec" x="' + l + '" y="' + (y - 5) + '" width="' + (r - l) + '" height="10"/>';
-      s += '<rect class="bar-smp" x="' + f1(X0(p.sampled_min)) + '" y="' + (y - 5) + '" width="' + Math.max(1, f1(X0(p.sampled_max) - X0(p.sampled_min))) + '" height="10"/>';
-      s += '<text class="tick" x="' + (r + 8) + '" y="' + (y + 4) + '">' + p.declared_min + '–' + p.declared_max + (unit(p.unit) === '°' ? '' : ' ') + unit(p.unit) + '</text>';
+      s += '<rect class="bar-dec" x="' + l + '" y="' + (by - 5) + '" width="' + (r - l) + '" height="10"/>';
+      s += '<rect class="bar-smp" x="' + f1(X0(p.sampled_min)) + '" y="' + (by - 5) + '" width="' + Math.max(1, f1(X0(p.sampled_max) - X0(p.sampled_min))) + '" height="10"/>';
+      s += nw ? '<text class="tick" x="' + W + '" y="' + (y + 4) + '" text-anchor="end">' + range + '</text>'
+        : '<text class="tick" x="' + (r + 8) + '" y="' + (y + 4) + '">' + range + '</text>';
     });
-    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="For each searched axis, the declared range and the part of it the search sampled.">' + s + '</svg>';
+    return '<svg class="fig' + (o.cls ? ' ' + o.cls : '') + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="For each searched axis, the declared range and the part of it the search sampled.">' + s + '</svg>';
   }
-  function coverageFig() { return coverageSvg(REP.coverage.per_axis); }
+  function coverageBoth(per) { return coverageSvg(per, { cls: 'fig--wide' }) + coverageSvg(per, { narrow: true, cls: 'fig--narrow' }); }
+  function coverageFig() { return coverageBoth(REP.coverage.per_axis); }
   // recorded tilt against the rule: the failing run, and the same robot unperturbed
   function traceSvg(c) {
-    var W = 640, H = 270, l = 40, r = W - 16, t = 26, b = H - 40, CAP = 90, pid = id('hx');
+    var W = c.w || 640, H = 270, l = 40, r = W - 16, t = 26, b = H - 40, CAP = 90, pid = id('hx'), narrow = W < 500;
     var hz = c.hz, nom = c.nominal, mn = c.minimal, len = (mn || nom).length, dur = (len - 1) / hz, thr = +c.threshold;
     var X0 = scale(0, dur, l, r), Y0 = scale(0, CAP, b, t);
     function path(arr) { return arr.map(function (v, i) { return (i ? 'L' : 'M') + f1(X0(i / hz)) + ',' + f1(Y0(Math.min(CAP, v))); }).join(''); }
@@ -188,7 +194,10 @@
         s += '<text class="lab hi" x="' + f1(X0(bt) + 10) + '" y="' + f1(Y0(thr) + 16) + '">breach · t = ' + n(bt, 2) + ' s</text>';
       }
       var peak = Math.max.apply(null, mn);
-      if (peak > CAP) s += '<text class="lab" x="' + (r - 4) + '" y="' + (t + 14) + '" text-anchor="end">clipped at ' + CAP + '°; the record reaches ' + Math.round(peak) + '°</text>';
+      // in the narrow drawing the note takes two lines, so it stays clear of the trace climbing past it
+      if (peak > CAP) s += narrow
+        ? '<text class="lab" x="' + (r - 4) + '" y="' + (t + 14) + '" text-anchor="end">clipped at ' + CAP + '°;<tspan x="' + (r - 4) + '" dy="14">the record reaches ' + Math.round(peak) + '°</tspan></text>'
+        : '<text class="lab" x="' + (r - 4) + '" y="' + (t + 14) + '" text-anchor="end">clipped at ' + CAP + '°; the record reaches ' + Math.round(peak) + '°</text>';
     }
     s += '<text class="lab" x="' + (l + 6) + '" y="' + f1(Y0(thr) - 6) + '">tilt_deg &gt; ' + c.threshold + '</text>';
     s += '<text class="tick" x="' + (l - 8) + '" y="' + (b + 3.5) + '" text-anchor="end">0</text><text class="tick" x="' + (l - 8) + '" y="' + (t + 3.5) + '" text-anchor="end">' + CAP + '</text>';
@@ -198,11 +207,15 @@
       s += '<line class="tr-fail" x1="' + (r - 220) + '" y1="' + (b - 30) + '" x2="' + (r - 196) + '" y2="' + (b - 30) + '"/><text class="lab hi" x="' + (r - 188) + '" y="' + (b - 26) + '">' + esc(c.minimalLabel || 'the failing case') + '</text>';
       s += '<line class="tr-calm" x1="' + (r - 220) + '" y1="' + (b - 12) + '" x2="' + (r - 196) + '" y2="' + (b - 12) + '"/><text class="lab" x="' + (r - 188) + '" y="' + (b - 8) + '">' + esc(c.nominalLabel || 'unperturbed') + '</text>';
     }
-    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(c.label || 'Recorded tilt against the rule.') + '">' + s + '</svg>';
+    return '<svg class="fig' + (c.cls ? ' ' + c.cls : '') + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(c.label || 'Recorded tilt against the rule.') + '">' + s + '</svg>';
+  }
+  // drawn twice, as the site's figures are: a panel narrower than 560px shows the narrow drawing (site.css)
+  function traceBoth(c) {
+    return traceSvg(Object.assign({}, c, { cls: 'fig--wide' })) + traceSvg(Object.assign({}, c, { w: 360, cls: 'fig--narrow' }));
   }
   function traceFig(o) {
     o = o || {};
-    return traceSvg({ hz: R.hz, threshold: V.threshold, nominal: o.nominal === false ? null : R.nominal_tilt,
+    return traceBoth({ hz: R.hz, threshold: V.threshold, nominal: o.nominal === false ? null : R.nominal_tilt,
       minimal: o.minimal === false ? null : R.minimal_tilt, minimalLabel: 'push ' + V.minimal_push + ' N·s requested', nominalLabel: 'no push',
       label: 'Recorded tilt over five seconds at ' + R.hz + ' hertz. With no push the peak is ' + V.peak_nominal + ' degrees. With a requested push of ' + V.minimal_push + ' newton-seconds the tilt passes ' + V.threshold + ' degrees at ' + V.breach_t + ' seconds.' });
   }
@@ -230,26 +243,32 @@
     return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true"><path class="ln" d="' + d + '"/>' +
       '<circle class="dt" cx="' + f1(X0(last)) + '" cy="' + f1(Y0(vals[last])) + '" r="3"/></svg>';
   }
-  // baseline against candidate, per mode (example)
-  function dumbbellFig(modes) {
-    var W = 640, rowH = 46, t = 24, l = 20, r = W - 20, H = t + modes.length * rowH + 30, s = '';
-    var X0 = scale(5, 9, l + 250, r - 30);
-    [6, 7, 8].forEach(function (v) { s += '<line class="grid" x1="' + f1(X0(v)) + '" y1="' + (t - 6) + '" x2="' + f1(X0(v)) + '" y2="' + (H - 24) + '"/><text class="tick" x="' + f1(X0(v)) + '" y="' + (H - 8) + '" text-anchor="middle">' + v + '</text>'; });
-    modes.forEach(function (m, i) {
-      var y = t + i * rowH + 14;
-      s += '<text class="lbl hi" x="' + l + '" y="' + (y - 2) + '">' + m.kind + '</text><text class="tick" x="' + l + '" y="' + (y + 13) + '">' + esc(m.label.replace('tilt_limit via ', '').replace('fallen via ', '')) + '</text>';
-      if (m.axis !== 'push_impulse_ns') { s += '<text class="tick" x="' + f1(X0(5)) + '" y="' + (y + 4) + '">' + (m.after != null ? m.after : m.before) + ' ' + m.unit + ' ' + m.axis + ' · not on this axis</text>'; return; }
-      if (m.before != null && m.after != null) s += '<line class="dumb" x1="' + f1(X0(m.before)) + '" y1="' + y + '" x2="' + f1(X0(m.after)) + '" y2="' + y + '"/>';
-      if (m.before != null) s += '<circle class="dumb-a" cx="' + f1(X0(m.before)) + '" cy="' + y + '" r="5"/>';
-      if (m.after != null) s += '<circle class="dumb-b" cx="' + f1(X0(m.after)) + '" cy="' + y + '" r="4.5"/>';
+  // baseline against candidate, per mode (example); the narrow drawing sets each mode's line under its name
+  function dumbbellSvg(modes, o) {
+    o = o || {};
+    var nw = !!o.narrow, W = nw ? 360 : 640, rowH = nw ? 66 : 46, t = nw ? 44 : 24, l = nw ? 0 : 20, r = W - (nw ? 0 : 20);
+    var H = t + modes.length * rowH + 30, s = '', dy = nw ? 30 : 0;
+    var X0 = scale(5, 9, nw ? l + 14 : l + 250, r - (nw ? 14 : 30));
+    [6, 7, 8].forEach(function (v) {
+      var x = f1(X0(v));
+      // across the narrow drawing the grid is drawn in each mode's band only, so it never runs through a name
+      s += nw ? modes.map(function (m, i) { var y = t + i * rowH + 14 + dy; return '<line class="grid" x1="' + x + '" y1="' + (y - 10) + '" x2="' + x + '" y2="' + (y + 10) + '"/>'; }).join('')
+        : '<line class="grid" x1="' + x + '" y1="' + (t - 6) + '" x2="' + x + '" y2="' + (H - 24) + '"/>';
+      s += '<text class="tick" x="' + x + '" y="' + (H - 8) + '" text-anchor="middle">' + v + '</text>';
     });
-    s += '<text class="unit" x="' + r + '" y="' + (t - 10) + '" text-anchor="end">smallest failing push · requested · N·s   ○ baseline  ● candidate</text>';
-    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Example: each failure mode\'s smallest failing push for the baseline and the candidate checkpoint.">' + s + '</svg>';
+    modes.forEach(function (m, i) {
+      var y = t + i * rowH + 14, yb = y + dy;
+      s += '<text class="lbl hi" x="' + l + '" y="' + (y - 2) + '">' + m.kind + '</text><text class="tick" x="' + l + '" y="' + (y + 13) + '">' + esc(m.label.replace('tilt_limit via ', '').replace('fallen via ', '')) + '</text>';
+      if (m.axis !== 'push_impulse_ns') { s += '<text class="tick" x="' + (nw ? l : f1(X0(5))) + '" y="' + (yb + 4) + '">' + (m.after != null ? m.after : m.before) + ' ' + m.unit + ' ' + m.axis + ' · not on this axis</text>'; return; }
+      if (m.before != null && m.after != null) s += '<line class="dumb" x1="' + f1(X0(m.before)) + '" y1="' + yb + '" x2="' + f1(X0(m.after)) + '" y2="' + yb + '"/>';
+      if (m.before != null) s += '<circle class="dumb-a" cx="' + f1(X0(m.before)) + '" cy="' + yb + '" r="5"/>';
+      if (m.after != null) s += '<circle class="dumb-b" cx="' + f1(X0(m.after)) + '" cy="' + yb + '" r="4.5"/>';
+    });
+    s += nw ? '<text class="unit" x="' + l + '" y="' + (t - 28) + '">smallest failing push · requested · N·s</text><text class="unit" x="' + l + '" y="' + (t - 13) + '">○ baseline  ● candidate</text>'
+      : '<text class="unit" x="' + r + '" y="' + (t - 10) + '" text-anchor="end">smallest failing push · requested · N·s   ○ baseline  ● candidate</text>';
+    return '<svg class="fig' + (o.cls ? ' ' + o.cls : '') + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Example: each failure mode\'s smallest failing push for the baseline and the candidate checkpoint.">' + s + '</svg>';
   }
-
-  // where js/machine.js may put the robot: clear of the HUD, which sits top right on a wide
-  // stage and along the bottom on a narrow one (app.css)
-  function replayBox(w, h) { return w > 640 ? [.03, .1, Math.max(.45, 1 - 300 / w), .94] : [.05, .06, .95, .56]; }
+  function dumbbellFig(modes) { return dumbbellSvg(modes, { cls: 'fig--wide' }) + dumbbellSvg(modes, { narrow: true, cls: 'fig--narrow' }); }
 
   // the 3D replay's frame: canvas, crop marks, drafting notes and the HUD that js/machine.js drives
   function stageHTML(c) {
@@ -430,13 +449,14 @@
     }
     var sm = $('[data-act="smoke"]');
     if (sm) {
-      var path = $('[data-trace="nom"]');
-      if (!ob.smoke && path && !reduced) {
+      // the trace is drawn twice (wide and narrow, one shown at a time); both are run
+      var paths = $$('[data-trace="nom"]');
+      if (!ob.smoke && !reduced) paths.forEach(function (path) {
         var L = path.getTotalLength(); path.style.strokeDasharray = L; path.style.strokeDashoffset = L;
-      }
+      });
       sm.addEventListener('click', function () {
         sm.disabled = true; sm.textContent = 'Running…';
-        if (path && !reduced) { path.style.transition = 'stroke-dashoffset 2.4s linear'; path.style.strokeDashoffset = 0; }
+        if (!reduced) paths.forEach(function (path) { path.style.transition = 'stroke-dashoffset 2.4s linear'; path.style.strokeDashoffset = 0; });
         later(function () { ob.smoke = true; $('[data-smoke-result]').hidden = false; sm.textContent = 'Run again'; sm.disabled = false; }, reduced ? 0 : 2500);
       });
     }
@@ -730,7 +750,7 @@
   S.mode.after = function () {
     var st = $('[data-replay]');
     if (st && window.TeeterMachine && !reduced) {
-      try { stopMachine = window.TeeterMachine.mount(st, REPLAY, { box: replayBox }); } catch (e) { stopMachine = null; }
+      try { stopMachine = window.TeeterMachine.mount(st, REPLAY); } catch (e) { stopMachine = null; }
       if (stopMachine) cleanup.push(function () { stopMachine(); stopMachine = null; });
     }
     if (st && !stopMachine) {
@@ -1053,6 +1073,12 @@
     else if (e.key === 'Enter' && shown[sel]) { go(shown[sel][1]); palClose(); }
   });
 
+  // the bars that stick under the strip along the top sit under all of it, however many lines it
+  // wraps to at this width (on a phone it scrolls away instead: app.css)
+  var strip = document.querySelector('.proto');
+  function stripH() { document.documentElement.style.setProperty('--strip', strip && !strip.hidden ? strip.offsetHeight + 'px' : '0px'); }
+  if (strip) { stripH(); if ('ResizeObserver' in window) new ResizeObserver(stripH).observe(strip); }
+
   var started = false;
   function start() {
     if (started) return;
@@ -1062,12 +1088,12 @@
   }
   function refresh() { wire(); fit(); }
   window.TeeterApp = {
-    S: S, ROUTES: ROUTES, hooks: hooks, start: start, render: render, refresh: refresh, R: R, X: X, AX: AX,
+    S: S, ROUTES: ROUTES, hooks: hooks, start: start, render: render, refresh: refresh, strip: stripH, R: R, X: X, AX: AX,
     seq: function () { return seq; }, view: view, cleanup: cleanup, later: later, navHTML: navHTML, crumbs: crumbs,
     h: { esc: esc, $: $, $$: $$, go: go, n: n, unit: unit, id: id, panel: panel, head: head, verdict: verdict, kv: kv,
          table: table, stat: stat, code: code, sh: sh, a: a, btn: btn, src: src, toast: toast, copyText: copyText,
          ruleSentence: ruleSentence, REQUESTED: REQUESTED, notFound: notFound },
-    figs: { scatter: scatterSvg, coverage: coverageSvg, trace: traceSvg, stage: stageHTML, spark: sparkSvg, replayBox: replayBox },
+    figs: { scatter: scatterSvg, coverage: coverageBoth, trace: traceBoth, stage: stageHTML, spark: sparkSvg },
     isStarted: function () { return started; },
     hold: function () { clearTimeout(fallback); }
   };
