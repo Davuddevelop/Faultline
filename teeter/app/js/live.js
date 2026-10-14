@@ -506,7 +506,7 @@
     if (!stage || !d.replay) return;
     var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches, stop = null;
     if (window.TeeterMachine && !reduced) {
-      try { stop = window.TeeterMachine.mount(stage, d.replay, { offset: stage.clientWidth >= 640 ? [0.17, 0.02] : [0, 0] }); } catch (e) { stop = null; }
+      try { stop = window.TeeterMachine.mount(stage, d.replay, { box: F.replayBox }); } catch (e) { stop = null; }
     }
     if (stop) A.cleanup.push(stop);
     else {

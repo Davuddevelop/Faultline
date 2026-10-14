@@ -93,6 +93,18 @@ html,body{margin:0;background:var(--g950)}
 .hud__lim{position:absolute;left:var(--lim);top:-4px;bottom:-4px;width:1px;background:var(--g300)}
 .hud__rule{margin:13px 0 0;padding:6px 9px;border:1px solid var(--g700);color:var(--v100);font-size:12.5px}
 .hud__rule.is-fail{background:var(--v100);color:var(--g950);border-color:var(--v100)}
+/* playback, as js/machine.js writes it: the rate, and the run on a timeline of its events */
+.hud__play{display:grid;gap:7px;margin-top:13px;padding-top:11px;border-top:1px solid var(--g800)}
+.hud__mode{margin:0;display:flex;gap:10px;align-items:baseline;font-size:12px;color:var(--g400)}
+.hud__mode [data-hud="rate"]{color:var(--v100);min-width:4ch}
+.hud__time{position:relative;height:12px}
+.hud__time::before{content:"";position:absolute;left:0;right:0;top:5px;height:1px;background:var(--g700)}
+.hud__after{position:absolute;top:2px;right:0;height:7px;opacity:.55;background:var(--hatch)}
+.hud__win{display:none}
+.hud__tick{position:absolute;top:1px;width:1px;height:9px;background:var(--g400)}
+.hud__tick--breach{top:-1px;height:13px;background:var(--g300)}
+.hud__now{position:absolute;top:-2px;width:2px;height:16px;margin-left:-1px;background:var(--v100)}
+.hud__legend{margin:0;font-size:11px;color:var(--g400);white-space:nowrap}
 .hud__rule.is-fail::before{content:"";display:inline-block;width:12px;height:12px;margin-right:9px;vertical-align:-1px;
   background:var(--hatch-dark);box-shadow:inset 0 0 0 1px var(--g950)}
 .note{position:absolute;left:0;top:0;font-family:var(--mono);font-size:13px;color:var(--v100);opacity:0;white-space:nowrap}
@@ -299,7 +311,7 @@ html,body{margin:0;background:var(--g950)}
   function mountMachine() {
     if (stopMachine) stopMachine();
     window.__queue = []; mNow = -1;
-    stopMachine = window.TeeterMachine.mount(stage, D, { offset: [-0.2, -0.11] });
+    stopMachine = window.TeeterMachine.mount(stage, D, { single: true, box: [.4, .07, .97, .95] });
   }
   function stepAt(ms) { mNow = ms; var q = window.__queue; window.__queue = []; q.forEach(function (cb) { cb(ms); }); }
   function machineTo(t) {

@@ -85,8 +85,10 @@ setTimeout(function () { if (!/\bmotion-ok\b/.test(document.documentElement.clas
       </div>
     </figure>
     <p class="stage__cap">The stand-in quadruped from the published campaign, replayed from the
-        simulator's own record at <span data-v="replay_speed">0.5</span>× speed. Every pose is one MuJoCo recorded;
-        the shell, motors and links drawn around those poses are an illustrative design, not the simulated geometry.</p>
+        simulator's own record: in real time, then again at <span data-v="replay_speed">0.5</span>× from the side,
+        its pose left behind every tenth of a second. Its checkpoint holds one pose, so the shove tips it over its
+        front feet and onto its back. Every pose is one MuJoCo recorded; the shell, motors and links drawn around
+        them are an illustrative design, kept inside the box MuJoCo collides with, not the simulated geometry.</p>
 
     <dl class="facts" data-intro>
       <div><dt>Simulator</dt><dd>MuJoCo <span data-v="mujoco">3.12.0</span>, pinned</dd></div>

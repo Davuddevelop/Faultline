@@ -12,7 +12,7 @@ Four sheets of one drawing, TT-401 to TT-404:
 
 | Sheet | Time | What it shows | Where it comes from |
 | --- | --- | --- | --- |
-| TT-401 | 0–4.6 s | the stand-in quadruped pushed over: the requested push, the breach of `tilt_deg > 35` at 1.26 s, the pose at the breach left in phantom line | the site's own machine (`teeter/js/machine.js`) replaying the replay document embedded in `teeter/index.html`, built from `sim.json` |
+| TT-401 | 0–4.6 s | the stand-in quadruped pushed over at the record's 0.5× rate, from a fixed camera: the requested push, the breach of `tilt_deg > 35` at 1.26 s, the pose at the breach left in phantom line and the pose every 0.1 s after the push, its shadow on the floor | the site's own machine (`teeter/js/machine.js`) replaying the replay document embedded in `teeter/index.html`, built from `sim.json` |
 | TT-402 | 4.5–10.6 s | the declared space, the rules, the 150 directed evaluations in the order they ran, the reduction to 7.875 N·s requested | `assets/data/campaign.json`: `space`, `report.predicates`, `scatter`, `report.modes[0]` |
 | TT-403 | 10.7–14.6 s | `teeter gate` blocking `tall-v2`: the push it falls to dropped from 7.875 to 6.89323 N·s requested, exit code 1 | the output of the run on the v0 demo stack on 9 October 2026, typed into the page in the form `cmd_gate` prints (`runner/teeter_runner/cli.py`); the only typed block |
 | TT-404 | 14.7–18 s | the lockup, "Adversarial testing for learned robot policies." | `teeter/brand/teeter-lockup.svg` |

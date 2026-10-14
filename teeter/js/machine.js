@@ -1,18 +1,28 @@
 /* Teeter — the machine: the simulator's record, replayed in 3D.
 
-   Every vertex comes from media/sim.json via the builders: per control step
-   the torso's position and orientation, each leg's body origins, the feet.
-   Nothing is interpolated beyond linear blending between recorded steps.
+   Every pose comes from the record the builders write (media/sim.json, or a
+   runner's replay.json): per control step the torso's position and
+   orientation, each leg's body origins, the feet. Nothing is interpolated
+   beyond blending between recorded steps, and nothing moves that MuJoCo did
+   not move.
 
-   Used by the site's opening (js/site.js) and by the product prototype's
-   failure-mode page (app/). mount(stage, data) takes a [data-replay] figure
-   and the replay document the builder writes, and returns a stop function,
-   or null when WebGL is not available (the poster then stays). */
+   It is played the way a fall is filmed. First in real time, from a tripod,
+   so gravity looks like gravity; then, if a rule broke, the same seconds again
+   at the record's slow rate from a side elevation, freezing on the breach and
+   leaving the pose behind every tenth of a second, as a chronophotograph
+   does. The rate on screen is always the rate being played.
+
+   Used by the site's opening (js/site.js), the app's failure-mode page and the
+   film (media/teeter-ad.html, which passes single: true and drives the clock).
+   mount(stage, data, opts) takes a [data-replay] figure and the replay
+   document, and returns a stop function, or null when WebGL is not available
+   (the poster then stays). */
 (function () {
   'use strict';
   function mount(stage, D, opts) {
     if (!stage || !D || !window.THREE) return null;
-    var OFF = opts && opts.offset;           // [x, y] fractions of the view: where to shift the picture
+    opts = opts || {};
+    var SINGLE = !!opts.single;              // one pass at the record's rate, on a clock the caller drives
     var T = window.THREE;
     var canvas = stage.querySelector('.stage__gl'), view = stage.querySelector('.stage__view');
     var renderer;
@@ -20,20 +30,28 @@
     if (!renderer.getContext()) return null;
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     renderer.setClearColor(0x000000, 0);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = T.PCFSoftShadowMap;
 
     var scene = new T.Scene();
     scene.fog = new T.Fog(0x0b0b0a, 1.7, 4.2);
-    var camera = new T.PerspectiveCamera(30, 4 / 3, .01, 30);
+    var camera = new T.PerspectiveCamera(30, 4 / 3, .01, 40);
 
     /* MuJoCo is z-up; three.js is y-up. (x, y, z) -> (x, z, -y) is a proper rotation. */
     function V(x, y, z) { return [x, z, -y]; }
 
-    function mat(color, opts) { return new T.LineBasicMaterial(Object.assign({ color: color, transparent: true }, opts || {})); }
+    function mat(color, o) { return new T.LineBasicMaterial(Object.assign({ color: color, transparent: true }, o || {})); }
     function segGeo(capacity) {
       var g = new T.BufferGeometry();
       g.setAttribute('position', new T.BufferAttribute(new Float32Array(capacity * 6), 3));
       g.setDrawRange(0, 0);
       return g;
+    }
+    function plane(m, y, order) {
+      var p = new T.Mesh(new T.PlaneGeometry(12, 12), m);
+      p.rotation.x = -Math.PI / 2; p.position.y = y; p.renderOrder = order;
+      scene.add(p);
+      return p;
     }
 
     // ground: a drafting grid, fading out in fog
@@ -49,6 +67,33 @@
         scene.add(new T.LineSegments(g, mat(p[1], { depthWrite: false })));
       });
     })();
+    // the floor is drawn as nothing, but it is solid: whatever is beneath it is
+    // hidden, as a floor hides it; and it takes the shadows of an overhead light
+    plane(new T.MeshBasicMaterial({ colorWrite: false }), -.0006, -2);
+    plane(new T.ShadowMaterial({ opacity: .6, depthWrite: false }), .0004, 1).receiveShadow = true;
+    // a pool of light on the floor around the path, so the shadow has something to fall on
+    var pool = (function () {
+      var c = document.createElement('canvas'); c.width = c.height = 128;
+      var g = c.getContext('2d'), grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grad.addColorStop(0, 'rgba(233,230,222,0.085)'); grad.addColorStop(.55, 'rgba(233,230,222,0.035)'); grad.addColorStop(1, 'rgba(233,230,222,0)');
+      g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
+      var m = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false }));
+      m.rotation.x = -Math.PI / 2; m.position.y = .0002; m.renderOrder = 0;
+      scene.add(m);
+      return m;
+    })();
+
+    // a datum on the floor under the path, ticked every 0.1 m: a scale for the travel, and the
+    // ground line the side elevation stands on
+    var datumGeo = new T.BufferGeometry(), datum = new T.LineSegments(datumGeo, mat(0x6B6962, { depthWrite: false }));
+    datum.renderOrder = 2; scene.add(datum);
+    function writeDatum(x0, x1, y) {
+      var p = [], a = Math.floor(x0 * 10) / 10, b = Math.ceil(x1 * 10) / 10;
+      function put(m) { var t = V(m[0], m[1], m[2]); p.push(t[0], t[1], t[2]); }
+      put([a, y, .0008]); put([b, y, .0008]);
+      for (var k = 0, n = Math.round((b - a) * 10); k <= n; k++) { put([a + k / 10, y, .0008]); put([a + k / 10, y, k % 5 ? .008 : .016]); }
+      datumGeo.setAttribute('position', new T.Float32BufferAttribute(p, 3));
+    }
 
     // annotations are drawn over the machine, as dimensions are drawn over a part
     var gizmoGeo = segGeo(80), gizmo = new T.LineSegments(gizmoGeo, mat(0xB5B1A8, { depthTest: false }));
@@ -58,7 +103,16 @@
     trailGeo.setAttribute('position', new T.BufferAttribute(new Float32Array(600 * 3), 3));
     trailGeo.setDrawRange(0, 0);
     var trail = new T.Line(trailGeo, mat(0x5F5D57, { depthWrite: false }));
-    scene.add(gizmo, arrow, trail);
+    trail.renderOrder = 4;
+    // the chronophotograph: the pose every tenth of a second, older ones fainter
+    var STROBE_DT = .1, STROBE_MAX = 64, STROBE_SEG = 24;
+    var strobeGeo = new T.BufferGeometry();
+    strobeGeo.setAttribute('position', new T.BufferAttribute(new Float32Array(STROBE_MAX * STROBE_SEG * 6), 3));
+    strobeGeo.setAttribute('color', new T.BufferAttribute(new Float32Array(STROBE_MAX * STROBE_SEG * 6), 3));
+    strobeGeo.setDrawRange(0, 0);
+    var strobe = new T.LineSegments(strobeGeo, new T.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false }));
+    strobe.renderOrder = 5;
+    scene.add(gizmo, arrow, trail, strobe);
 
     var HX = D.half[0], HY = D.half[1], HZ = D.half[2];
     function qrot(q, v) {
@@ -69,7 +123,8 @@
     function frameAt(run, f) {                   // blend two recorded steps
       var F = run.f, i = Math.max(0, Math.min(F.length - 1, Math.floor(f))), j = Math.min(F.length - 1, i + 1), u = f - i;
       var a = F[i], b = F[j], r = new Array(a.length);
-      for (var k = 0; k < a.length; k++) r[k] = a[k] + (b[k] - a[k]) * u;
+      var s = a[3] * b[3] + a[4] * b[4] + a[5] * b[5] + a[6] * b[6] < 0 ? -1 : 1;   // q and -q are one rotation
+      for (var k = 0; k < a.length; k++) r[k] = a[k] + ((k >= 3 && k < 7 ? s * b[k] : b[k]) - a[k]) * u;
       var qn = Math.hypot(r[3], r[4], r[5], r[6]) || 1;
       r[3] /= qn; r[4] /= qn; r[5] /= qn; r[6] /= qn;
       return r;
@@ -82,13 +137,23 @@
        Every pose comes from the record: the torso's position and quaternion, and
        for each leg the hip, thigh and calf body origins and the foot. The body,
        motors and links drawn around those poses are a design, not the simulated
-       collision geometry, and the caption says so. Drawn the way CAD draws a part:
-       dark shaded fill, ink outline and edges, hidden edges dashed. */
+       collision geometry, and the caption says so; but it is kept inside the
+       simulated torso box and foot spheres, so that where MuJoCo puts the robot on
+       the floor, the drawing touches the floor and does not sink into it. Drawn the
+       way CAD draws a part: dark shaded fill, ink outline and edges, hidden edges
+       dashed. */
     var world = new T.Group();                       // works in MuJoCo's z-up frame
     world.rotation.x = -Math.PI / 2;
     scene.add(world);
     var key = new T.DirectionalLight(0xffffff, .75); key.position.set(.8, 1.6, 1.1); scene.add(key);
     scene.add(new T.HemisphereLight(0xE9E6DE, 0x0B0B0A, .5));
+    // the sun that casts the shadows: overhead, a little forward, barely lighting the part
+    var sun = new T.DirectionalLight(0xffffff, .06);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.bias = -.0005;
+    sun.shadow.radius = 3;
+    scene.add(sun, sun.target);
 
     function fillMat(c) { return new T.MeshLambertMaterial({ color: c, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }); }
     var SHELL = fillMat(0x1f1f1d), DARK = fillMat(0x161615), METAL = fillMat(0x2a2926);
@@ -108,7 +173,8 @@
       if (at) geo.applyMatrix4(at);
       var edges = new T.EdgesGeometry(geo, 24);
       var hid = new T.LineSegments(edges, HIDDEN); hid.computeLineDistances();
-      frame.add(new T.Mesh(geo, fill), new T.Mesh(geo, OUTLINE), new T.LineSegments(edges, detail ? DETAIL : INKL), hid);
+      var body = new T.Mesh(geo, fill); body.castShadow = true;
+      frame.add(body, new T.Mesh(geo, OUTLINE), new T.LineSegments(edges, detail ? DETAIL : INKL), hid);
       var g = new T.LineSegments(edges, GHOST); g.matrixAutoUpdate = false;
       g.userData.frame = frame; ghosts.add(g);
     }
@@ -155,29 +221,38 @@
         solid(frame, cyl(r || .0028, .003, 8), METAL, true, move(Math.cos(a) * rr, y, Math.sin(a) * rr));
       }
     }
+    function outlineOnly(frame, pts, lift) {         // a groove: drawn as edges on a face, not as a solid
+      var p = [];
+      for (var k = 0; k < pts.length; k++) { var a = pts[k], b = pts[(k + 1) % pts.length]; p.push(a[0], a[1], lift, b[0], b[1], lift); }
+      var g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3));
+      frame.add(new T.LineSegments(g, DETAIL));
+    }
 
-    // torso: shell, sensor head, tail block, handle, deck plate, vents, abduction motors
-    var torso = frameGroup();
-    solid(torso, section(chamfered(HY + .004, HZ + .006, .016, .008), HX * 2 - .02, .006), SHELL);
-    solid(torso, section(chamfered(.066, .03, .012, .006), .036, .004), DARK, false, move(HX + .016, 0, .002));
+    // torso: shell, sensor head, tail block, deck with a recessed grip, vents, abduction motors.
+    // The torso box MuJoCo collides with is 2HX x 2HY x 2HZ; the shell is inset 3 mm, and
+    // the head, tail, deck and vents reach the box's faces and no further.
+    var IN = .003, BV = .006, torso = frameGroup();
+    solid(torso, section(chamfered(HY - BV - IN, HZ - BV - IN, .016, .008), HX * 2 - .02, BV), SHELL);
+    var HEAD = .022, HEADX = HX - .006 - HEAD;      // the head's front face sits 6 mm inside the box; the lenses fill it
+    solid(torso, section(chamfered(.066, .03, .012, .006), HEAD * 2 - .008, .004), DARK, false, move(HEADX, 0, .001));
     [-.026, .026].forEach(function (y) {
-      solid(torso, cyl(.011, .008), METAL, false, M().multiplyMatrices(move(HX + .04, y, .006), onX()));
-      solid(torso, cyl(.006, .004), DARK, true, M().multiplyMatrices(move(HX + .046, y, .006), onX()));
+      solid(torso, cyl(.011, .004), METAL, false, M().multiplyMatrices(move(HX - .004, y, .006), onX()));
+      solid(torso, cyl(.006, .003), DARK, true, M().multiplyMatrices(move(HX - .0015, y, .006), onX()));
     });
-    solid(torso, box(.003, .07, .006), DARK, true, move(HX + .036, 0, -.014));
-    solid(torso, section(chamfered(.058, .022, .008, .006), .03, .004), DARK, false, move(-HX - .012, 0, 0));
-    solid(torso, box(.2, .11, .004), DARK, true, move(-.01, 0, HZ + .009));
-    [-.075, .075].forEach(function (x) { solid(torso, box(.012, .012, .03), METAL, false, move(x, 0, HZ + .024)); });
-    solid(torso, box(.172, .014, .01), METAL, false, move(0, 0, HZ + .042));
+    solid(torso, box(.006, .07, .006), DARK, true, move(HX - .003, 0, -.014));
+    solid(torso, section(chamfered(.058, .022, .008, .006), .03, .004), DARK, false, move(-HX + .019, 0, 0));
+    solid(torso, box(.2, .11, .004), DARK, true, move(-.01, 0, HZ - .002));
+    outlineOnly(torso, [[-.086, -.0075], [.086, -.0075], [.086, .0075], [-.086, .0075]], HZ + .0003);
+    outlineOnly(torso, [[-.075, -.003], [.075, -.003], [.075, .003], [-.075, .003]], HZ + .0003);
     [-1, 1].forEach(function (side) {
-      for (var v = 0; v < 6; v++) solid(torso, box(.004, .003, .026), DARK, true, move(-.05 + v * .02, side * (HY + .0105), .002));
-      solid(torso, box(.07, .003, .03), DARK, true, move(.07, side * (HY + .0105), .0));
+      for (var v = 0; v < 6; v++) solid(torso, box(.004, .003, .026), DARK, true, move(-.05 + v * .02, side * (HY - .0015), .002));
+      solid(torso, box(.07, .003, .03), DARK, true, move(.07, side * (HY - .0015), 0));
     });
     var HIPS = [[1, -1], [1, 1], [-1, -1], [-1, 1]];          // fr, fl, hr, hl, as the record orders them
     HIPS.forEach(function (h) {
       var hx = h[0] * (HX - .03), hy = h[1] * (HY - .012);
       solid(torso, cyl(.027, .05), METAL, false, M().multiplyMatrices(move(hx, hy, -.03), onX()));
-      solid(torso, cyl(.019, .006), DARK, true, M().multiplyMatrices(move(hx + h[0] * .028, hy, -.03), onX()));
+      solid(torso, cyl(.019, .005), DARK, true, M().multiplyMatrices(move(hx + h[0] * .0275, hy, -.03), onX()));
     });
 
     // legs: hip-pitch motor at the thigh body, thigh plate, knee, shin, foot
@@ -198,7 +273,7 @@
       solid(thigh, cyl(.012, .004), DARK, true, move(0, .029, -Lt));
       solid(shin, plate(link(Lc - .012, .024, .014, true), .01, .0015), DARK, false);
       solid(shin, box(.018, .006, .05), METAL, true, move(.006, .008, -.03));
-      solid(foot, new T.IcosahedronGeometry(.021, 1), DARK);
+      solid(foot, new T.IcosahedronGeometry(.019, 1), DARK);              // the foot sphere MuJoCo collides with
       solid(foot, cyl(.016, .008, 16), METAL, true, move(0, 0, -.004));
       return { o: o, out: out, motor: motor, thigh: thigh, shin: shin, foot: foot };
     });
@@ -243,7 +318,18 @@
     function writeGizmo(r, tiltDeg) {
       var p = gizmoGeo.attributes.position.array, n = 0, c = [r[0], r[1], r[2]], q = [r[3], r[4], r[5], r[6]];
       var up = [0, 0, 1], b = qrot(q, [0, 0, 1]);
-      function put(m) { var t = V(m[0], m[1], m[2]); p[n++] = t[0]; p[n++] = t[1]; p[n++] = t[2]; }
+      function at(m) { var t = V(m[0], m[1], m[2]); p[n++] = t[0]; p[n++] = t[1]; p[n++] = t[2]; }
+      // an annotation is drawn over the machine, but not through the floor: a segment is cut where it meets it
+      function line(a, e) {
+        if (a[2] < 0 && e[2] < 0) return;
+        if (a[2] < 0 || e[2] < 0) {
+          var u = a[2] / (a[2] - e[2]), m = [a[0] + (e[0] - a[0]) * u, a[1] + (e[1] - a[1]) * u, 0];
+          if (a[2] < 0) a = m; else e = m;
+        }
+        at(a); at(e);
+      }
+      var held = null;
+      function put(m) { if (held) { line(held, m); held = null; } else held = m; }
       function seg(a, d, l0, l1) { put([c[0] + d[0] * l0, c[1] + d[1] * l0, c[2] + d[2] * l0]); put([c[0] + d[0] * l1, c[1] + d[1] * l1, c[2] + d[2] * l1]); }
       var dot = Math.max(-1, Math.min(1, b[2])), ang = Math.acos(dot);
       var w = [b[0] - dot * up[0], b[1] - dot * up[1], b[2] - dot * up[2]], wl = Math.hypot(w[0], w[1], w[2]);
@@ -263,16 +349,40 @@
       gizmoGeo.attributes.position.needsUpdate = true;
       gizmoGeo.setDrawRange(0, n / 3);
     }
-    function writeArrow(r, alpha) {
+    // the push: along the line it acted on, through the torso, as long as the impulse is large
+    function writeArrow(r, alpha, push) {
       var p = arrowGeo.attributes.position.array, n = 0, c = [r[0], r[1], r[2]];
       function put(m) { var t = V(m[0], m[1], m[2]); p[n++] = t[0]; p[n++] = t[1]; p[n++] = t[2]; }
-      var tip = [c[0] - HX - .03, c[1], c[2]], tail = [tip[0] - .2, c[1], c[2]];
+      var len = Math.max(.06, Math.min(.34, .025 * push));
+      var tip = [c[0] - HX - .03, c[1], c[2]], tail = [tip[0] - len, c[1], c[2]];
       put(tail); put(tip);
       put(tip); put([tip[0] - .035, tip[1], tip[2] + .018]);
       put(tip); put([tip[0] - .035, tip[1], tip[2] - .018]);
       arrowGeo.attributes.position.needsUpdate = true;
       arrowGeo.setDrawRange(0, n / 3);
       arrow.material.opacity = alpha;
+    }
+    // a strobe pose: the torso box's twelve edges and each leg's three links, exactly as recorded
+    var BOXC = [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]];
+    var BOXE = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]];
+    var strobeN = 0;
+    function addStrobe(r) {
+      if (strobeN >= STROBE_MAX) return;
+      var p = strobeGeo.attributes.position.array, n = strobeN * STROBE_SEG * 6, q = [r[3], r[4], r[5], r[6]];
+      function put(m) { var t = V(m[0], m[1], m[2]); p[n++] = t[0]; p[n++] = t[1]; p[n++] = t[2]; }
+      var cs = BOXC.map(function (s) { var d = qrot(q, [s[0] * HX, s[1] * HY, s[2] * HZ]); return [r[0] + d[0], r[1] + d[1], r[2] + d[2]]; });
+      BOXE.forEach(function (e) { put(cs[e[0]]); put(cs[e[1]]); });
+      legs.forEach(function (L) {
+        for (var k = 0; k < 3; k++) { put(r.slice(L.o + 3 * k, L.o + 3 * k + 3)); put(r.slice(L.o + 3 * k + 3, L.o + 3 * k + 6)); }
+      });
+      strobeN++;
+      var col = strobeGeo.attributes.color.array;               // fade toward the floor's tone with age
+      for (var g = 0; g < strobeN; g++) {
+        var age = (strobeN - 1 - g) / Math.max(1, strobeN), v = .46 - .3 * age;
+        for (var i = g * STROBE_SEG * 6; i < (g + 1) * STROBE_SEG * 6; i += 3) { col[i] = v * .91; col[i + 1] = v * .9; col[i + 2] = v * .87; }
+      }
+      strobeGeo.attributes.position.needsUpdate = strobeGeo.attributes.color.needsUpdate = true;
+      strobeGeo.setDrawRange(0, strobeN * STROBE_SEG * 2);
     }
 
     // HUD
@@ -281,35 +391,152 @@
       push: stage.querySelector('[data-hud="push"]'), bar: stage.querySelector('[data-hud="bar"]'),
       rule: stage.querySelector('[data-hud="rule"]')
     };
+    // the rate being played, and a timeline of the run's events, under the readout
+    var hudEl = stage.querySelector('.hud'), play = stage.querySelector('[data-hud="play"]');
+    if (hudEl && !play) {
+      play = document.createElement('div');
+      play.className = 'hud__play'; play.setAttribute('data-hud', 'play');
+      play.innerHTML = '<p class="hud__mode"><span data-hud="rate">1×</span><span data-hud="mode">real time</span></p>' +
+        '<div class="hud__time" aria-hidden="true"><i class="hud__after"></i><i class="hud__win"></i><span class="hud__ticks"></span><i class="hud__now"></i></div>' +
+        '<p class="hud__legend" data-hud="legend"></p>';
+      hudEl.appendChild(play);
+    }
+    var tl = play && {
+      rate: play.querySelector('[data-hud="rate"]'), mode: play.querySelector('[data-hud="mode"]'),
+      after: play.querySelector('.hud__after'), win: play.querySelector('.hud__win'),
+      ticks: play.querySelector('.hud__ticks'), now: play.querySelector('.hud__now'), legend: play.querySelector('[data-hud="legend"]')
+    };
     var runButtons = stage.querySelectorAll('[data-run]');
     var np = stage.querySelector('[data-note-push]'), nb = stage.querySelector('[data-note-breach]');
     // the record keeps the push at full precision; four decimals is what any panel shows
     function num(v) { return String(+(+v).toFixed(4)); }
+    function firstOver(run) { return run.tilt.findIndex(function (x) { return x > D.threshold; }); }
     if (np) np.textContent = num(D.runs.minimal.push);
-    if (nb) nb.textContent = (D.runs.minimal.tilt.findIndex(function (x) { return x > D.threshold; }) / D.hz).toFixed(2);
-    var runName = 'minimal', run = D.runs[runName];
-    var START = .4;                          /* the first 0.4 s is the robot settling onto the floor */
-    var simT = START, hold = 0, breached = false, peak = 0, trailN = 0;
-    var DUR = (run.f.length - 1) / D.hz, HOLD = 2.4;
-    function reset() {
-      simT = START; hold = 0; breached = false; peak = 0; trailN = 0;
-      leaveGhost(false); trailGeo.setDrawRange(0, 0); phantomAt = null;
-      hud.rule.classList.remove('is-fail');
-    }
-    runButtons.forEach(function (b) {
-      b.addEventListener('click', function () {
-        runName = b.getAttribute('data-run'); run = D.runs[runName];
-        runButtons.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
-        reset();
-      });
-    });
+    if (nb) nb.textContent = (firstOver(D.runs.minimal) / D.hz).toFixed(2);
 
-    var target = new T.Vector3(0, .13, 0), clock = 0, phantomAt = null;
-    // drag to orbit: the offset eases back towards the drift once let go
+    /* ── the cut ─────────────────────────────────────────────
+       What the record says happened, and when: the push, the first control step
+       past the limit, and the moment the torso comes to rest (it moves less than
+       1.5 mm and turns less than 0.4° per step for 0.3 s). */
+    var START = .4;                          /* the first 0.4 s is the robot settling onto the floor */
+    var FREEZE = .8, HOLD = 2.4;
+    var RATE = D.speed || .5;
+    function eventsOf(run) {
+      var F = run.f, n = F.length, hz = D.hz, ib = firstOver(run), still = Math.round(.3 * hz), rest = null;
+      if (run.push > 0) {
+        for (var i = Math.round(D.push_t * hz) + 3; i < n - still - 1 && rest === null; i++) {
+          var ok = true;
+          for (var k = i; k < i + still && ok; k++) {
+            var a = F[k], b = F[k + 1];
+            ok = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) < .0015 && Math.abs(run.tilt[k + 1] - run.tilt[k]) < .4;
+          }
+          if (ok) rest = i / hz;
+        }
+      }
+      return { breach: ib >= 0 ? ib / hz : null, rest: rest, end: (n - 1) / hz };
+    }
+    function planOf(run) {
+      var E = eventsOf(run), steps = [], fell = run.push > 0 && E.breach !== null;
+      if (SINGLE) {
+        steps.push({ k: 'play', from: START, to: E.end, rate: RATE, mode: 'replay', cam: 'A', strobe: fell });
+        steps.push({ k: 'hold', dur: HOLD });
+      } else {
+        var to = E.rest !== null ? Math.min(E.end, E.rest + .8) : E.end;
+        steps.push({ k: 'play', from: START, to: to, rate: 1, mode: 'real time', cam: 'A' });
+        if (fell) {
+          steps.push({ k: 'hold', dur: .9 });
+          steps.push({ k: 'dip' });
+          steps.push({ k: 'play', from: Math.max(START, D.push_t - .3), to: Math.min(E.end, (E.rest !== null ? E.rest : E.end) + .3),
+            rate: RATE, mode: 'replay · side elevation', cam: 'B', strobe: true, freeze: E.breach });
+          steps.push({ k: 'hold', dur: 1.8 });
+        } else steps.push({ k: 'hold', dur: 1.2 });
+        steps.push({ k: 'dip' });
+      }
+      return { E: E, steps: steps };
+    }
+
+    /* ── cameras on tripods ──────────────────────────────────
+       A camera that chases a falling body, or turns while it falls, adds its own
+       motion to the body's. Each camera is fixed for the whole pass: it is set so
+       that every point the record holds for the run, start to rest, lands inside
+       the part of the stage the panels leave free (opts.box, fractions of the
+       view). Only a drag moves it, and it settles back.
+       A: three-quarter view. B: side elevation, on a long lens, square to the
+       plane the push acts in. */
+    var CAMS = { A: { az: .34, el: .3, fov: 30 }, B: { az: 0, el: .07, fov: 15 } };
+    var cam = CAMS.A, aim = new T.Vector3(), ext = null, camD = 2;
+    function boxOf(w, h) {
+      if (typeof opts.box === 'function') return opts.box(w, h);
+      if (opts.box) return opts.box;
+      return w >= 1000 ? [.46, .3, .985, .8] : w >= 700 ? [.03, .14, Math.max(.45, 1 - 330 / w), .92] : [.06, .1, .94, .9];
+    }
+    // the run's extent in MuJoCo's frame: every torso corner and leg point recorded, the push arrow, the gizmo
+    function frameRun(run) {
+      var e = [Infinity, -Infinity, Infinity, -Infinity, 0, 0], F = run.f;
+      function grow(p) { e[0] = Math.min(e[0], p[0]); e[1] = Math.max(e[1], p[0]); e[2] = Math.min(e[2], p[1]); e[3] = Math.max(e[3], p[1]); e[5] = Math.max(e[5], p[2]); }
+      for (var i = Math.round(START * D.hz); i < F.length; i++) {
+        var r = F[i], q = [r[3], r[4], r[5], r[6]];
+        BOXC.forEach(function (c) { var d = qrot(q, [c[0] * HX, c[1] * HY, c[2] * HZ]); grow([r[0] + d[0], r[1] + d[1], r[2] + d[2]]); });
+        for (var k = 7; k + 2 < r.length; k += 3) grow([r[k], r[k + 1], r[k + 2]]);
+      }
+      if (run.push > 0) e[0] = Math.min(e[0], F[Math.round(D.push_t * D.hz)][0] - HX - .03 - Math.max(.06, Math.min(.34, .025 * run.push)));
+      e[5] = Math.max(e[5], F[0][2] + .26);                    // the gizmo stands .24 above the torso
+      ext = [e[0] - .03, e[1] + .03, e[2] - .03, e[3] + .03, 0, e[5] + .02];
+      writeDatum(ext[0] - .1, ext[1] + .1, (e[2] + e[3]) / 2);
+      var c = V((ext[0] + ext[1]) / 2, (ext[2] + ext[3]) / 2, (ext[4] + ext[5]) / 2);
+      aim.set(c[0], c[1], c[2]);
+      // the shadow-casting sun stands over the middle of the travel, and lights a pool around it
+      var span = Math.max(ext[1] - ext[0], ext[3] - ext[2]) + 1.1;
+      pool.position.x = aim.x; pool.position.z = aim.z; pool.scale.set(span, span, 1);
+      sun.target.position.set(aim.x, 0, aim.z);
+      sun.position.set(aim.x + .3, 2.6, aim.z + .45);
+      var sc = sun.shadow.camera, half = Math.max(ext[1] - ext[0], ext[3] - ext[2]) / 2 + .45;
+      sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.near = .5; sc.far = 4.5;
+      sc.updateProjectionMatrix();
+      fit();
+    }
     var orbit = 0, dragging = false, lastX = 0;
     view.addEventListener('pointerdown', function (e) { dragging = true; lastX = e.clientX; view.setPointerCapture(e.pointerId); });
     view.addEventListener('pointermove', function (e) { if (!dragging) return; orbit += (e.clientX - lastX) * -.006; lastX = e.clientX; });
     ['pointerup', 'pointercancel'].forEach(function (k) { view.addEventListener(k, function () { dragging = false; }); });
+    function setPose(d, az) {
+      camera.position.set(aim.x + Math.sin(az) * Math.cos(cam.el) * d, aim.y + Math.sin(cam.el) * d,
+        aim.z + Math.cos(az) * Math.cos(cam.el) * d);
+      camera.lookAt(aim);
+      camera.updateMatrixWorld();
+    }
+    var pj = new T.Vector3();
+    function projected(w, h) {                       // the extent's screen rectangle, in pixels
+      var r = [Infinity, Infinity, -Infinity, -Infinity];
+      for (var k = 0; k < 8; k++) {
+        var m = V(ext[k & 1 ? 1 : 0], ext[k & 2 ? 3 : 2], ext[k & 4 ? 5 : 4]);
+        pj.set(m[0], m[1], m[2]).project(camera);
+        var x = (pj.x + 1) / 2 * w, y = (1 - pj.y) / 2 * h;
+        r[0] = Math.min(r[0], x); r[1] = Math.min(r[1], y); r[2] = Math.max(r[2], x); r[3] = Math.max(r[3], y);
+      }
+      return r;
+    }
+    function fit() {
+      var w = view.clientWidth, h = view.clientHeight;
+      if (!w || !h || !ext) return;
+      var B = boxOf(w, h), bw = (B[2] - B[0]) * w, bh = (B[3] - B[1]) * h;
+      camera.aspect = w / h; camera.fov = cam.fov; camera.clearViewOffset(); camera.updateProjectionMatrix();
+      var d = 2, r;
+      for (var it = 0; it < 6; it++) {                 // a projected size falls off as 1 / distance
+        setPose(d, cam.az); r = projected(w, h);
+        d *= Math.max((r[2] - r[0]) / bw, (r[3] - r[1]) / bh);
+      }
+      setPose(d, cam.az); r = projected(w, h);
+      camera.setViewOffset(w, h, (r[0] + r[2]) / 2 - (B[0] + B[2]) / 2 * w, (r[1] + r[3]) / 2 - (B[1] + B[3]) / 2 * h, w, h);
+      camera.updateProjectionMatrix();
+      camD = d;
+      scene.fog.near = d * .92; scene.fog.far = d * 2.27;
+    }
+    function placeCamera(dt) {
+      if (!dragging) orbit *= Math.pow(.25, dt);
+      setPose(camD, cam.az + orbit);
+    }
+
     var notes = { push: stage.querySelector('[data-note="push"]'), breach: stage.querySelector('[data-note="breach"]') };
     var pv = new T.Vector3();
     function place(el, on, at) {
@@ -320,54 +547,133 @@
       pv.set(v[0], v[1], v[2]).project(camera);
       var x = (pv.x + 1) / 2 * view.clientWidth, y = (1 - pv.y) / 2 * view.clientHeight;
       el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
+      // a label that would run past the frame's right edge is slid back inside it
+      var sp = el.firstElementChild;
+      if (sp && el.getAttribute('data-note') !== 'push') {
+        var over = x + 30 + sp.offsetWidth - (view.clientWidth - 10);
+        sp.style.transform = over > 0 ? 'translate(' + (30 - over).toFixed(1) + 'px,-12px)' : '';
+      }
     }
+
+    // the timeline's marks, for the run being shown
+    function pct(t, E) { return (Math.max(0, Math.min(1, t / E.end)) * 100).toFixed(2) + '%'; }
+    function drawTimeline(run, E) {
+      if (!tl) return;
+      var marks = [];
+      if (run.push > 0) marks.push([D.push_t, 'push']);
+      if (E.breach !== null) marks.push([E.breach, 'breach']);
+      if (run.push > 0 && E.rest !== null) marks.push([E.rest, 'rest']);
+      tl.ticks.innerHTML = marks.map(function (m) {
+        return '<i class="hud__tick hud__tick--' + m[1] + '" style="left:' + pct(m[0], E) + '"></i>';
+      }).join('');
+      tl.legend.textContent = marks.length ? marks.map(function (m) { return m[1] + ' ' + m[0].toFixed(2); }).join(' · ') + ' s'
+        : 'no push: ' + E.end.toFixed(1) + ' s of standing';
+      tl.after.style.left = E.breach !== null ? pct(E.breach, E) : '100%';
+    }
+
+    var runName = 'minimal', run = D.runs[runName], P, si = 0, simT = START, stepT = 0, freezeLeft = 0, passDone = {};
+    var breached = false, peak = 0, trailN = 0, phantomAt = null, strobeNext = null;
+    function clearPass() {
+      breached = false; peak = 0; trailN = 0; phantomAt = null; strobeN = 0;
+      leaveGhost(false); trailGeo.setDrawRange(0, 0); strobeGeo.setDrawRange(0, 0);
+      if (hud.rule) hud.rule.classList.remove('is-fail');
+    }
+    function begin(i) {
+      si = i % P.steps.length; stepT = 0;
+      var s = P.steps[si];
+      if (s.k === 'play') {
+        simT = s.from; freezeLeft = 0;
+        if (cam !== CAMS[s.cam]) { cam = CAMS[s.cam]; fit(); }
+        clearPass();
+        strobeNext = s.strobe ? D.push_t : null;
+        stage.setAttribute('data-pass', s.cam === 'B' ? 'replay' : 'live');
+        if (tl) {
+          tl.rate.textContent = (s.rate === 1 ? '1' : num(s.rate)) + '×';
+          tl.mode.textContent = s.mode;
+          tl.win.style.left = pct(s.from, P.E); tl.win.style.right = (100 - parseFloat(pct(s.to, P.E))).toFixed(2) + '%';
+        }
+      }
+      if (s.k === 'dip') { canvas.style.transition = 'opacity .25s linear'; canvas.style.opacity = '0'; }
+    }
+    function choose(name) {
+      runName = name; run = D.runs[name]; P = planOf(run);
+      frameRun(run); drawTimeline(run, P.E);
+      canvas.style.opacity = ''; begin(0);
+    }
+    runButtons.forEach(function (b) {
+      b.addEventListener('click', function () {
+        runButtons.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+        choose(b.getAttribute('data-run'));
+      });
+    });
+
     function frame(dt) {
-      if (hold > 0) { hold -= dt; if (hold <= 0) reset(); }
-      else { simT += dt * D.speed; if (simT >= DUR) { simT = DUR; hold = HOLD; } }
+      var s = P.steps[si];
+      if (s.k === 'play') {
+        if (freezeLeft > 0) {
+          freezeLeft -= dt;
+          if (freezeLeft <= 0 && tl) tl.mode.textContent = s.mode;
+        } else {
+          var next = simT + dt * s.rate;
+          if (s.freeze != null && simT < s.freeze && next >= s.freeze) {
+            next = s.freeze; freezeLeft = FREEZE;
+            if (tl) tl.mode.textContent = 'held at the breach';
+          }
+          simT = Math.min(s.to, next);
+          if (simT >= s.to && freezeLeft <= 0) begin(si + 1);
+        }
+      } else if (s.k === 'hold') {
+        stepT += dt; if (stepT >= s.dur) begin(si + 1);
+      } else if (s.k === 'dip') {
+        stepT += dt;
+        if (stepT >= .28) { canvas.style.opacity = '1'; begin(si + 1); }
+      }
+
       var f = simT * D.hz, r = frameAt(run, f), tilt = tiltAt(run, f);
       peak = Math.max(peak, tilt);
       pose(r); writeGizmo(r, tilt);
 
       // the torso's path, drawn as it is made
-      if (hold <= 0 && trailN < 600) {
+      if (s.k === 'play' && freezeLeft <= 0 && trailN < 600) {
         var tp = trailGeo.attributes.position.array, v = V(r[0], r[1], r[2]);
         tp[trailN * 3] = v[0]; tp[trailN * 3 + 1] = v[1]; tp[trailN * 3 + 2] = v[2];
         trailN++; trailGeo.attributes.position.needsUpdate = true; trailGeo.setDrawRange(0, trailN);
       }
-      // the push, shown around the instant it is applied
-      var dtp = simT - D.push_t, show = run.push > 0 && dtp > -.35 && dtp < .3;
-      writeArrow(r, show ? Math.min(1, (.3 - Math.abs(dtp + .03)) * 6) : 0);
+      // the chronophotograph: a recorded control step every tenth of a second, from the push to rest
+      var stopAt = P.E.rest !== null ? P.E.rest + STROBE_DT / 2 : P.E.end;
+      while (strobeNext !== null && simT + 1e-9 >= strobeNext && strobeNext <= stopAt) {
+        addStrobe(run.f[Math.min(run.f.length - 1, Math.round(strobeNext * D.hz))]);
+        strobeNext += STROBE_DT;
+      }
+      // the push, drawn while the force acts (D.window) and a moment either side of it
+      var W = D.window || .05, dtp = simT - D.push_t;
+      var aA = run.push <= 0 ? 0 : dtp < -.12 ? 0 : dtp < 0 ? .45 * (dtp + .12) / .12 : dtp <= W ? 1 : dtp < W + .22 ? 1 - (dtp - W) / .22 : 0;
+      writeArrow(r, aA, run.push);
 
       // at the breach, the pose is left behind in phantom line
       if (!breached && tilt > D.threshold) {
         breached = true;
         leaveGhost(true);
         phantomAt = [r[0], r[1], r[2] + HZ + .05];
-        hud.rule.classList.add('is-fail');
-        // report the recorded control step that first exceeded the limit, not the blended frame
-        var ib = run.tilt.findIndex(function (x) { return x > D.threshold; });
-        hud.rule.textContent = 'tilt_deg > ' + D.threshold + ' · breached ' + (ib / D.hz).toFixed(2) + ' s';
+        if (hud.rule) {
+          hud.rule.classList.add('is-fail');
+          // report the recorded control step that first exceeded the limit, not the blended frame
+          hud.rule.textContent = 'tilt_deg > ' + D.threshold + ' · breached ' + (firstOver(run) / D.hz).toFixed(2) + ' s';
+        }
       }
-      if (!breached) hud.rule.textContent = 'tilt_deg > ' + D.threshold + ' · holds' + (simT >= DUR ? ', peak ' + peak.toFixed(2) + '°' : '');
-      hud.t.textContent = simT.toFixed(2);
-      hud.tilt.textContent = tilt.toFixed(2);
-      hud.push.textContent = run.push > 0 ? num(run.push) : '0';
-      hud.bar.style.setProperty('--w', Math.min(100, tilt / 180 * 100).toFixed(2) + '%');
+      var last = P.steps[si].k !== 'play';
+      if (!breached && hud.rule) hud.rule.textContent = 'tilt_deg > ' + D.threshold + ' · holds' + (last ? ', peak ' + peak.toFixed(2) + '°' : '');
+      if (hud.t) hud.t.textContent = simT.toFixed(2);
+      if (hud.tilt) hud.tilt.textContent = tilt.toFixed(2);
+      if (hud.push) hud.push.textContent = run.push > 0 ? num(run.push) : '0';
+      if (hud.bar) hud.bar.style.setProperty('--w', Math.min(100, tilt / 180 * 100).toFixed(2) + '%');
+      if (tl) tl.now.style.left = pct(simT, P.E);
 
-      // the camera follows the torso along x and drifts slowly around it
-      clock += dt;
-      var tv = V(r[0], r[1], r[2]);
-      target.x += (tv[0] - target.x) * Math.min(1, dt * 2.2);
-      target.z += (tv[2] * .5 - target.z) * Math.min(1, dt * 2.2);
-      if (!dragging) orbit *= Math.pow(.35, dt);
-      var az = .34 + .2 * Math.sin(clock * .16) + orbit, el = .3, dist = view.clientWidth >= 1000 ? 1.85 : (camera.aspect > 1.8 ? 1.28 : 1.55);
-      camera.position.set(target.x + Math.sin(az) * Math.cos(el) * dist, target.y + Math.sin(el) * dist,
-        target.z + Math.cos(az) * Math.cos(el) * dist);
-      camera.lookAt(target);
+      placeCamera(dt);
       renderer.render(scene, camera);
 
       // drafting notes: the push where it is applied, the breach where it was left
-      place(notes.push, show && arrow.material.opacity > .2, [r[0] - HX - .23, r[1], r[2]]);
+      place(notes.push, aA > .2, [r[0] - HX - .23, r[1], r[2]]);
       place(notes.breach, breached, phantomAt);
     }
 
@@ -375,23 +681,18 @@
       var w = view.clientWidth, h = view.clientHeight;
       if (!w || !h) return;
       renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      // where the HUD sits over the view, shift the picture so the robot clears it
-      if (OFF) camera.setViewOffset(w, h, w * OFF[0], h * OFF[1], w, h);
-      else if (w >= 1000) camera.setViewOffset(w, h, -w * .2, -h * .08, w, h);
-      else if (w >= 700) camera.setViewOffset(w, h, -w * .16, h * .06, w, h); else camera.clearViewOffset();
-      camera.updateProjectionMatrix();
+      fit();
     }
     var ro = 'ResizeObserver' in window ? new ResizeObserver(resize) : null;
     if (ro) ro.observe(view);
     resize();
 
-    var visible = true, last = null, raf = null;
+    var visible = true, lastNow = null, raf = null;
     function loop(now) {
       raf = null;
-      if (!alive || !visible || document.hidden) { last = null; return; }
-      var dt = last === null ? 0 : Math.min(.05, (now - last) / 1000);
-      last = now;
+      if (!alive || !visible || document.hidden) { lastNow = null; return; }
+      var dt = lastNow === null ? 0 : Math.min(.05, (now - lastNow) / 1000);
+      lastNow = now;
       frame(dt);
       raf = requestAnimationFrame(loop);
     }
@@ -400,6 +701,7 @@
     var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { visible = es[0].isIntersecting; kick(); }) : null;
     if (io) io.observe(view);
     document.addEventListener('visibilitychange', kick);
+    choose(runName);
     frame(0);
     stage.classList.add('is-live', 'is-playing');
     kick();
@@ -411,6 +713,9 @@
       if (io) io.disconnect();
       document.removeEventListener('visibilitychange', kick);
       renderer.dispose();
+      if (play && play.parentNode && !play.hasAttribute('data-static')) play.parentNode.removeChild(play);
+      canvas.style.opacity = ''; canvas.style.transition = '';
+      stage.removeAttribute('data-pass');
       stage.classList.remove('is-live', 'is-playing');
     };
   }

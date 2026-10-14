@@ -247,6 +247,10 @@
     return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Example: each failure mode\'s smallest failing push for the baseline and the candidate checkpoint.">' + s + '</svg>';
   }
 
+  // where js/machine.js may put the robot: clear of the HUD, which sits top right on a wide
+  // stage and along the bottom on a narrow one (app.css)
+  function replayBox(w, h) { return w > 640 ? [.03, .1, Math.max(.45, 1 - 300 / w), .94] : [.05, .06, .95, .56]; }
+
   // the 3D replay's frame: canvas, crop marks, drafting notes and the HUD that js/machine.js drives
   function stageHTML(c) {
     return '<figure class="stage" data-replay aria-label="A 3D replay of the minimal case: the robot after a requested push of ' + esc(c.push) + ' newton-seconds">' +
@@ -726,7 +730,7 @@
   S.mode.after = function () {
     var st = $('[data-replay]');
     if (st && window.TeeterMachine && !reduced) {
-      try { stopMachine = window.TeeterMachine.mount(st, REPLAY, { offset: st.clientWidth >= 640 ? [.17, .02] : [0, 0] }); } catch (e) { stopMachine = null; }
+      try { stopMachine = window.TeeterMachine.mount(st, REPLAY, { box: replayBox }); } catch (e) { stopMachine = null; }
       if (stopMachine) cleanup.push(function () { stopMachine(); stopMachine = null; });
     }
     if (st && !stopMachine) {
@@ -1063,7 +1067,7 @@
     h: { esc: esc, $: $, $$: $$, go: go, n: n, unit: unit, id: id, panel: panel, head: head, verdict: verdict, kv: kv,
          table: table, stat: stat, code: code, sh: sh, a: a, btn: btn, src: src, toast: toast, copyText: copyText,
          ruleSentence: ruleSentence, REQUESTED: REQUESTED, notFound: notFound },
-    figs: { scatter: scatterSvg, coverage: coverageSvg, trace: traceSvg, stage: stageHTML, spark: sparkSvg },
+    figs: { scatter: scatterSvg, coverage: coverageSvg, trace: traceSvg, stage: stageHTML, spark: sparkSvg, replayBox: replayBox },
     isStarted: function () { return started; },
     hold: function () { clearTimeout(fallback); }
   };
