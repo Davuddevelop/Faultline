@@ -60,6 +60,7 @@ Verify before quoting; they drift.
 | `docs/primer.md` | the domain from scratch, written to be learned from |
 | `docs/walkthrough.md` | every part of the product, step by step from a fresh clone, rehearsed with what each step printed; re-run it when the product changes |
 | `docs/cheatsheet.md` | one page: the input and output file formats, the exit codes, the commands to run |
+| `docs/handoff-prompt.md` | the prompt for the Claude in a project that trained a policy: what Teeter needs from it, and the parity checks to run. Read from `model.py`, `observe.py`, `adapters.py`, `runner.py`; update it when they change |
 | `docs/strategy.md`, `product-spec.md`, `roadmap.md` | business case, spec, sequencing |
 | `docs/v1-roadmap.md` | engineering roadmap: architecture, v0 as built, milestones to v1 |
 | `docs/decisions.md` | the four decisions of 9 October (hosting, sign-in, simulator, the older pages) and the hosted setup only the account owner can do |
