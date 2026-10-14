@@ -30,7 +30,9 @@ STARTER = """\
 robot: {robot}
 
 # "stand" is the built-in baseline that holds a stance. Point this at your own
-# policy as "module:Attr" — anything with reset(seed) and act(obs, t).
+# policy: an exported file as "onnx:path.onnx" or "torchscript:path.pt" (with
+# an "observation:" list in the order it was trained on), or Python as
+# "module:Attr", anything with reset(seed) and act(obs, t).
 policy: stand
 
 duration_s: 5.0

@@ -35,22 +35,25 @@ class Axis:
 
     ``nominal`` is the value at which the axis stops perturbing anything.
     ``None`` means the nominal is whatever the model itself specifies, which is
-    only the case for friction.
+    only the case for friction. ``quantised`` axes are applied on the control
+    grid (``runner.run``), so the robot receives a rounded amount and a report
+    quotes the value as requested.
     """
 
     field: str
     nominal: float | None
     tolerance: float
     unit: str
+    quantised: bool = False
 
 
 # push_time_s, push_yaw_deg and slope_yaw_deg are deliberately absent: they are
 # *when* and *which direction*, not *how much*. Relaxing them toward zero would
 # change the case rather than shrink it.
 SEVERITY_AXES: tuple[Axis, ...] = (
-    Axis("push_impulse_ns", 0.0, 0.5, "N.s"),
+    Axis("push_impulse_ns", 0.0, 0.5, "N.s", quantised=True),
     Axis("slope_deg", 0.0, 0.25, "deg"),
-    Axis("sensor_lag_ms", 0.0, 2.5, "ms"),
+    Axis("sensor_lag_ms", 0.0, 2.5, "ms", quantised=True),
     Axis("torque_loss_pct", 0.0, 1.0, "%"),
     Axis("payload_kg", 0.0, 0.05, "kg"),
     Axis("payload_offset_m", 0.0, 0.005, "m"),

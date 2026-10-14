@@ -41,7 +41,7 @@ def axes():
     block = src[src.index("SEVERITY_AXES: tuple[Axis, ...] = ("):]
     block = block[:block.index("\n)\n")]
     out = []
-    for name, nominal, tol, unit in re.findall(r'Axis\("(\w+)", ([\w.]+), ([\d.]+), "([^"]+)"\)', block):
+    for name, nominal, tol, unit in re.findall(r'Axis\("(\w+)", ([\w.]+), ([\d.]+), "([^"]+)"(?:, quantised=True)?\)', block):
         out.append({"name": name, "nominal": None if nominal == "None" else float(nominal),
                     "tolerance": float(tol), "unit": unit})
     return out

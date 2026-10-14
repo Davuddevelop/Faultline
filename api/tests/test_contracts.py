@@ -14,8 +14,7 @@ def test_axes_are_the_engines():
     from faultline.reduce import SEVERITY_AXES
     assert list(AXES) == [a.field for a in SEVERITY_AXES]
     for a in SEVERITY_AXES:
-        unit, nominal, tol, _ = AXES[a.field]
-        assert (unit, nominal, tol) == (a.unit, a.nominal, a.tolerance)
+        assert AXES[a.field] == (a.unit, a.nominal, a.tolerance, a.quantised)
 
 
 def test_signals_are_the_trajectorys():
