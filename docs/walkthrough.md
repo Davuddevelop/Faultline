@@ -1,5 +1,8 @@
 # Walkthrough: the whole product, step by step
 
+The one-page version, inputs, outputs and commands only, is
+`docs/cheatsheet.md`.
+
 Every step below was run on 14 October 2026 from a fresh clone of the branch
 `claude/faultline-landing-spec-179f9n`, on Linux x86-64 with 4 cores, Python
 3.11.15, MuJoCo 3.12.0 and NumPy 2.4.6. The outputs quoted are what it printed;
