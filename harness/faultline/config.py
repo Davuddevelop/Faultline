@@ -97,6 +97,12 @@ def load_policy(ref: str, model_path: str) -> Policy:
     for method in ("reset", "act"):
         if not callable(getattr(policy, method, None)):
             raise ConfigError(f"policy {ref!r} has no callable {method}()")
+    if not getattr(policy, "id", None):
+        # nothing better to name it by; a policy that knows its version sets id itself
+        try:
+            policy.id = ref
+        except AttributeError as exc:
+            raise ConfigError(f"policy {ref!r} has no id and will not take one; give it an id attribute") from exc
     return policy
 
 

@@ -77,6 +77,18 @@ def test_a_relative_policy_file_resolves_against_the_config_too(tmp_path):
     assert load(write(tmp_path, MINIMAL)).policy_ref == "stand"
 
 
+def test_a_python_policy_without_an_id_is_named_by_its_reference(tmp_path, monkeypatch):
+    (tmp_path / "idless_policy.py").write_text(
+        "import numpy as np\n"
+        "class Hold:\n"
+        "    def reset(self, seed): pass\n"
+        "    def act(self, obs, t): return np.zeros(12)\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    cfg = write(tmp_path, MINIMAL.replace("policy: stand", "policy: idless_policy:Hold"))
+    c, policy = load(cfg).loaded()
+    assert c.spec.policy_id == policy.id == "idless_policy:Hold"
+
+
 # ------------------------------------------------------- loud, specific errors
 
 def test_missing_robot_is_named(tmp_path):
