@@ -570,9 +570,9 @@
     });
     $$('[data-act^="run:"]').forEach(function (b) {
       b.addEventListener('click', function () {
-        var ck = pr.checkpoints.filter(function (c) { return c.label === b.getAttribute('data-act').slice(4); })[0];
-        var spec = Object.assign({}, pr.standard_spec, { policy: ck.policy });
-        post('/campaigns', { spec: spec }).then(function (c) { h.go('/campaigns/' + c.ref + '/live'); }).catch(function (e) { h.toast(e.message); });
+        b.disabled = true;
+        post('/programs/' + pr.slug + '/checkpoints/' + encodeURIComponent(b.getAttribute('data-act').slice(4)) + '/run')
+          .then(function (c) { h.go('/campaigns/' + c.ref + '/live'); }).catch(function (e) { b.disabled = false; h.toast(e.message); });
       });
     });
   });

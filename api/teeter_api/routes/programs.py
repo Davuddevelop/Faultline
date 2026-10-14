@@ -1,7 +1,8 @@
 """Programs, their checkpoints, and gates.
 
 A program fixes the experiment (its standard spec, with no policy). Each
-checkpoint names a policy. Gating a checkpoint runs that experiment on it and
+checkpoint names a policy. Running a checkpoint runs that experiment on it,
+recorded against it. Gating a checkpoint runs the experiment on it and
 compares with the baseline checkpoint's most recent run of the same
 experiment, queuing the baseline too if it has never run it.
 """
@@ -52,6 +53,18 @@ def _validate_standard(spec: dict[str, Any]) -> dict[str, Any]:
     if "policy" in spec:
         raise ApiError(422, "invalid", "standard_spec: leave out 'policy'; each checkpoint supplies its own")
     return CampaignSpec(**{**spec, "policy": "placeholder"}).model_dump(mode="json") | {"policy": None}
+
+
+def _checkpoint(session: Session, prog: Program, label: str) -> Checkpoint:
+    ck = session.scalar(select(Checkpoint).where(Checkpoint.program_id == prog.id, Checkpoint.label == label))
+    if ck is None:
+        raise not_found(f"checkpoint {label!r} in {prog.slug}")
+    return ck
+
+
+def _spec_for(prog: Program, ck: Checkpoint) -> CampaignSpec:
+    """The program's experiment with this checkpoint's policy, and nothing else changed."""
+    return CampaignSpec(**{**prog.standard_spec, "policy": ck.policy})
 
 
 def _program_out(session: Session, prog: Program) -> dict[str, Any]:
@@ -121,13 +134,23 @@ def add_checkpoint(slug: str, body: NewCheckpoint, request: Request, p: Principa
 def set_baseline(slug: str, body: GateCheckpoint, request: Request, p: Principal = Depends(editors),
                  session: Session = Depends(get_session)) -> dict:
     prog = service.find_program(session, p.workspace.id, slug)
-    ck = session.scalar(select(Checkpoint).where(Checkpoint.program_id == prog.id, Checkpoint.label == body.checkpoint))
-    if ck is None:
-        raise not_found(f"checkpoint {body.checkpoint!r} in {slug}")
+    ck = _checkpoint(session, prog, body.checkpoint)
     prog.baseline_checkpoint_id = ck.id
     audit.record(session, p, "program.baseline", f"{slug}/{ck.label}", {}, request)
     session.commit()
     return _program_out(session, prog)
+
+
+@router.post("/programs/{slug}/checkpoints/{label}/run", status_code=201)
+def run_checkpoint(slug: str, label: str, request: Request, p: Principal = Depends(editors_or_ci),
+                   session: Session = Depends(get_session)) -> dict:
+    """Run the program's experiment on one checkpoint. The campaign is recorded
+    against the checkpoint, so a later gate reuses it rather than repeating it."""
+    prog = service.find_program(session, p.workspace.id, slug)
+    ck = _checkpoint(session, prog, label)
+    c = service.create_campaign(session, p, _spec_for(prog, ck), max_attempts=request.app.state.settings.max_attempts,
+                                program=prog, checkpoint=ck, request=request)
+    return service.campaign_detail(session, c)
 
 
 @router.post("/programs/{slug}/gate", status_code=201)
@@ -137,27 +160,21 @@ def gate_checkpoint(slug: str, body: GateCheckpoint, request: Request, p: Princi
     compare it with the baseline's."""
     settings = request.app.state.settings
     prog = service.find_program(session, p.workspace.id, slug)
-    cand_ck = session.scalar(select(Checkpoint).where(Checkpoint.program_id == prog.id,
-                                                      Checkpoint.label == body.checkpoint))
-    if cand_ck is None:
-        raise not_found(f"checkpoint {body.checkpoint!r} in {slug}")
+    cand_ck = _checkpoint(session, prog, body.checkpoint)
     base_ck = session.get(Checkpoint, prog.baseline_checkpoint_id) if prog.baseline_checkpoint_id else None
     if base_ck is None:
         raise ApiError(409, "no_baseline", f"{slug} has no baseline checkpoint; set one first")
     if base_ck.id == cand_ck.id:
         raise ApiError(409, "is_baseline", f"{body.checkpoint} is the baseline; gate a different checkpoint")
 
-    def spec_for(ck: Checkpoint) -> CampaignSpec:
-        return CampaignSpec(**{**prog.standard_spec, "policy": ck.policy})
-
-    base_spec = spec_for(base_ck)
+    base_spec = _spec_for(prog, base_ck)
     base = session.scalar(select(Campaign).where(
         Campaign.checkpoint_id == base_ck.id, Campaign.spec_sha256 == base_spec.experiment_sha256(),
         Campaign.state.in_(("queued", "running", "done"))).order_by(Campaign.number.desc()).limit(1))
     if base is None:
         base = service.create_campaign(session, p, base_spec, max_attempts=settings.max_attempts,
                                        program=prog, checkpoint=base_ck, request=request)
-    cand = service.create_campaign(session, p, spec_for(cand_ck), max_attempts=settings.max_attempts,
+    cand = service.create_campaign(session, p, _spec_for(prog, cand_ck), max_attempts=settings.max_attempts,
                                    program=prog, checkpoint=cand_ck, request=request)
     g = service.create_gate(session, p, base, cand, program=prog, request=request)
     return service.gate_detail(session, g)

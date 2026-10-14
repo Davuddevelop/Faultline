@@ -91,7 +91,7 @@ The environment only, so one image runs anywhere (`teeter_api/settings.py`).
 | Public | `GET /v1/health`, `GET /v1/contracts`, `GET /v1/auth/methods`, `GET /v1/auth/link/{code}`, `POST /v1/auth/demo`, `GET /v1/auth/workos/login`, `GET /v1/auth/workos/callback` |
 | Workspace | `GET /v1/me`, `/v1/overview`, `/v1/runners`, `/v1/audit`; `GET POST /v1/tokens`, `DELETE /v1/tokens/{id}`; `GET POST /v1/members`, `DELETE /v1/members/{email}` |
 | Campaigns | `GET POST /v1/campaigns`; `GET /v1/campaigns/{ref}`, `…/evaluations?after=`, `…/artifacts/{name}`; `POST …/cancel` |
-| Programs and gates | `GET POST /v1/programs`; `GET /v1/programs/{slug}`; `POST …/checkpoints`; `PUT …/baseline`; `POST …/gate` (what CI calls); `GET POST /v1/gates`; `GET /v1/gates/{ref}` |
+| Programs and gates | `GET POST /v1/programs`; `GET /v1/programs/{slug}`; `POST …/checkpoints`; `POST …/checkpoints/{label}/run` (the program's experiment on one checkpoint, recorded against it); `PUT …/baseline`; `POST …/gate` (what CI calls); `GET POST /v1/gates`; `GET /v1/gates/{ref}` |
 | Runner protocol | `POST /v1/runner/register`, `/claim`; `POST /v1/runner/jobs/{id}/heartbeat`, `/evaluations`, `/complete`, `/fail`; `PUT /v1/runner/jobs/{id}/artifacts/{name}` |
 
 The OpenAPI schema is at `/v1/openapi.json` and browsable at `/v1/docs`.

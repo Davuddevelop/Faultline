@@ -80,6 +80,25 @@ def test_gating_a_checkpoint_through_its_program(client, world):
     assert g2["baseline"]["ref"] == g["baseline"]["ref"]
 
 
+def test_running_a_checkpoint_is_recorded_against_it_and_the_gate_reuses_it(client, world):
+    u, ci = World.h(world.user), World.h(world.ci)
+    std = {k: v for k, v in SPEC.items() if k != "policy"}
+    client.post("/v1/programs", headers=u, json={"slug": "q2", "name": "Q2", "standard_spec": std})
+    client.post("/v1/programs/q2/checkpoints", headers=u, json={"label": "v40", "policy": "stand", "baseline": True})
+    client.post("/v1/programs/q2/checkpoints", headers=u, json={"label": "v41", "policy": "tall"})
+
+    run = client.post("/v1/programs/q2/checkpoints/v40/run", headers=u)
+    assert run.status_code == 201, run.text
+    run = run.json()
+    assert (run["policy"], run["program"], run["checkpoint"]) == ("stand", "q2", "v40")
+    shown = client.get("/v1/programs/q2", headers=u).json()["checkpoints"][0]["latest_campaign"]
+    assert shown["ref"] == run["ref"]
+    assert client.post("/v1/programs/q2/checkpoints/v99/run", headers=u).status_code == 404
+
+    g = client.post("/v1/programs/q2/gate", headers=ci, json={"checkpoint": "v41"}).json()
+    assert g["baseline"]["ref"] == run["ref"], "the gate reuses the checkpoint's run, not a second one"
+
+
 def test_a_failed_campaign_refuses_its_gate(client, world):
     u = World.h(world.user)
     client.post("/v1/campaigns", headers=u, json={"spec": SPEC})
