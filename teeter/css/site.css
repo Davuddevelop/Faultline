@@ -342,7 +342,7 @@ svg{display:block;max-width:100%}
 .draw .ahf,.fig .ahf{fill:var(--ink-2)}
 .draw .dim{font:400 calc(12px * var(--k) * var(--scale)) var(--mono);fill:var(--ink)}
 .draw .lab{font:400 calc(11px * var(--k) * var(--scale)) var(--mono);fill:var(--ink-2)}
-.draw .sub{font-size:calc(calc(8px * var(--k) * var(--scale)) * var(--scale))}
+.draw .sub{font-size:calc(8px * var(--k) * var(--scale))}
 /* lettering breaks the lines it crosses, as a draughtsman leaves a gap */
 .draw .dim,.draw .lab{paint-order:stroke;stroke:var(--sheet);stroke-width:calc(4px * var(--k) * var(--scale));stroke-linejoin:round}
 .fig .grid{stroke:var(--hair);stroke-width:1}
