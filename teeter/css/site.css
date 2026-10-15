@@ -598,10 +598,14 @@ body::after{content:"";position:fixed;inset:-50%;pointer-events:none;z-index:90;
     linear-gradient(to top,var(--bg) 0,rgba(11,11,10,.85) 13%,transparent 40%),
     linear-gradient(to right,rgba(11,11,10,.75),transparent 46%),
     radial-gradient(ellipse 120% 90% at 60% 40%,transparent 55%,rgba(11,11,10,.8) 100%)}
-  .hero > .hero__text{z-index:3;align-self:stretch;align-content:end;gap:calc(22px * var(--scale));pointer-events:none;box-sizing:content-box;
+  /* the words stand on the foot of the stage, but never more than 140px (scaled) below its top: an empty
+     first item takes the room above them up to that, and only room there is, so a short screen keeps them
+     where they were; on a tall one the label stays under the tag and what is left goes under the buttons */
+  .hero > .hero__text{z-index:3;align-self:stretch;display:flex;flex-direction:column;gap:calc(22px * var(--scale));pointer-events:none;box-sizing:content-box;
     max-width:max(var(--hero-w),calc(540px * var(--scale)));
     /* no padding on the right: the column ends where its words do, and the robot is framed from there */
-    padding:calc(clamp(84px,13vh,108px) * var(--scale)) 0 clamp(44px,6vh,calc(76px * var(--scale))) var(--pad)}
+    padding:calc((clamp(84px,13vh,108px) - 22px) * var(--scale)) 0 clamp(44px,6vh,calc(76px * var(--scale))) var(--pad)}
+  .hero > .hero__text::before{content:"";flex:1 1 0;max-height:calc((140px - clamp(84px,13vh,108px)) * var(--scale))}
   .hero > .hero__text > .display{max-width:10em}
   .hero .lede{max-width:46ch;font-size:calc(16.5px * var(--scale))}
   /* a short screen keeps the whole opening: the stage grows to hold the text rather than the text running out of it */
