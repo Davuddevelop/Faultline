@@ -64,7 +64,7 @@
   --gutter:28px;
   --pad:clamp(36px,3.6vw,52px);
   --stage-h:clamp(600px,calc(100vh - 84px),920px);
-  --hero-fs:clamp(40px,min(3.4vw,6.4vh),54px);   /* the robot is framed beside this column, so it stays narrow */
+  --hero-fs:clamp(44px,min(4.2vw,7.2vh),62px);   /* the opening's largest thing; the robot is framed beside its column */
   --hero-w:calc(var(--hero-fs) * 10);  /* five lines: "Robots are / learning to move. / We find the / ..." */
 }}
 @media (min-width:1600px){:root{      /* desktop */
@@ -74,7 +74,7 @@
   --pad:60px;
   --rail:184px;
   --stage-h:clamp(680px,calc(100vh - 90px),1080px);
-  --hero-fs:clamp(52px,min(3.3vw,6.4vh),70px);
+  --hero-fs:clamp(56px,min(3.6vw,7.2vh),72px);
   --hud-w:320px;
 }}
 @media (min-width:2200px){:root{      /* wide */
@@ -84,7 +84,7 @@
   --pad:76px;
   --rail:208px;
   --stage-h:clamp(820px,calc(100vh - 100px),1360px);
-  --hero-fs:clamp(64px,min(3.1vw,6.4vh),92px);
+  --hero-fs:clamp(64px,min(3vw,7.2vh),84px);
   --hud-w:356px;
 }}
 *,*::before,*::after{box-sizing:border-box}
@@ -610,13 +610,13 @@ body::after{content:"";position:fixed;inset:-50%;pointer-events:none;z-index:90;
   .hero__text a,.hero__text button{pointer-events:auto}
   .hero > .stage__cap{grid-row:2}
   .hero > .facts{grid-row:3;margin-top:28px}
-  /* the readout at the top right, in two columns, the numbers beside the verdict: wider and shorter
-     than on a tablet, so the robot drawn below it is larger */
-  .hero .hud{left:auto;right:28px;top:60px;width:calc(var(--hud-w) * 1.7);grid-template-columns:auto minmax(0,1fr);column-gap:calc(18px * var(--scale));align-items:start}
+  /* the readout at the top right, in two columns, the numbers beside the verdict: a little wider and
+     shorter than on a tablet, so the robot drawn below it is larger, and still well under the headline */
+  .hero .hud{left:auto;right:28px;top:60px;width:calc(var(--hud-w) * 1.4);grid-template-columns:auto minmax(0,1fr);column-gap:calc(18px * var(--scale));align-items:start}
   .hero .hud > .hud__head,.hero .hud > .hud__runs,.hero .hud > .hud__play{grid-column:1 / -1}
   .hero .hud > .hud__dl{grid-column:1;grid-row:3 / span 2}
   .hero .hud > .hud__bar{grid-column:2;grid-row:3;align-self:center}
-  .hero .hud > .hud__rule{grid-column:2;grid-row:4}
+  .hero .hud > .hud__rule{grid-column:2;grid-row:4;white-space:pre-line}   /* the rule, then the verdict under it */
 }
 .facts{margin-inline:0}
 

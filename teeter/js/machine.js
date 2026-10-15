@@ -730,11 +730,12 @@
         if (hud.rule) {
           hud.rule.classList.add('is-fail');
           // report the recorded control step that first exceeded the limit, not the blended frame
-          hud.rule.textContent = 'tilt_deg > ' + D.threshold + ' · breached ' + (firstOver(run) / D.hz).toFixed(2) + ' s';
+          hud.rule.textContent = 'tilt_deg > ' + D.threshold + ' ·\nbreached ' + (firstOver(run) / D.hz).toFixed(2) + ' s';
         }
       }
       var last = P.steps[si].k !== 'play';
-      if (!breached && hud.rule) hud.rule.textContent = 'tilt_deg > ' + D.threshold + ' · holds' + (last ? ', peak ' + peak.toFixed(2) + '°' : '');
+      // the rule, then its verdict: a readout narrow enough sets the verdict on a line of its own (white-space: pre-line)
+      if (!breached && hud.rule) hud.rule.textContent = 'tilt_deg > ' + D.threshold + ' ·\nholds' + (last ? ', peak ' + peak.toFixed(2) + '°' : '');
       if (hud.t) hud.t.textContent = simT.toFixed(2);
       if (hud.tilt) hud.tilt.textContent = tilt.toFixed(2);
       if (hud.push) hud.push.textContent = run.push > 0 ? num(run.push) : '0';
