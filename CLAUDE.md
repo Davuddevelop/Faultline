@@ -64,6 +64,7 @@ Verify before quoting; they drift.
 | `docs/strategy.md`, `product-spec.md`, `roadmap.md` | business case, spec, sequencing |
 | `docs/v1-roadmap.md` | engineering roadmap: architecture, v0 as built, milestones to v1 |
 | `docs/decisions.md` | the four decisions of 9 October (hosting, sign-in, simulator, the older pages) and the hosted setup only the account owner can do |
+| `docs/plan-next-six-months.md` | October 2026 to March 2027, phase by phase: talking leads and building follows, the 90-day check, the weekly rhythm, what not to do |
 | `docs/product-plan.md` | the product: architecture, every screen, sign-in, what cannot be copied, build phases |
 | `tools/publish_campaign.py` | re-makes the published campaign record from the engine; `--check` compares |
 | `teeter/` | the Teeter website, filled by `tools/build_teeter_site.py` from the campaign record. How big things are on each kind of screen (phone, tablet, laptop, desktop, wide) is set once, in the "device sizes" block at the top of `css/site.css` (the app's own in `app/css/app.css`); the replay frames the robot in whatever the layout leaves free |
