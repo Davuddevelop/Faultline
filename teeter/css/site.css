@@ -46,6 +46,7 @@
   --rail:164px;                       /* the margin column of section numbers (tablet up) */
   --stage-h:clamp(340px,52vh,480px);  /* the opening replay */
   --hero-fs:clamp(32px,9.4vw,46px);   /* the opening headline: "We find the / exact condition" holds from 360 */
+  --hero-w:none;                      /* its measure, once it is set over the replay (laptop up) */
   --hud-w:auto;                       /* the replay's readout */
 }
 @media (min-width:700px){:root{       /* tablet */
@@ -59,29 +60,31 @@
   --stage-h:max(300px,calc(100vh - 70px));
 }}
 @media (min-width:1100px){:root{      /* laptop */
+  --wrap:min(1400px,94vw);
   --gutter:28px;
   --pad:clamp(36px,3.6vw,52px);
-  --stage-h:clamp(540px,calc(100vh - 300px),760px);  /* under the words, the robot whole on the first screen */
-  --hero-fs:58px;                                    /* at most: a sentence a line sets it from the width (below) */
+  --stage-h:clamp(600px,calc(100vh - 84px),920px);
+  --hero-fs:clamp(40px,min(3.4vw,6.4vh),54px);   /* the robot is framed beside this column, so it stays narrow */
+  --hero-w:calc(var(--hero-fs) * 10);  /* five lines: "Robots are / learning to move. / We find the / ..." */
 }}
 @media (min-width:1600px){:root{      /* desktop */
   --scale:1.08;
-  --wrap:min(1600px,86vw);
+  --wrap:min(1800px,92vw);
   --gutter:36px;
   --pad:60px;
   --rail:184px;
-  --stage-h:clamp(600px,calc(100vh - 320px),900px);
-  --hero-fs:76px;
+  --stage-h:clamp(680px,calc(100vh - 90px),1080px);
+  --hero-fs:clamp(52px,min(3.3vw,6.4vh),70px);
   --hud-w:320px;
 }}
 @media (min-width:2200px){:root{      /* wide */
   --scale:1.2;
-  --wrap:min(2200px,80vw);
+  --wrap:min(2400px,88vw);
   --gutter:48px;
   --pad:76px;
   --rail:208px;
-  --stage-h:clamp(760px,calc(100vh - 440px),1200px);
-  --hero-fs:96px;
+  --stage-h:clamp(820px,calc(100vh - 100px),1360px);
+  --hero-fs:clamp(64px,min(3.1vw,6.4vh),92px);
   --hud-w:356px;
 }}
 *,*::before,*::after{box-sizing:border-box}
@@ -559,7 +562,8 @@ body::after{content:"";position:fixed;inset:-50%;pointer-events:none;z-index:90;
 /* the opening: the replay fills the screen, the headline sits over it */
 .hero{padding:0;gap:0}
 .hero .display{line-height:.98;letter-spacing:-.02em}
-/* --frame-inset and --frame-gap: where js/machine.js may draw the robot, inside the view and clear of its panels */
+/* --frame-inset and --frame-gap: where js/machine.js may draw the robot, inside the view and clear of its panels;
+   --frame-fit: what it fits there, the box round the whole run (the default) or its drawn outline, which fills it */
 .stage__view{aspect-ratio:auto;height:var(--stage-h);border:0;--frame-inset:10% 5% 8% 5%;--frame-gap:16px;
   background:
     radial-gradient(ellipse 55% 60% at 66% 44%,rgba(233,230,222,.11),transparent 70%),
@@ -579,25 +583,40 @@ body::after{content:"";position:fixed;inset:-50%;pointer-events:none;z-index:90;
 .stage__cap span[data-v]{color:var(--ink-2)}
 .hero__text{padding:clamp(28px,5vw,48px) var(--pad) 8px}
 @media (min-width:700px){.stage__view{--frame-inset:8% 3% 8% 3%}}
-/* tablet up: the readout stands at the foot of the stage, so the robot is framed in the rest:
-   beside the readout on a wide stage, above it on a tall one */
-@media (min-width:700px){.hero .hud{top:auto;bottom:18px}.stage__drag{right:auto;left:48px;top:calc(20px + 42px * var(--scale))}}
-/* laptop up: as on a tablet, the words stand above the replay and the replay takes the page's
-   whole width, so the robot is drawn as large on a monitor as on an iPad. The headline sets one
-   sentence a line, sized from the width it has (24.5 of its ems hold "We find the exact condition
-   where they fall."), and the case for it stands beside the buttons, so the words stay short and
-   the replay begins on the first screen */
+/* tablet up: the drag hint under the tag. On a tablet the readout stands at the foot of the
+   stage, so the robot is framed above it, in the part of a portrait screen that is seen first */
+@media (min-width:700px){.stage__drag{right:auto;left:48px;top:calc(20px + 42px * var(--scale))}}
+@media (min-width:700px) and (max-width:1099px){.hero .hud{top:auto;bottom:18px}}
+/* laptop up: the headline is set over the replay, in a column the full height of
+   the stage, so the robot is framed beside it and never under it */
 @media (min-width:1100px){
-  .hero__text{container-type:inline-size;grid-template-columns:minmax(0,1fr) auto;align-items:end;
-    column-gap:clamp(32px,4vw,calc(80px * var(--scale)));row-gap:calc(20px * var(--scale));
-    padding:clamp(24px,4.5vh,calc(52px * var(--scale))) var(--pad) clamp(22px,3.5vh,calc(40px * var(--scale)))}
-  .hero__text > .label,.hero__text > .display{grid-column:1 / -1}
-  .hero .display{font-size:clamp(36px,calc(100cqi / 24.5),var(--hero-fs))}
-  .hero__text > .lede{max-width:68ch;font-size:calc(16.5px * var(--scale))}
-  .hero__text > .acts{flex-wrap:nowrap}
-  .hero .hud{right:28px;bottom:28px}
-  .stage__drag{left:auto;right:48px;top:20px}
-  .hero > .facts{margin-top:28px}
+  .hero{display:grid;grid-template-columns:minmax(0,1fr)}
+  .hero > .hero__text,.hero > .stage{grid-area:1 / 1}
+  /* the robot is fitted by what is drawn, not by the box round it, so it is as large here as on the iPad */
+  .hero .stage__view{--frame-inset:48px 28px 11% 28px;--frame-fit:outline}
+  .hero .stage__view::after{background:
+    linear-gradient(to top,var(--bg) 0,rgba(11,11,10,.85) 13%,transparent 40%),
+    linear-gradient(to right,rgba(11,11,10,.75),transparent 46%),
+    radial-gradient(ellipse 120% 90% at 60% 40%,transparent 55%,rgba(11,11,10,.8) 100%)}
+  .hero > .hero__text{z-index:3;align-self:stretch;align-content:end;gap:calc(22px * var(--scale));pointer-events:none;box-sizing:content-box;
+    max-width:max(var(--hero-w),calc(540px * var(--scale)));
+    /* no padding on the right: the column ends where its words do, and the robot is framed from there */
+    padding:calc(clamp(84px,13vh,108px) * var(--scale)) 0 clamp(44px,6vh,calc(76px * var(--scale))) var(--pad)}
+  .hero > .hero__text > .display{max-width:10em}
+  .hero .lede{max-width:46ch;font-size:calc(16.5px * var(--scale))}
+  /* a short screen keeps the whole opening: the stage grows to hold the text rather than the text running out of it */
+  .hero > .stage{align-self:stretch}
+  .hero > .stage > .stage__view{height:auto;min-height:var(--stage-h)}
+  .hero__text a,.hero__text button{pointer-events:auto}
+  .hero > .stage__cap{grid-row:2}
+  .hero > .facts{grid-row:3;margin-top:28px}
+  /* the readout at the top right, in two columns, the numbers beside the verdict: wider and shorter
+     than on a tablet, so the robot drawn below it is larger */
+  .hero .hud{left:auto;right:28px;top:60px;width:calc(var(--hud-w) * 1.7);grid-template-columns:auto minmax(0,1fr);column-gap:calc(18px * var(--scale));align-items:start}
+  .hero .hud > .hud__head,.hero .hud > .hud__runs,.hero .hud > .hud__play{grid-column:1 / -1}
+  .hero .hud > .hud__dl{grid-column:1;grid-row:3 / span 2}
+  .hero .hud > .hud__bar{grid-column:2;grid-row:3;align-self:center}
+  .hero .hud > .hud__rule{grid-column:2;grid-row:4}
 }
 .facts{margin-inline:0}
 

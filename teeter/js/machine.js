@@ -464,7 +464,7 @@
        A: three-quarter view. B: side elevation, on a long lens, square to the
        plane the push acts in. */
     var CAMS = { A: { az: .34, el: .3, fov: 30 }, B: { az: 0, el: .07, fov: 15 } };
-    var cam = CAMS.A, aim = new T.Vector3(), ext = null, camD = 2;
+    var cam = CAMS.A, aim = new T.Vector3(), ext = null, outline = [], camD = 2;
 
     /* Where the run may be drawn is the stylesheet's to say, at every screen size:
        the largest rectangle inside the view's --frame-inset that keeps
@@ -472,7 +472,10 @@
        drag hint, and whatever opts.clear names, such as a headline set over the
        stage). Largest means the one that draws the run biggest, for the shape
        the run makes on screen. opts.box, fractions of the view or a function of
-       its size, overrides all of this; the film frames itself. */
+       its size, overrides all of this; the film frames itself.
+       What is fitted to that rectangle is the stylesheet's too, in --frame-fit:
+       the box round the whole run (the default, which leaves a margin inside
+       it), or 'outline', the points actually drawn over the run, which fills it. */
     var extraClear = !opts.clear ? [] : [].slice.call(typeof opts.clear === 'string' ? document.querySelectorAll(opts.clear) : opts.clear);
     var clearEls = [].slice.call(stage.querySelectorAll('.hud, .stage__tag, .stage__drag')).concat(extraClear);
     function insetOf(s, w, h) {                  // the inset shorthand, px or %, as [top, right, bottom, left] in px
@@ -514,16 +517,32 @@
       if (opts.box) return opts.box;
       return freeBox(w, h, aspect);
     }
-    // the run's extent in MuJoCo's frame: every torso corner and leg point recorded, the push arrow, the gizmo
+    // the run's extent in MuJoCo's frame: every torso corner and leg point recorded, the push arrow, the gizmo;
+    // and its outline: the same points one by one, with where the gizmo reaches at every pose
     function frameRun(run) {
       var e = [Infinity, -Infinity, Infinity, -Infinity, 0, 0], F = run.f;
-      function grow(p) { e[0] = Math.min(e[0], p[0]); e[1] = Math.max(e[1], p[0]); e[2] = Math.min(e[2], p[1]); e[3] = Math.max(e[3], p[1]); e[5] = Math.max(e[5], p[2]); }
+      outline = [];
+      function grow(p) { e[0] = Math.min(e[0], p[0]); e[1] = Math.max(e[1], p[0]); e[2] = Math.min(e[2], p[1]); e[3] = Math.max(e[3], p[1]); e[5] = Math.max(e[5], p[2]); outline.push(p); }
+      // writeGizmo draws within .24 of the torso, in the plane of the vertical and the torso's up-axis, from the
+      // vertical round to the up-axis or to the limit, whichever is further, and nothing below the floor
+      function reach(r) {
+        var b = qrot([r[3], r[4], r[5], r[6]], [0, 0, 1]), l = Math.hypot(b[0], b[1]), u = l < 1e-6 ? [1, 0] : [b[0] / l, b[1] / l];
+        var top = Math.max(Math.acos(Math.max(-1, Math.min(1, b[2]))), D.threshold * Math.PI / 180);
+        for (var s = 0; s <= 8; s++) {
+          var t = top * s / 8;
+          outline.push([r[0] + .24 * Math.sin(t) * u[0], r[1] + .24 * Math.sin(t) * u[1], Math.max(0, r[2] + .24 * Math.cos(t))]);
+        }
+      }
       for (var i = Math.round(START * D.hz); i < F.length; i++) {
         var r = F[i], q = [r[3], r[4], r[5], r[6]];
         BOXC.forEach(function (c) { var d = qrot(q, [c[0] * HX, c[1] * HY, c[2] * HZ]); grow([r[0] + d[0], r[1] + d[1], r[2] + d[2]]); });
         for (var k = 7; k + 2 < r.length; k += 3) grow([r[k], r[k + 1], r[k + 2]]);
+        reach(r);
       }
-      if (run.push > 0) e[0] = Math.min(e[0], F[Math.round(D.push_t * D.hz)][0] - HX - .03 - Math.max(.06, Math.min(.34, .025 * run.push)));
+      if (run.push > 0) {                                      // the arrow's tail, where writeArrow puts it
+        var at = F[Math.round(D.push_t * D.hz)], tail = [at[0] - HX - .03 - Math.max(.06, Math.min(.34, .025 * run.push)), at[1], at[2]];
+        e[0] = Math.min(e[0], tail[0]); outline.push(tail);
+      }
       e[5] = Math.max(e[5], F[0][2] + .26);                    // the gizmo stands .24 above the torso
       ext = [e[0] - .03, e[1] + .03, e[2] - .03, e[3] + .03, 0, e[5] + .02];
       writeDatum(ext[0] - .1, ext[1] + .1, (e[2] + e[3]) / 2);
@@ -549,20 +568,28 @@
       camera.lookAt(aim);
       camera.updateMatrixWorld();
     }
-    var pj = new T.Vector3();
-    function projected(w, h) {                       // the extent's screen rectangle, in pixels
+    var pj = new T.Vector3(), byOutline = false;
+    function projected(w, h) {                       // the screen rectangle of the extent, or of the outline, in pixels
       var r = [Infinity, Infinity, -Infinity, -Infinity];
-      for (var k = 0; k < 8; k++) {
-        var m = V(ext[k & 1 ? 1 : 0], ext[k & 2 ? 3 : 2], ext[k & 4 ? 5 : 4]);
+      function add(p) {
+        var m = V(p[0], p[1], p[2]);
         pj.set(m[0], m[1], m[2]).project(camera);
         var x = (pj.x + 1) / 2 * w, y = (1 - pj.y) / 2 * h;
         r[0] = Math.min(r[0], x); r[1] = Math.min(r[1], y); r[2] = Math.max(r[2], x); r[3] = Math.max(r[3], y);
       }
-      return r;
+      if (!byOutline) {
+        for (var k = 0; k < 8; k++) add([ext[k & 1 ? 1 : 0], ext[k & 2 ? 3 : 2], ext[k & 4 ? 5 : 4]]);
+        return r;
+      }
+      outline.forEach(add);
+      // the outline's points are centres: the motors, plates and feet drawn round them stand up to .035 proud
+      var m = .035 * h / 2 / (camera.position.distanceTo(aim) * Math.tan(camera.fov * Math.PI / 360));
+      return [r[0] - m, r[1] - m, r[2] + m, r[3] + m];
     }
     function fit() {
       var w = view.clientWidth, h = view.clientHeight;
       if (!w || !h || !ext) return;
+      byOutline = getComputedStyle(view).getPropertyValue('--frame-fit').trim() === 'outline';
       camera.aspect = w / h; camera.fov = cam.fov; camera.clearViewOffset(); camera.updateProjectionMatrix();
       var d = 2, r;
       setPose(d, cam.az); r = projected(w, h);          // the run's shape on screen picks the frame
