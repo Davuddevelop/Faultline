@@ -40,4 +40,4 @@ __all__ = [
     "reduce_failure", "ReductionResult", "ReductionError",
     "Axis", "AxisOutcome", "SEVERITY_AXES",
 ]
-__version__ = "0.2.0"
+__version__ = "0.3.0"

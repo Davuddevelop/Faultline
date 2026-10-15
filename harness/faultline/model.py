@@ -45,10 +45,26 @@ class RobotModel:
     has_keyframe: bool
     source_sha256: str
     notes: tuple[str, ...] = field(default=())
+    # where the base's free joint sits in qpos and qvel. Zero for a robot that
+    # is the only free body; not zero when, say, a loose box is declared first
+    base_qpos_adr: int = 0
+    base_dof_adr: int = 0
 
     @property
     def n_joints(self) -> int:
         return len(self.actuated_joints)
+
+    @property
+    def default_joint_pos(self) -> np.ndarray:
+        """The pose a run starts from, per actuated joint: keyframe 0 when the
+        model has one, because the runner resets to it, else ``qpos0``.
+
+        This is what Isaac Lab and legged_gym subtract for a relative joint
+        position. ``qpos0`` alone is usually all zeros, so offsetting by it
+        quietly fed a policy absolute angles where it was trained on offsets.
+        """
+        src = self.model.key_qpos[0] if self.model.nkey > 0 else self.model.qpos0
+        return np.asarray(src[self.qpos_adr], dtype=float)
 
     def as_dict(self) -> dict:
         return {
@@ -121,6 +137,12 @@ def load(path: str | Path, *, base_body: str | None = None) -> RobotModel:
         raise ModelError(f"{path.name} did not load: {exc}") from exc
 
     base_id, free_base = _resolve_base(model, base_body)
+    free_bodies = [b for b in range(1, model.nbody) if _is_free(model, b)]
+    base_qpos_adr = base_dof_adr = 0
+    if free_base:
+        jnt = next(model.body_jntadr[base_id] + j for j in range(model.body_jntnum[base_id])
+                   if model.jnt_type[model.body_jntadr[base_id] + j] == _FREE)
+        base_qpos_adr, base_dof_adr = int(model.jnt_qposadr[jnt]), int(model.jnt_dofadr[jnt])
 
     # Actuated joints are the ones a policy can drive: every joint that is not
     # the free base. Ball joints are excluded because one actuator cannot
@@ -154,6 +176,12 @@ def load(path: str | Path, *, base_body: str | None = None) -> RobotModel:
             "usually has none — add an <actuator> section naming the joints to drive."
         )
 
+    if base_body is None and len(free_bodies) > 1:
+        names = _body_names(model)
+        notes.append(
+            f"{len(free_bodies)} bodies have free joints; took the first, "
+            f"{names[base_id]!r}, as the robot's base. Set base_body if that is wrong"
+        )
     if n_ball:
         notes.append(f"{n_ball} ball joint(s) ignored: one actuator cannot drive three DOF")
     if model.nu != len(actuated):
@@ -185,4 +213,6 @@ def load(path: str | Path, *, base_body: str | None = None) -> RobotModel:
         has_keyframe=model.nkey > 0,
         source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
         notes=tuple(notes),
+        base_qpos_adr=base_qpos_adr,
+        base_dof_adr=base_dof_adr,
     )

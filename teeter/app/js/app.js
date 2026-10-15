@@ -59,9 +59,11 @@
   function kv(rows) {
     return '<dl class="kv">' + rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('') + '</dl>';
   }
+  // on a phone a table of four or more columns becomes one card per row (app.css, .t--stack)
   function table(heads, rows, o) {
     o = o || {};
-    return '<div class="tw"><table class="t' + (o.stack ? ' t--stack' : '') + '"><thead><tr>' +
+    var stack = o.stack != null ? o.stack : heads.length > 3;
+    return '<div class="tw"><table class="t' + (stack ? ' t--stack' : '') + '"><thead><tr>' +
       heads.map(function (h) { return '<th' + (h.r ? ' class="r"' : '') + '>' + (h.t || h) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       rows.map(function (r) {
         var href = r.href ? ' data-href="' + r.href + '"' : '';
@@ -96,27 +98,41 @@
   }
 
   /* ── figures ───────────────────────────────────────────── */
+  // evaluations by two requested axes; failures solid, and the band they fell in hatched
+  function scatterSvg(c) {
+    var W = 520, H = 300, l = 40, r = W - 14, t = 30, b = H - 44, pid = id('hx'), pts = c.points;
+    var X0 = scale(c.xb[0], c.xb[1], l, r), Y0 = scale(c.yb[0], c.yb[1], b, t);
+    function cx(v) { return f1(Math.max(l, Math.min(r, X0(v)))); }
+    function cy(v) { return f1(Math.max(t, Math.min(b, Y0(v)))); }
+    var fails = pts.filter(function (p) { return p.f; });
+    var lo = fails.length ? Math.min.apply(null, fails.map(function (p) { return p.x; })) : null;
+    var hi = fails.length ? Math.max.apply(null, fails.map(function (p) { return p.x; })) : null;
+    var s = '<defs>' + hatchDef(pid) + '</defs>';
+    for (var k = 1; k < 3; k++) { var yy = f1(Y0(c.yb[0] + (c.yb[1] - c.yb[0]) * k / 3)); s += '<line class="grid" x1="' + l + '" y1="' + yy + '" x2="' + r + '" y2="' + yy + '"/>'; }
+    if (fails.length) {
+      var band = 'x="' + cx(lo) + '" y="' + t + '" width="' + Math.max(1, f1(cx(hi) - cx(lo))) + '" height="' + (b - t) + '"';
+      s += '<g class="zone"' + (c.hideZone ? ' style="opacity:0"' : '') + '><rect class="fail-zone" ' + band + ' fill="url(#' + pid + ')"/><rect class="fail-edge" ' + band + '/></g>';
+    }
+    s += '<line class="axis" x1="' + l + '" y1="' + t + '" x2="' + l + '" y2="' + b + '"/><line class="axis" x1="' + l + '" y1="' + b + '" x2="' + r + '" y2="' + b + '"/>';
+    s += '<g class="dots">' + pts.map(function (p, i) {
+      var cls = p.invalid ? 'dot dot--invalid' : p.f ? 'dot--fail' : 'dot';
+      if (p.fresh) cls += ' dot--new';
+      return '<circle class="' + cls + '" data-i="' + i + '" cx="' + cx(p.x) + '" cy="' + cy(p.y) + '" r="' + (p.f ? 3.1 : 2.5) + '"' + (c.hidden ? ' style="opacity:0"' : '') + '/>';
+    }).join('') + '</g>';
+    s += '<text class="tick" x="' + (l - 8) + '" y="' + (b + 3.5) + '" text-anchor="end">' + c.yb[0] + '</text><text class="tick" x="' + (l - 8) + '" y="' + (t + 3.5) + '" text-anchor="end">' + c.yb[1] + '</text>';
+    s += '<text class="tick" x="' + l + '" y="' + (b + 18) + '" text-anchor="middle">' + c.xb[0] + '</text><text class="tick" x="' + r + '" y="' + (b + 18) + '" text-anchor="middle">' + c.xb[1] + '</text>';
+    s += '<text class="unit" x="' + l + '" y="' + (t - 14) + '">' + esc(c.yAxis) + (c.yUnit ? ' · ' + esc(c.yUnit) : '') + '</text>';
+    s += '<text class="unit" x="' + r + '" y="' + (b + 36) + '" text-anchor="end">' + esc(c.xAxis) + (c.xRequested ? ' · requested' : '') + (c.xUnit ? ' · ' + esc(c.xUnit) : '') + '</text>';
+    if (fails.length) s += '<text class="lab hi zone"' + (c.hideZone ? ' style="opacity:0"' : '') + ' x="' + f1(Math.max(l + 120, cx(lo) - 10)) + '" y="' + (t + 16) + '" text-anchor="end">' + fails.length + ' violated, all at ≥ ' + n(lo, 3) + '</text>';
+    var label = c.label || ('All ' + pts.length + ' evaluations, by ' + c.xAxis + ' against ' + c.yAxis + '. ' + fails.length + ' violated a rule' + (fails.length ? ', between ' + n(lo, 3) + ' and ' + n(hi, 3) + '.' : '.'));
+    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' + s + '</svg>';
+  }
   // every evaluation of C-0001's directed seed-0 run, push against torque loss
   function scatterFig(o) {
-    o = o || {};
-    var sc = CAMP.scatter, W = 520, H = 300, l = 40, r = W - 14, t = 30, b = H - 44, pid = id('hx');
-    var X0 = scale(sc.x_bounds[0], sc.x_bounds[1], l, r), Y0 = scale(sc.y_bounds[0], sc.y_bounds[1], b, t);
-    var fails = sc.points.filter(function (p) { return p.f; });
-    var lo = Math.min.apply(null, fails.map(function (p) { return p.x; })), hi = Math.max.apply(null, fails.map(function (p) { return p.x; }));
-    var s = '<defs>' + hatchDef(pid) + '</defs>';
-    for (var k = 1; k < 3; k++) { var yy = f1(Y0(sc.y_bounds[1] * k / 3)); s += '<line class="grid" x1="' + l + '" y1="' + yy + '" x2="' + r + '" y2="' + yy + '"/>'; }
-    var band = 'x="' + f1(X0(lo)) + '" y="' + t + '" width="' + f1(X0(hi) - X0(lo)) + '" height="' + (b - t) + '"';
-    s += '<g class="zone"' + (o.live ? ' style="opacity:0"' : '') + '><rect class="fail-zone" ' + band + ' fill="url(#' + pid + ')"/><rect class="fail-edge" ' + band + '/></g>';
-    s += '<line class="axis" x1="' + l + '" y1="' + t + '" x2="' + l + '" y2="' + b + '"/><line class="axis" x1="' + l + '" y1="' + b + '" x2="' + r + '" y2="' + b + '"/>';
-    s += '<g class="dots">' + sc.points.map(function (p, i) {
-      return '<circle class="' + (p.f ? 'dot--fail' : 'dot') + '" data-i="' + i + '" cx="' + f1(X0(p.x)) + '" cy="' + f1(Y0(p.y)) + '" r="' + (p.f ? 3.1 : 2.5) + '"' + (o.live ? ' style="opacity:0"' : '') + '/>';
-    }).join('') + '</g>';
-    s += '<text class="tick" x="' + (l - 8) + '" y="' + (b + 3.5) + '" text-anchor="end">' + sc.y_bounds[0] + '</text><text class="tick" x="' + (l - 8) + '" y="' + (t + 3.5) + '" text-anchor="end">' + sc.y_bounds[1] + '</text>';
-    s += '<text class="tick" x="' + l + '" y="' + (b + 18) + '" text-anchor="middle">' + sc.x_bounds[0] + '</text><text class="tick" x="' + r + '" y="' + (b + 18) + '" text-anchor="middle">' + sc.x_bounds[1] + '</text>';
-    s += '<text class="unit" x="' + l + '" y="' + (t - 14) + '">' + sc.y_axis + ' · %</text>';
-    s += '<text class="unit" x="' + r + '" y="' + (b + 36) + '" text-anchor="end">' + sc.x_axis + ' · requested · N·s</text>';
-    s += '<text class="lab hi zone"' + (o.live ? ' style="opacity:0"' : '') + ' x="' + f1(X0(lo) - 10) + '" y="' + (t + 16) + '" text-anchor="end">' + fails.length + ' violated, all at ≥ ' + n(lo, 3) + '</text>';
-    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="All ' + sc.points.length + ' evaluations of the directed search, seed 0, by requested push against torque loss. The ' + fails.length + ' that violated a rule sit between ' + n(lo, 3) + ' and ' + n(hi, 3) + ' newton-seconds.">' + s + '</svg>';
+    var sc = CAMP.scatter;
+    return scatterSvg({ points: sc.points, xAxis: sc.x_axis, yAxis: sc.y_axis, xb: sc.x_bounds, yb: sc.y_bounds,
+      xUnit: 'N·s', yUnit: '%', xRequested: true, hidden: o && o.live, hideZone: o && o.live,
+      label: 'All ' + sc.points.length + ' evaluations of the directed search, seed 0, by requested push against torque loss.' });
   }
   // cumulative violations per seed, uniform against directed
   function effFig() {
@@ -137,48 +153,71 @@
     s += '<line class="run-calm" x1="' + (l + 12) + '" y1="' + (t + 32) + '" x2="' + (l + 34) + '" y2="' + (t + 32) + '"/><text class="lab" x="' + (l + 42) + '" y="' + (t + 36) + '">uniform · random</text>';
     return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Cumulative violations against evaluations, ' + eff.cem.length + ' seeds of each method.">' + s + '</svg>';
   }
-  // declared range against sampled range, per axis
-  function coverageFig() {
-    var per = REP.coverage.per_axis, names = Object.keys(per), W = 520, rowH = 34, l = 150, r = W - 70, t = 14;
+  // declared range against sampled range, per axis; the narrow drawing puts each bar under its name
+  function coverageSvg(per, o) {
+    o = o || {};
+    var names = Object.keys(per), nw = !!o.narrow, W = nw ? 360 : 520, rowH = nw ? 44 : 34, l = nw ? 0 : 150, r = nw ? W : W - 70, t = 14;
     var H = t + names.length * rowH + 8, s = '';
     names.forEach(function (nm, i) {
-      var p = per[nm], y = t + i * rowH + 12, X0 = scale(p.declared_min, p.declared_max, l, r);
-      s += '<text class="lbl" x="0" y="' + (y + 4) + '">' + nm + '</text>';
-      s += '<rect class="bar-dec" x="' + l + '" y="' + (y - 5) + '" width="' + (r - l) + '" height="10"/>';
-      s += '<rect class="bar-smp" x="' + f1(X0(p.sampled_min)) + '" y="' + (y - 5) + '" width="' + f1(X0(p.sampled_max) - X0(p.sampled_min)) + '" height="10"/>';
-      s += '<text class="tick" x="' + (r + 8) + '" y="' + (y + 4) + '">' + p.declared_min + '–' + p.declared_max + ' ' + unit(p.unit) + '</text>';
+      var p = per[nm], y = t + i * rowH + 12, by = nw ? y + 14 : y, X0 = scale(p.declared_min, p.declared_max, l, r);
+      var range = p.declared_min + '–' + p.declared_max + (unit(p.unit) === '°' ? '' : ' ') + unit(p.unit);
+      s += '<text class="lbl" x="0" y="' + (y + 4) + '">' + esc(nm) + '</text>';
+      s += '<rect class="bar-dec" x="' + l + '" y="' + (by - 5) + '" width="' + (r - l) + '" height="10"/>';
+      s += '<rect class="bar-smp" x="' + f1(X0(p.sampled_min)) + '" y="' + (by - 5) + '" width="' + Math.max(1, f1(X0(p.sampled_max) - X0(p.sampled_min))) + '" height="10"/>';
+      s += nw ? '<text class="tick" x="' + W + '" y="' + (y + 4) + '" text-anchor="end">' + range + '</text>'
+        : '<text class="tick" x="' + (r + 8) + '" y="' + (y + 4) + '">' + range + '</text>';
     });
-    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="For each searched axis, the declared range and the part of it the search sampled.">' + s + '</svg>';
+    return '<svg class="fig' + (o.cls ? ' ' + o.cls : '') + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="For each searched axis, the declared range and the part of it the search sampled.">' + s + '</svg>';
   }
-  // recorded tilt: no push against the smallest failing push, with the rule
-  function traceFig(o) {
-    o = o || {};
-    var W = 640, H = 270, l = 40, r = W - 16, t = 26, b = H - 40, CAP = 90, pid = id('hx');
-    var hz = R.hz, nom = R.nominal_tilt, mn = R.minimal_tilt, dur = (mn.length - 1) / hz, thr = +V.threshold;
+  function coverageBoth(per) { return coverageSvg(per, { cls: 'fig--wide' }) + coverageSvg(per, { narrow: true, cls: 'fig--narrow' }); }
+  function coverageFig() { return coverageBoth(REP.coverage.per_axis); }
+  // recorded tilt against the rule: the failing run, and the same robot unperturbed
+  function traceSvg(c) {
+    var W = c.w || 640, H = 270, l = 40, r = W - 16, t = 26, b = H - 40, CAP = 90, pid = id('hx'), narrow = W < 500;
+    var hz = c.hz, nom = c.nominal, mn = c.minimal, len = (mn || nom).length, dur = (len - 1) / hz, thr = +c.threshold;
     var X0 = scale(0, dur, l, r), Y0 = scale(0, CAP, b, t);
     function path(arr) { return arr.map(function (v, i) { return (i ? 'L' : 'M') + f1(X0(i / hz)) + ',' + f1(Y0(Math.min(CAP, v))); }).join(''); }
     var s = '<defs>' + hatchDef(pid) + '<clipPath id="' + pid + 'c"><rect x="' + l + '" y="' + t + '" width="' + (r - l) + '" height="' + (b - t) + '"/></clipPath></defs>';
     [30, 60].forEach(function (v) { s += '<line class="grid" x1="' + l + '" y1="' + f1(Y0(v)) + '" x2="' + r + '" y2="' + f1(Y0(v)) + '"/>'; });
-    s += '<rect class="fail-zone" x="' + l + '" y="' + t + '" width="' + (r - l) + '" height="' + f1(Y0(thr) - t) + '" fill="url(#' + pid + ')"/>';
+    // past the rule is hatched as a band along the limit, not as the whole field above it
+    var bandH = Math.min(14, f1(Y0(thr) - t));
+    s += '<rect class="fail-zone" x="' + l + '" y="' + f1(Y0(thr) - bandH) + '" width="' + (r - l) + '" height="' + bandH + '" fill="url(#' + pid + ')"/>';
     s += '<line class="limit" x1="' + l + '" y1="' + f1(Y0(thr)) + '" x2="' + r + '" y2="' + f1(Y0(thr)) + '"/>';
     s += '<line class="axis" x1="' + l + '" y1="' + t + '" x2="' + l + '" y2="' + b + '"/><line class="axis" x1="' + l + '" y1="' + b + '" x2="' + r + '" y2="' + b + '"/>';
-    if (o.nominal !== false) s += '<path class="tr-calm" data-trace="nom" d="' + path(nom) + '"/>';
-    if (o.minimal !== false) {
+    if (nom) s += '<path class="tr-calm" data-trace="nom" d="' + path(nom) + '"/>';
+    if (mn) {
       s += '<path class="tr-fail" data-trace="min" clip-path="url(#' + pid + 'c)" d="' + path(mn) + '"/>';
-      var bt = +V.breach_t;
-      s += '<circle class="breach" cx="' + f1(X0(bt)) + '" cy="' + f1(Y0(thr)) + '" r="4"/>';
-      s += '<text class="lab hi" x="' + f1(X0(bt) + 10) + '" y="' + f1(Y0(thr) + 16) + '">breach · t = ' + V.breach_t + ' s</text>';
-      s += '<text class="lab" x="' + (r - 4) + '" y="' + (t + 14) + '" text-anchor="end">clipped at ' + CAP + '°; the record reaches ' + Math.round(Math.max.apply(null, mn)) + '°</text>';
+      var bi = mn.findIndex(function (v) { return v > thr; });
+      if (bi >= 0) {
+        var bt = bi / hz;
+        s += '<circle class="breach" cx="' + f1(X0(bt)) + '" cy="' + f1(Y0(thr)) + '" r="4"/>';
+        s += '<text class="lab hi" x="' + f1(X0(bt) + 10) + '" y="' + f1(Y0(thr) + 16) + '">breach · t = ' + n(bt, 2) + ' s</text>';
+      }
+      var peak = Math.max.apply(null, mn);
+      // in the narrow drawing the note takes two lines, so it stays clear of the trace climbing past it
+      if (peak > CAP) s += narrow
+        ? '<text class="lab" x="' + (r - 4) + '" y="' + (t + 14) + '" text-anchor="end">clipped at ' + CAP + '°;<tspan x="' + (r - 4) + '" dy="14">the record reaches ' + Math.round(peak) + '°</tspan></text>'
+        : '<text class="lab" x="' + (r - 4) + '" y="' + (t + 14) + '" text-anchor="end">clipped at ' + CAP + '°; the record reaches ' + Math.round(peak) + '°</text>';
     }
-    s += '<text class="lab" x="' + (l + 6) + '" y="' + f1(Y0(thr) - 6) + '">tilt_deg &gt; ' + V.threshold + '</text>';
+    s += '<text class="lab" x="' + (l + 6) + '" y="' + f1(Y0(thr) - 6) + '">tilt_deg &gt; ' + c.threshold + '</text>';
     s += '<text class="tick" x="' + (l - 8) + '" y="' + (b + 3.5) + '" text-anchor="end">0</text><text class="tick" x="' + (l - 8) + '" y="' + (t + 3.5) + '" text-anchor="end">' + CAP + '</text>';
     for (var sec = 0; sec <= dur; sec++) s += '<text class="tick" x="' + f1(X0(sec)) + '" y="' + (b + 18) + '" text-anchor="middle">' + sec + '</text>';
     s += '<text class="unit" x="' + l + '" y="' + (t - 10) + '">tilt_deg · °</text><text class="unit" x="' + r + '" y="' + (b + 34) + '" text-anchor="end">t · s</text>';
-    if (o.nominal !== false && o.minimal !== false) {
-      s += '<line class="tr-fail" x1="' + (r - 220) + '" y1="' + (b - 30) + '" x2="' + (r - 196) + '" y2="' + (b - 30) + '"/><text class="lab hi" x="' + (r - 188) + '" y="' + (b - 26) + '">push ' + V.minimal_push + ' N·s requested</text>';
-      s += '<line class="tr-calm" x1="' + (r - 220) + '" y1="' + (b - 12) + '" x2="' + (r - 196) + '" y2="' + (b - 12) + '"/><text class="lab" x="' + (r - 188) + '" y="' + (b - 8) + '">no push</text>';
+    if (nom && mn) {
+      s += '<line class="tr-fail" x1="' + (r - 220) + '" y1="' + (b - 30) + '" x2="' + (r - 196) + '" y2="' + (b - 30) + '"/><text class="lab hi" x="' + (r - 188) + '" y="' + (b - 26) + '">' + esc(c.minimalLabel || 'the failing case') + '</text>';
+      s += '<line class="tr-calm" x1="' + (r - 220) + '" y1="' + (b - 12) + '" x2="' + (r - 196) + '" y2="' + (b - 12) + '"/><text class="lab" x="' + (r - 188) + '" y="' + (b - 8) + '">' + esc(c.nominalLabel || 'unperturbed') + '</text>';
     }
-    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Recorded tilt over five seconds at ' + hz + ' hertz. With no push the peak is ' + V.peak_nominal + ' degrees. With a requested push of ' + V.minimal_push + ' newton-seconds the tilt passes ' + V.threshold + ' degrees at ' + V.breach_t + ' seconds.">' + s + '</svg>';
+    return '<svg class="fig' + (c.cls ? ' ' + c.cls : '') + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(c.label || 'Recorded tilt against the rule.') + '">' + s + '</svg>';
+  }
+  // drawn twice, as the site's figures are: a panel narrower than 560px shows the narrow drawing (site.css)
+  function traceBoth(c) {
+    return traceSvg(Object.assign({}, c, { cls: 'fig--wide' })) + traceSvg(Object.assign({}, c, { w: 360, cls: 'fig--narrow' }));
+  }
+  function traceFig(o) {
+    o = o || {};
+    return traceBoth({ hz: R.hz, threshold: V.threshold, nominal: o.nominal === false ? null : R.nominal_tilt,
+      minimal: o.minimal === false ? null : R.minimal_tilt, minimalLabel: 'push ' + V.minimal_push + ' N·s requested', nominalLabel: 'no push',
+      label: 'Recorded tilt over five seconds at ' + R.hz + ' hertz. With no push the peak is ' + V.peak_nominal + ' degrees. With a requested push of ' + V.minimal_push + ' newton-seconds the tilt passes ' + V.threshold + ' degrees at ' + V.breach_t + ' seconds.' });
   }
   // smallest failing push per checkpoint (example)
   function trendFig(cps, o) {
@@ -204,21 +243,44 @@
     return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true"><path class="ln" d="' + d + '"/>' +
       '<circle class="dt" cx="' + f1(X0(last)) + '" cy="' + f1(Y0(vals[last])) + '" r="3"/></svg>';
   }
-  // baseline against candidate, per mode (example)
-  function dumbbellFig(modes) {
-    var W = 640, rowH = 46, t = 24, l = 20, r = W - 20, H = t + modes.length * rowH + 30, s = '';
-    var X0 = scale(5, 9, l + 250, r - 30);
-    [6, 7, 8].forEach(function (v) { s += '<line class="grid" x1="' + f1(X0(v)) + '" y1="' + (t - 6) + '" x2="' + f1(X0(v)) + '" y2="' + (H - 24) + '"/><text class="tick" x="' + f1(X0(v)) + '" y="' + (H - 8) + '" text-anchor="middle">' + v + '</text>'; });
-    modes.forEach(function (m, i) {
-      var y = t + i * rowH + 14;
-      s += '<text class="lbl hi" x="' + l + '" y="' + (y - 2) + '">' + m.kind + '</text><text class="tick" x="' + l + '" y="' + (y + 13) + '">' + esc(m.label.replace('tilt_limit via ', '').replace('fallen via ', '')) + '</text>';
-      if (m.axis !== 'push_impulse_ns') { s += '<text class="tick" x="' + f1(X0(5)) + '" y="' + (y + 4) + '">' + (m.after != null ? m.after : m.before) + ' ' + m.unit + ' ' + m.axis + ' · not on this axis</text>'; return; }
-      if (m.before != null && m.after != null) s += '<line class="dumb" x1="' + f1(X0(m.before)) + '" y1="' + y + '" x2="' + f1(X0(m.after)) + '" y2="' + y + '"/>';
-      if (m.before != null) s += '<circle class="dumb-a" cx="' + f1(X0(m.before)) + '" cy="' + y + '" r="5"/>';
-      if (m.after != null) s += '<circle class="dumb-b" cx="' + f1(X0(m.after)) + '" cy="' + y + '" r="4.5"/>';
+  // baseline against candidate, per mode (example); the narrow drawing sets each mode's line under its name
+  function dumbbellSvg(modes, o) {
+    o = o || {};
+    var nw = !!o.narrow, W = nw ? 360 : 640, rowH = nw ? 66 : 46, t = nw ? 44 : 24, l = nw ? 0 : 20, r = W - (nw ? 0 : 20);
+    var H = t + modes.length * rowH + 30, s = '', dy = nw ? 30 : 0;
+    var X0 = scale(5, 9, nw ? l + 14 : l + 250, r - (nw ? 14 : 30));
+    [6, 7, 8].forEach(function (v) {
+      var x = f1(X0(v));
+      // across the narrow drawing the grid is drawn in each mode's band only, so it never runs through a name
+      s += nw ? modes.map(function (m, i) { var y = t + i * rowH + 14 + dy; return '<line class="grid" x1="' + x + '" y1="' + (y - 10) + '" x2="' + x + '" y2="' + (y + 10) + '"/>'; }).join('')
+        : '<line class="grid" x1="' + x + '" y1="' + (t - 6) + '" x2="' + x + '" y2="' + (H - 24) + '"/>';
+      s += '<text class="tick" x="' + x + '" y="' + (H - 8) + '" text-anchor="middle">' + v + '</text>';
     });
-    s += '<text class="unit" x="' + r + '" y="' + (t - 10) + '" text-anchor="end">smallest failing push · requested · N·s   ○ baseline  ● candidate</text>';
-    return '<svg class="fig" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Example: each failure mode\'s smallest failing push for the baseline and the candidate checkpoint.">' + s + '</svg>';
+    modes.forEach(function (m, i) {
+      var y = t + i * rowH + 14, yb = y + dy;
+      s += '<text class="lbl hi" x="' + l + '" y="' + (y - 2) + '">' + m.kind + '</text><text class="tick" x="' + l + '" y="' + (y + 13) + '">' + esc(m.label.replace('tilt_limit via ', '').replace('fallen via ', '')) + '</text>';
+      if (m.axis !== 'push_impulse_ns') { s += '<text class="tick" x="' + (nw ? l : f1(X0(5))) + '" y="' + (yb + 4) + '">' + (m.after != null ? m.after : m.before) + ' ' + m.unit + ' ' + m.axis + ' · not on this axis</text>'; return; }
+      if (m.before != null && m.after != null) s += '<line class="dumb" x1="' + f1(X0(m.before)) + '" y1="' + yb + '" x2="' + f1(X0(m.after)) + '" y2="' + yb + '"/>';
+      if (m.before != null) s += '<circle class="dumb-a" cx="' + f1(X0(m.before)) + '" cy="' + yb + '" r="5"/>';
+      if (m.after != null) s += '<circle class="dumb-b" cx="' + f1(X0(m.after)) + '" cy="' + yb + '" r="4.5"/>';
+    });
+    s += nw ? '<text class="unit" x="' + l + '" y="' + (t - 28) + '">smallest failing push · requested · N·s</text><text class="unit" x="' + l + '" y="' + (t - 13) + '">○ baseline  ● candidate</text>'
+      : '<text class="unit" x="' + r + '" y="' + (t - 10) + '" text-anchor="end">smallest failing push · requested · N·s   ○ baseline  ● candidate</text>';
+    return '<svg class="fig' + (o.cls ? ' ' + o.cls : '') + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Example: each failure mode\'s smallest failing push for the baseline and the candidate checkpoint.">' + s + '</svg>';
+  }
+  function dumbbellFig(modes) { return dumbbellSvg(modes, { cls: 'fig--wide' }) + dumbbellSvg(modes, { narrow: true, cls: 'fig--narrow' }); }
+
+  // the 3D replay's frame: canvas, crop marks, drafting notes and the HUD that js/machine.js drives
+  function stageHTML(c) {
+    return '<figure class="stage" data-replay aria-label="A 3D replay of the minimal case: the robot after a requested push of ' + esc(c.push) + ' newton-seconds">' +
+      '<div class="stage__view"><canvas class="stage__gl" aria-hidden="true"></canvas>' +
+      '<span class="cross cross--tl" aria-hidden="true"></span><span class="cross cross--tr" aria-hidden="true"></span><span class="cross cross--bl" aria-hidden="true"></span><span class="cross cross--br" aria-hidden="true"></span>' +
+      '<p class="micro stage__tag" aria-hidden="true">TT-324 · replay<br>' + esc(c.tag || 'media/sim.json') + '</p>' +
+      '<p class="note" data-note="push" aria-hidden="true"><span>push · <b data-note-push></b> N·s requested</span></p><p class="note" data-note="breach" aria-hidden="true"><span>pose at breach · t = <b data-note-breach></b> s</span></p>' +
+      '<div class="hud"><div class="hud__head"><span>Replay</span><span>MuJoCo ' + esc(c.mujoco) + '</span></div><div class="hud__runs" role="group" aria-label="Choose a run"><button type="button" data-run="nominal" aria-pressed="false">Unperturbed</button><button type="button" data-run="minimal" aria-pressed="true">Push ' + esc(c.push) + ' N·s</button></div>' +
+      '<dl class="hud__dl"><div><dt>t</dt><dd><span data-hud="t">0.00</span> s</dd></div><div><dt>push</dt><dd><span data-hud="push">' + esc(c.push) + '</span> N·s requested</dd></div><div><dt>tilt_deg</dt><dd><span data-hud="tilt">0.00</span>°</dd></div></dl>' +
+      '<div class="hud__bar" aria-hidden="true" style="--lim:' + (c.threshold / 180 * 100).toFixed(3) + '%;--w:0%"><span class="hud__over"></span><span class="hud__fill" data-hud="bar"></span><i class="hud__lim"></i></div>' +
+      '<p class="hud__rule" data-hud="rule">tilt_deg &gt; ' + esc(c.threshold) + '</p></div></div></figure>';
   }
 
   /* drawings scale; their lettering should not (as on the site) */
@@ -258,7 +320,7 @@
       '<p class="hero-side__q">' + q + '</p></aside>';
   }
   S.login = function () {
-    return '<div class="gate-page">' + heroSide('Find the conditions that break your policy, before your customers do.') +
+    return '<div class="gate-page">' + heroSide('Robots are learning to move. We find the exact condition where they fall.') +
       '<div class="gate-form"><span class="gate-form__lock">' + R.brand.lockup + '</span>' +
       '<div><p class="micro">TT-301 · Sign in</p><h1 class="ph__title" style="margin-top:8px">Sign in to your workspace</h1></div>' +
       '<p class="fine">Teeter is invite-only while pilots run. Every workspace is set up with us on a call.</p>' +
@@ -387,13 +449,14 @@
     }
     var sm = $('[data-act="smoke"]');
     if (sm) {
-      var path = $('[data-trace="nom"]');
-      if (!ob.smoke && path && !reduced) {
+      // the trace is drawn twice (wide and narrow, one shown at a time); both are run
+      var paths = $$('[data-trace="nom"]');
+      if (!ob.smoke && !reduced) paths.forEach(function (path) {
         var L = path.getTotalLength(); path.style.strokeDasharray = L; path.style.strokeDashoffset = L;
-      }
+      });
       sm.addEventListener('click', function () {
         sm.disabled = true; sm.textContent = 'Running…';
-        if (path && !reduced) { path.style.transition = 'stroke-dashoffset 2.4s linear'; path.style.strokeDashoffset = 0; }
+        if (!reduced) paths.forEach(function (path) { path.style.transition = 'stroke-dashoffset 2.4s linear'; path.style.strokeDashoffset = 0; });
         later(function () { ob.smoke = true; $('[data-smoke-result]').hidden = false; sm.textContent = 'Run again'; sm.disabled = false; }, reduced ? 0 : 2500);
       });
     }
@@ -405,7 +468,7 @@
     var online = X.runners.filter(function (r) { return r.state !== 'offline'; }).length;
     var cards = X.programs.map(function (p) {
       var inner;
-      if (p.id === 'standin') inner = kv([['latest', a('/campaigns/C-0001', 'C-0001')], ['modes', REP.modes.length + ' failure modes'], ['smallest push', '<span class="m">' + V.minimal_push + ' N·s</span> requested'], ['gate', 'not set up: one campaign, no checkpoints']]);
+      if (p.id === 'standin') inner = kv([['latest', a('/campaigns/C-0001', 'C-0001')], ['modes', REP.modes.length + (REP.modes.length === 1 ? ' failure mode' : ' failure modes')], ['smallest push', '<span class="m">' + V.minimal_push + ' N·s</span> requested'], ['gate', 'not set up: one campaign, no checkpoints']]);
       else if (p.id === 'q2') inner = '<div><p class="f__l">smallest failing push · v36 → v41</p>' + sparkSvg(q2.slice().reverse().map(function (c) { return c.min_push; })) + '</div>' +
         kv([['latest', a('/gates/G-0041', 'G-0041') + ' · v41 against v40'], ['gate', verdict('blocked') + ' 1 new mode, 1 widened'], ['smallest push', '<span class="m">6.2 N·s</span> requested, was 7.9']]);
       else inner = '<p class="note-line">' + p.note + '</p>' + kv([['state', verdict('setup', 'Waiting on the roadmap')]]);
@@ -418,12 +481,12 @@
       { href: '#/evidence/EP-0001', cells: [verdict('done', 'Draft'), 'EP-0001 is unsigned: signing is not built yet', 'Evidence'] }
     ]);
     return head('TT-310 · Overview', 'Example Robotics', 'Every program\'s latest gate, what needs a decision, and what is running now.',
-      '<span>Pilot</span><span>3 programs</span><span>' + online + ' of ' + X.runners.length + ' runners online</span>', btn('New campaign', { href: '/campaigns/new' })) +
+      '<span>Pilot</span><span>3 programs</span><span>' + online + ' of ' + X.runners.length + ' runners online</span>') +
       '<div class="stats" style="margin-bottom:18px">' + stat('Open regressions', '1', 'G-0041, Q2 · walk · example') + stat('Running now', String(running.length), running.map(function (c) { return c.id + ' · ' + c.done + '/' + c.budget; }).join(', ') + ' · example') +
       stat('Failure modes, C-0001', String(REP.modes.length), REP.failures_total + ' violations in ' + CAMP.budget + ' directed evaluations · record') + stat('Uniform rate, C-0001', V.unif_lo + '–' + V.unif_hi + '%', '95% interval, ' + V.unif_k + ' of ' + V.unif_n + ' uniform samples · record') + '</div>' +
       '<div class="grid grid--3" style="margin-bottom:18px">' + cards + '</div>' +
       '<div class="grid grid--21">' + panel('Needs a decision', 'example', attention, { flush: true }) +
-      panel('Activity', 'example', '<ul class="check">' + X.audit.slice(0, 5).map(function (e) { return '<li class="is-wait"><span><span class="m" style="color:var(--ink-3)">' + e.at.slice(5) + '</span> ' + esc(e.what) + '</span></li>'; }).join('') + '</ul>', { foot: a('/settings/audit', 'Audit log →') }) + '</div>';
+      panel('Activity', 'example', '<ul class="check">' + X.audit.slice(0, 5).map(function (e) { return '<li class="is-log"><span><span class="m" style="color:var(--ink-3)">' + e.at.slice(5) + '</span> ' + esc(e.what) + '</span></li>'; }).join('') + '</ul>', { foot: a('/settings/audit', 'Audit log →') }) + '</div>';
   };
 
   /* TT-311 program */
@@ -431,7 +494,7 @@
     var pr = prog(p.p);
     if (!pr) return notFound();
     if (pr.id === 'standin') {
-      return head('TT-311 · Program', pr.name, pr.note, '<span>robot ' + a('/robots/quadruped', 'quadruped.xml') + '</span><span>policy ' + a('/policies/stand', 'stand') + '</span><span>' + src('record') + '</span>', btn('New campaign', { href: '/campaigns/new' })) +
+      return head('TT-311 · Program', pr.name, pr.note, '<span>robot ' + a('/robots/quadruped', 'quadruped.xml') + '</span><span>policy ' + a('/policies/stand', 'stand') + '</span><span>' + src('record') + '</span>') +
         '<div class="grid grid--2">' + panel('Latest campaign', 'record', kv([['campaign', a('/campaigns/C-0001', 'C-0001')], ['date', CAMP.generated], ['search', 'CEM · ' + CAMP.budget + ' evaluations · seed 0'], ['violations', REP.failures_total + ' of ' + CAMP.budget + ' · describes the search, not the robot'], ['modes', REP.modes.map(function (m, i) { return a('/campaigns/C-0001/modes/' + i, esc(m.label)); }).join('<br>')]])) +
         panel('Standard campaign', 'record', code(esc(R.yaml), { copy: true })) + '</div>' +
         '<div class="grid" style="margin-top:18px">' + panel('Checkpoints', 'record', '<p class="note-line">One policy, the built-in <code>stand</code>, and no checkpoints: there is nothing to gate. A gate needs a policy that changes. ' + a('/programs/q2', 'Q2 · walk') + ' shows one (example).</p>') + '</div>';
@@ -442,7 +505,7 @@
     }
     var cps = X.checkpoints;
     return head('TT-311 · Program', pr.name, pr.note, '<span>robot ' + a('/robots/q2', 'q2.xml') + '</span><span>policy ' + a('/policies/q2-walk', 'q2-walk') + '</span><span>baseline <b>v40</b> (shipped)</span><span>' + src('example') + '</span>',
-      btn('Checkpoints', { href: '/programs/q2/checkpoints', line: true }) + btn('New campaign', { href: '/campaigns/new' })) +
+      btn('Checkpoints', { href: '/programs/q2/checkpoints', line: true })) +
       '<div class="banner" style="margin-bottom:18px"><span class="banner__sw" aria-hidden="true"></span><div class="banner__body"><p class="banner__t">v41 is blocked</p><p class="banner__d">Against the shipped v40: 1 failure mode widened, 1 new, 1 fixed, 1 unchanged. Example values.</p></div>' + btn('Open the gate', { href: '/gates/G-0041' }) + '</div>' +
       '<div class="grid grid--21">' + panel('Smallest failing push, by checkpoint', 'example', trendFig(cps) + '<p class="note-line">Each point is the minimal case of the <code>tilt_limit via push_impulse_ns</code> mode in that checkpoint\'s standard campaign. Higher holds a bigger push. Comparable only because robot, space, rules and seeds match (v39 is excluded from comparison: its space differs).</p>') +
       panel('Standard campaign', 'example', kv([['space', a('/library', 'q2-standard v3') + ' · 6 axes'], ['rules', a('/library', 'q2-safety v2') + ' · 2 rules'], ['search', 'CEM · 600 evaluations'], ['seeds', 'sampler 0xA13F · sim 0 · policy 0'], ['runs on', 'lab-gpu-02, ci-runner-01'], ['called by', 'GitHub Actions on every PR that changes policies/']])) + '</div>';
@@ -490,7 +553,7 @@
       var pr = prog(c.program), href = c.id === 'C-0001' ? '/campaigns/C-0001' : c.state === 'running' ? '/campaigns/C-0001/live' : c.state === 'refused' ? '/gates/G-0039' : '/gates/G-0041';
       return { href: '#' + href, cells: ['<span class="ink">' + c.id + '</span>', pr.name, c.checkpoint, c.method, c.state === 'running' ? c.done + ' / ' + c.budget : String(c.budget), c.violations == null ? '—' : String(c.violations), c.modes == null ? '—' : String(c.modes), verdict(c.state), src(c.source)] };
     });
-    return head('TT-320 · Campaigns', 'Campaigns', 'Every search, newest first. A violation count from a directed search describes the search, not the robot.', null, btn('New campaign', { href: '/campaigns/new' })) +
+    return head('TT-320 · Campaigns', 'Campaigns', 'Every search, newest first. A violation count from a directed search describes the search, not the robot.') +
       '<div class="acts" style="margin-bottom:12px"><div class="seg" role="group" aria-label="Filter"><button type="button" aria-pressed="true">All</button><button type="button" aria-pressed="false">Running</button><button type="button" aria-pressed="false">Blocked</button><button type="button" aria-pressed="false">Gates</button></div></div>' +
       panel('Campaigns', null, table(['id', 'program', 'checkpoint', 'method', { t: 'evaluations', r: 1, m: 1 }, { t: 'violations', r: 1, m: 1 }, { t: 'modes', r: 1, m: 1 }, 'state', 'data'], rows, { stack: true }), { flush: true,
         foot: 'C-0001 is the published campaign of ' + CAMP.generated + ' (directed, seed 0). Running C-0413 opens a replay of C-0001\'s evaluations, since nothing here runs.' });
@@ -651,7 +714,7 @@
     return head('TT-323 · Campaign result', 'C-0001', 'The published campaign: the stand-in quadruped and its stance policy, searched over six axes for ' + CAMP.budget + ' evaluations.',
       '<span>' + CAMP.generated + '</span><span>CEM · seed 0</span><span>robot <span class="m">' + R.robot.sha256.slice(0, 12) + '…</span></span><span>' + src('record') + '</span>',
       btn('Replay the run', { href: '/campaigns/C-0001/live', line: true }) + btn('Build evidence', { href: '/evidence/EP-0001' })) +
-      '<div class="banner banner--inv" style="margin-bottom:18px"><span class="banner__sw" aria-hidden="true"></span><div class="banner__body"><p class="banner__t">' + REP.modes.length + ' failure modes found</p>' +
+      '<div class="banner banner--inv" style="margin-bottom:18px"><span class="banner__sw" aria-hidden="true"></span><div class="banner__body"><p class="banner__t">' + REP.modes.length + (REP.modes.length === 1 ? ' failure mode' : ' failure modes') + ' found</p>' +
       '<p class="banner__d">Smallest: a requested push of ' + V.minimal_push + ' N·s, all else nominal, breaches <code style="color:inherit">tilt_deg &gt; ' + V.threshold + '</code> at ' + V.breach_t + ' s. Found in simulation, MuJoCo ' + V.mujoco + '; nothing here was run on hardware.</p></div></div>' +
       '<div class="grid">' + panel('Failure modes · the ' + REP.reduced + ' most severe of ' + REP.failures_total + ' violations, reduced and grouped', 'record', modes, { flush: true,
         foot: 'Reduction applies to the most severe failures (<code>reduce.max = ' + REP.reduced + '</code>), not every one. Each minimal case is locally minimal: no single axis can be relaxed further. It is not proven globally smallest.' }) + '</div>' +
@@ -669,15 +732,7 @@
     if (p.id !== 'C-0001' || !m) return notFound();
     var space = Object.keys(CAMP.space), gone = space.filter(function (k) { return m.required.indexOf(k) < 0; });
     var hasReplay = i === 0 && Object.keys(m.minimal).length === 1 && Math.abs(m.minimal.push_impulse_ns - REPLAY.runs.minimal.push) < 1e-9;
-    var stage = hasReplay ? '<figure class="stage" data-replay aria-label="A 3D replay of the minimal case: the stand-in quadruped after a requested push of ' + V.minimal_push + ' newton-seconds">' +
-      '<div class="stage__view"><canvas class="stage__gl" aria-hidden="true"></canvas>' +
-      '<span class="cross cross--tl" aria-hidden="true"></span><span class="cross cross--tr" aria-hidden="true"></span><span class="cross cross--bl" aria-hidden="true"></span><span class="cross cross--br" aria-hidden="true"></span>' +
-      '<p class="micro stage__tag" aria-hidden="true">TT-324 · replay<br>media/sim.json</p>' +
-      '<p class="note" data-note="push" aria-hidden="true"><span>push · <b data-note-push></b> N·s requested</span></p><p class="note" data-note="breach" aria-hidden="true"><span>pose at breach · t = <b data-note-breach></b> s</span></p>' +
-      '<div class="hud"><div class="hud__head"><span>Replay</span><span>MuJoCo ' + V.mujoco + '</span></div><div class="hud__runs" role="group" aria-label="Choose a run"><button type="button" data-run="nominal" aria-pressed="false">No push</button><button type="button" data-run="minimal" aria-pressed="true">Push ' + V.minimal_push + ' N·s</button></div>' +
-      '<dl class="hud__dl"><div><dt>t</dt><dd><span data-hud="t">0.00</span> s</dd></div><div><dt>push</dt><dd><span data-hud="push">' + V.minimal_push + '</span> N·s requested</dd></div><div><dt>tilt_deg</dt><dd><span data-hud="tilt">0.00</span>°</dd></div></dl>' +
-      '<div class="hud__bar" aria-hidden="true" style="--lim:' + (V.threshold / 180 * 100).toFixed(3) + '%;--w:0%"><span class="hud__over"></span><span class="hud__fill" data-hud="bar"></span><i class="hud__lim"></i></div>' +
-      '<p class="hud__rule" data-hud="rule">tilt_deg &gt; ' + V.threshold + '</p></div></div></figure>' : '';
+    var stage = hasReplay ? stageHTML({ push: V.minimal_push, mujoco: V.mujoco, threshold: V.threshold }) : '';
     return head('TT-324 · Failure mode', esc(m.label), 'Mode ' + (i + 1) + ' of ' + REP.modes.length + ' in C-0001: ' + m.count + ' of the ' + REP.reduced + ' reduced failures fell here.',
       '<span>' + a('/campaigns/C-0001', 'C-0001') + '</span><span>found in simulation</span><span>' + src('record') + '</span>',
       (i > 0 ? btn('← Mode ' + i, { href: '/campaigns/C-0001/modes/' + (i - 1), line: true }) : '') + (i < REP.modes.length - 1 ? btn('Mode ' + (i + 2) + ' →', { href: '/campaigns/C-0001/modes/' + (i + 1), line: true }) : '')) +
@@ -695,7 +750,7 @@
   S.mode.after = function () {
     var st = $('[data-replay]');
     if (st && window.TeeterMachine && !reduced) {
-      try { stopMachine = window.TeeterMachine.mount(st, REPLAY, { offset: st.clientWidth >= 640 ? [.17, .02] : [0, 0] }); } catch (e) { stopMachine = null; }
+      try { stopMachine = window.TeeterMachine.mount(st, REPLAY); } catch (e) { stopMachine = null; }
       if (stopMachine) cleanup.push(function () { stopMachine(); stopMachine = null; });
     }
     if (st && !stopMachine) {
@@ -872,7 +927,7 @@
     });
   };
 
-  function notFound() { return head('TT-399', 'Nothing here', 'This screen does not exist in the prototype.', null, btn('Overview', { href: '/' })); }
+  function notFound() { return head('TT-399', 'Nothing at this address', 'Check the link, or start again from the overview.', null, btn('Overview', { href: '/', line: true })); }
 
   /* ── routes ────────────────────────────────────────────── */
   var ROUTES = [
@@ -908,7 +963,7 @@
       var ok = pat.every(function (s, j) { if (s.charAt(0) === ':') { p[s.slice(1)] = decodeURIComponent(seg[j]); return !!seg[j]; } return s === seg[j]; });
       if (ok) return { name: ROUTES[i][1], o: ROUTES[i][2], p: p, path: path };
     }
-    return { name: null, o: { crumb: '—' }, p: {}, path: path };
+    return { name: null, o: { crumb: 'Not found' }, p: {}, path: path };
   }
 
   /* ── navigation, breadcrumbs ───────────────────────────── */
@@ -938,8 +993,11 @@
     cleanup.splice(0).forEach(function (fn) { try { fn(); } catch (e) { /* keep going */ } });
     timers.splice(0).forEach(clearTimeout);
   }
-  var lastPath = null;
+  var lastPath = null, seq = 0;
+  // the live layer (js/live.js) sets these when the app is served by a control plane
+  var hooks = { nav: null, crumbs: null, title: 'Teeter app prototype', decorate: null, palette: null };
   function render() {
+    seq++;
     teardown();
     var path = (location.hash || '#/').slice(1) || '/';
     if (path.length > 1 && path.charAt(path.length - 1) === '/') path = path.slice(0, -1);
@@ -947,10 +1005,11 @@
     body.classList.toggle('is-bare', !!m.o.bare);
     var navKey = m.o.nav === 'program' ? (m.p.p ? 'p:' + m.p.p : (m.p.r === 'quadruped' || m.p.id === 'stand' ? 'p:standin' : 'p:q2')) : m.name === 'program' ? 'p:' + m.p.p : m.o.nav;
     if (m.name === 'program') navKey = 'p:' + m.p.p;
-    document.getElementById('nav').innerHTML = navHTML(navKey);
-    document.getElementById('crumbs').innerHTML = crumbs(m);
-    view.innerHTML = fn ? fn(m.p) : notFound();
-    document.title = (m.o.crumb || 'Teeter') + ' · Teeter app prototype';
+    document.getElementById('nav').innerHTML = (hooks.nav || navHTML)(navKey, m);
+    document.getElementById('crumbs').innerHTML = (hooks.crumbs || crumbs)(m);
+    var html = fn ? fn(m.p) : notFound();
+    view.innerHTML = hooks.decorate ? hooks.decorate(m, html) : html;
+    document.title = (m.o.crumb || 'Teeter') + ' · ' + hooks.title;
     if (fn && fn.after) fn.after(m.p);
     wire();
     fit();
@@ -984,15 +1043,18 @@
     ['Program · Stand-in quadruped', '/programs/standin'], ['Program · Q2 · walk', '/programs/q2'], ['Program · A7 arm', '/programs/a7'], ['Checkpoints · Q2', '/programs/q2/checkpoints'],
     ['Robot · quadruped.xml', '/robots/quadruped'], ['Robot · q2.xml', '/robots/q2'], ['Policy · stand', '/policies/stand'], ['Policy · q2-walk', '/policies/q2-walk'],
     ['Campaigns', '/campaigns'], ['New campaign', '/campaigns/new'], ['C-0001 · live', '/campaigns/C-0001/live'], ['C-0001 · result', '/campaigns/C-0001'],
-    ['C-0001 · mode 1', '/campaigns/C-0001/modes/0'], ['C-0001 · mode 2', '/campaigns/C-0001/modes/1'], ['Gates', '/gates'], ['G-0041 · v41 against v40', '/gates/G-0041'], ['G-0039 · refused', '/gates/G-0039'],
+    ['Gates', '/gates'], ['G-0041 · v41 against v40', '/gates/G-0041'], ['G-0039 · refused', '/gates/G-0039'],
     ['Evidence', '/evidence'], ['EP-0001', '/evidence/EP-0001'], ['EP-0002', '/evidence/EP-0002'], ['Assessor view · EP-0001', '/evidence/EP-0001/share'],
     ['Spaces and rules', '/library'], ['Runners', '/runners'], ['Integrations', '/integrations'],
     ['Settings · workspace', '/settings/workspace'], ['Settings · members', '/settings/members'], ['Settings · SSO', '/settings/sso'], ['Settings · plan', '/settings/plan'], ['Settings · data handling', '/settings/data'], ['Settings · audit log', '/settings/audit']
   ];
+  REP.modes.forEach(function (m, i) { PAL.splice(16 + i, 0, ['C-0001 · mode ' + (i + 1), '/campaigns/C-0001/modes/' + i]); });
   var pal = document.getElementById('palette'), pin = document.getElementById('palette-in'), plist = document.getElementById('palette-list'), sel = 0, shown = [];
+  var kbd = document.querySelector('[data-kbd]');
+  if (kbd && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) kbd.textContent = '⌘K';
   function palDraw() {
     var q = pin.value.toLowerCase().trim();
-    shown = PAL.filter(function (x) { return !q || (x[0] + ' ' + x[1]).toLowerCase().indexOf(q) >= 0; });
+    shown = (hooks.palette ? hooks.palette() : PAL).filter(function (x) { return !q || (x[0] + ' ' + x[1]).toLowerCase().indexOf(q) >= 0; });
     sel = Math.min(sel, Math.max(0, shown.length - 1));
     plist.innerHTML = shown.map(function (x, i) { return '<li role="option" data-i="' + i + '" aria-selected="' + (i === sel) + '">' + esc(x[0]) + '<small>' + esc(x[1]) + '</small></li>'; }).join('') || '<li>No match</li>';
   }
@@ -1011,6 +1073,31 @@
     else if (e.key === 'Enter' && shown[sel]) { go(shown[sel][1]); palClose(); }
   });
 
-  window.addEventListener('hashchange', render);
-  render();
+  // the bars that stick under the strip along the top sit under all of it, however many lines it
+  // wraps to at this width (on a phone it scrolls away instead: app.css)
+  var strip = document.querySelector('.proto');
+  function stripH() { document.documentElement.style.setProperty('--strip', strip && !strip.hidden ? strip.offsetHeight + 'px' : '0px'); }
+  if (strip) { stripH(); if ('ResizeObserver' in window) new ResizeObserver(stripH).observe(strip); }
+
+  var started = false;
+  function start() {
+    if (started) return;
+    started = true;
+    window.addEventListener('hashchange', render);
+    render();
+  }
+  function refresh() { wire(); fit(); }
+  window.TeeterApp = {
+    S: S, ROUTES: ROUTES, hooks: hooks, start: start, render: render, refresh: refresh, strip: stripH, R: R, X: X, AX: AX,
+    seq: function () { return seq; }, view: view, cleanup: cleanup, later: later, navHTML: navHTML, crumbs: crumbs,
+    h: { esc: esc, $: $, $$: $$, go: go, n: n, unit: unit, id: id, panel: panel, head: head, verdict: verdict, kv: kv,
+         table: table, stat: stat, code: code, sh: sh, a: a, btn: btn, src: src, toast: toast, copyText: copyText,
+         ruleSentence: ruleSentence, REQUESTED: REQUESTED, notFound: notFound },
+    figs: { scatter: scatterSvg, coverage: coverageBoth, trace: traceBoth, stage: stageHTML, spark: sparkSvg },
+    isStarted: function () { return started; },
+    hold: function () { clearTimeout(fallback); }
+  };
+  // js/live.js decides whether a control plane is serving this page. If it
+  // never answers (not loaded, or blocked), run as the prototype anyway.
+  var fallback = setTimeout(start, 2500);
 }());

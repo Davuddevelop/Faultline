@@ -258,9 +258,11 @@
     Object.keys(byId).forEach(function (id) { var el = document.getElementById(id); if (el) spy.observe(el); });
   }
 
-  /* ══ the hero: the simulator's record, replayed in 3D (js/machine.js) ═ */
+  /* ══ the hero: the simulator's record, replayed in 3D (js/machine.js) ═
+     From laptop width up the headline is set over the stage; the robot is
+     framed clear of it, whatever size the stylesheet gives each. */
   var stage = document.querySelector('[data-replay]');
   var dataEl = document.getElementById('replay-data');
   if (!stage || !dataEl || !window.TeeterMachine || !motion) return;
-  try { window.TeeterMachine.mount(stage, JSON.parse(dataEl.textContent)); } catch (e) { /* the poster stays */ }
+  try { window.TeeterMachine.mount(stage, JSON.parse(dataEl.textContent), { clear: '.hero > .hero__text' }); } catch (e) { /* the poster stays */ }
 }());

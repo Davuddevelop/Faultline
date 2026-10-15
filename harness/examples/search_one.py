@@ -45,7 +45,7 @@ def main() -> int:
         duration_s=5.0,
     )
 
-    print(f"space: {SPACE.dims} axes, ~2.5% of uniform samples fail\n")
+    print(f"space: {SPACE.dims} axes; the published campaign's uniform arm failed 12 of 750 (1.6%)\n")
     result = compare(spec, policy, SPACE, budget=100, seeds=(0, 1, 2))
     print(result.summary())
 

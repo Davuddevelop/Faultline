@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import platform
 from dataclasses import dataclass
+from typing import Callable
 
 import mujoco
 import numpy as np
@@ -87,8 +88,15 @@ def _apply_perturbation(model: mujoco.MjModel, spec: RunSpec, base_id: int) -> N
     if p.torque_loss_pct:
         if not 0 <= p.torque_loss_pct < 100:
             raise ValueError("torque_loss_pct must be in [0, 100)")
-        model.actuator_forcerange *= 1.0 - p.torque_loss_pct / 100.0
-        model.actuator_gainprm[:, 0] *= 1.0 - p.torque_loss_pct / 100.0
+        # An actuator's force is gain * ctrl + bias(qpos, qvel). A weaker motor
+        # scales all of it. Scaling the gain alone moves a position servo's
+        # setpoint instead: kp*(1-l)*ctrl - kp*q settles at q = (1-l)*ctrl, so
+        # the robot changed posture (and stood taller) rather than weakening.
+        # For a plain motor the bias terms are zero and this changes nothing.
+        k = 1.0 - p.torque_loss_pct / 100.0
+        model.actuator_forcerange *= k
+        model.actuator_gainprm[:, 0] *= k
+        model.actuator_biasprm[:, :3] *= k
 
     if p.payload_kg:
         torso = base_id
@@ -143,8 +151,16 @@ def _diverged(model: mujoco.MjModel, data: mujoco.MjData) -> str | None:
     return None
 
 
-def run(spec: RunSpec, policy: Policy) -> Trajectory:
-    """Execute one run. No search, no retries, no hidden state."""
+# Called after every control step with the time and the live MuJoCo state. It
+# must only read: anything it writes would change the run it is observing.
+StepHook = Callable[[float, mujoco.MjModel, mujoco.MjData], None]
+
+
+def run(spec: RunSpec, policy: Policy, *, on_step: StepHook | None = None) -> Trajectory:
+    """Execute one run. No search, no retries, no hidden state.
+
+    ``on_step`` lets a caller record more than the four signals, such as body
+    poses for a replay, from this exact loop rather than from a copy of it."""
     robot = load_model(spec.model_path, base_body=spec.base_body)
     model = robot.model
     _apply_perturbation(model, spec, robot.base_body_id)
@@ -234,5 +250,7 @@ def run(spec: RunSpec, policy: Policy) -> Trajectory:
         # when there is not; the old qvel[6:] silently dropped the first six
         # joints of every fixed-base robot
         jvel_arr[k] = float(np.abs(data.qvel[robot.dof_adr]).max())
+        if on_step is not None:
+            on_step(t, model, data)
 
     return Trajectory(t_arr, tilt_arr, height_arr, force_arr, jvel_arr)

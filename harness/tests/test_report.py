@@ -138,6 +138,19 @@ def test_engineering_report_names_every_mode_and_its_minimal_case(report):
     assert str(report.failures_total) in text
 
 
+def test_push_and_lag_are_quoted_as_requested(report):
+    """They land on the control grid, so the robot receives a rounded amount:
+    a document that printed them bare would be quoting a delivered value."""
+    text = engineering_report(report)
+    for m in report.modes:
+        for axis in m.required:
+            line = next(x for x in text.splitlines() if x.startswith(f"{axis} "))
+            assert line.endswith("requested") == (axis in ("push_impulse_ns", "sensor_lag_ms")), line
+    for text in (engineering_report(report), safety_appendix(report)):
+        assert "`push_impulse_ns` and `sensor_lag_ms` are requested values" in text
+    assert "| N.s requested |" in safety_appendix(report)
+
+
 def test_safety_appendix_documents_every_predicate_and_the_space(report, spec):
     text = safety_appendix(report)
     for p in spec.predicates:

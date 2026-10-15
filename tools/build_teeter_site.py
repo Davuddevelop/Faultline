@@ -190,10 +190,13 @@ def torso_half_extents():
 
 
 def push_timing():
-    """When and over how long capture_sim.py pushes: its run() defaults."""
-    src = (ROOT / "media/capture_sim.py").read_text()
-    t = float(re.search(r"push_t=([\d.]+)", src).group(1))
-    w = float(re.search(r"win, f = ([\d.]+)", src).group(1))
+    """When and over how long the runner pushes: the Perturbation default and
+    runner.run's window, read from the engine's source (this script runs
+    without MuJoCo, so it cannot import them)."""
+    spec = (ROOT / "harness/faultline/spec.py").read_text()
+    runner = (ROOT / "harness/faultline/runner.py").read_text()
+    t = float(re.search(r"push_time_s: float = ([\d.]+)", spec).group(1))
+    w = float(re.search(r"push_window = ([\d.]+)", runner).group(1))
     return t, w
 
 

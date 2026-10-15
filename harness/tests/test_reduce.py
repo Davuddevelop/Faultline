@@ -198,3 +198,16 @@ def test_table_names_every_axis_and_its_status(reduced):
     for a in SEVERITY_AXES:
         assert a.field in text
     assert reduced.target_predicate in text
+
+
+def test_an_axis_within_tolerance_is_still_asked_whether_it_is_needed(policy):
+    """Regression: a value within one tolerance of nominal was skipped and then
+    reported as "required" without a single probe. 0.5% torque loss is too
+    small to bisect, but whether a push needs it is a question with an answer."""
+    s = make_spec(push_impulse_ns=12.0, torque_loss_pct=0.5)
+    assert _violation(s.with_perturbation(torque_loss_pct=0.0), policy, "tilt_limit") is not None, \
+        "fixture: the push alone must fail, or torque loss really is required"
+    r = reduce_failure(s, policy, target_predicate="tilt_limit", budget=60)
+    status = {a.field: a.status for a in r.axes}
+    assert status["torque_loss_pct"] == "eliminated"
+    assert r.required == ["push_impulse_ns"]

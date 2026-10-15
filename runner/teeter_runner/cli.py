@@ -1,0 +1,233 @@
+"""teeter: the command line for people, CI and runners.
+
+    teeter runner start --config runner.yaml       run campaigns on this machine
+    teeter campaign run spec.yaml                  plan one, follow it, print what it found
+    teeter program create --slug P --name N spec   fix a program's experiment (a member's token)
+    teeter checkpoint add --program P --label C --policy NAME   a new checkpoint (CI may)
+    teeter gate --program P --checkpoint C         CI: exit 0 passed, 1 blocked, 2 refused or error
+    teeter status                                  the workspace at a glance
+
+Every command takes --api and --token (or --token-file), or reads TEETER_API
+and TEETER_TOKEN from the environment, which is how CI should pass them.
+--header adds a header to every request, for a control plane behind an
+access proxy.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import time
+from pathlib import Path
+from typing import NoReturn
+
+import yaml
+
+from .client import ApiError, Client
+
+
+def _fail(message: str) -> NoReturn:
+    """Exit 2: 1 means violations found or a gate blocked, so an error must not
+    look like either to CI."""
+    print(f"error: {message}", file=sys.stderr)
+    raise SystemExit(2)
+
+
+def _auth(args) -> tuple[str, str]:
+    if getattr(args, "header", None):
+        # every client this process makes reads them (client.extra_headers)
+        os.environ["TEETER_HEADERS"] = "\n".join(filter(None, [os.environ.get("TEETER_HEADERS", ""), *args.header]))
+    api = args.api or os.environ.get("TEETER_API")
+    # what is on the command line beats the environment, a file included
+    token = args.token or (Path(args.token_file).read_text().strip() if args.token_file else None) \
+        or os.environ.get("TEETER_TOKEN")
+    if not api or not token:
+        _fail("give --api and --token (or --token-file), or set TEETER_API and TEETER_TOKEN")
+    return api, token
+
+
+def cmd_runner_start(args) -> int:
+    from .agent import Agent
+    from .config import RunnerConfigError, load
+    api, token = _auth(args)
+    try:
+        cfg = load(args.config)
+    except RunnerConfigError as exc:
+        _fail(str(exc))
+    return Agent(api, token, cfg, name=args.name, log=lambda m: print(m, flush=True)).run_forever(once=args.once)
+
+
+def _amount(axis: str, value: float) -> str:
+    """A value with its unit. Push and lag land on the control grid, so the
+    robot received a quantised amount: they are quoted as requested."""
+    from faultline.reduce import SEVERITY_AXES          # the engine's table, imported only to print
+    ax = next(a for a in SEVERITY_AXES if a.field == axis)
+    return f"{value:g} {ax.unit}" + (" requested" if ax.quantised else "")
+
+
+def _read_spec(path: str) -> dict:
+    text = Path(path).read_text()
+    return json.loads(text) if path.endswith(".json") else yaml.safe_load(text)
+
+
+def _follow(client: Client, ref: str, quiet: bool = False) -> dict:
+    last = None
+    while True:
+        c = client.get(f"/v1/campaigns/{ref}")
+        line = (f"{c['ref']}  {c['state']:<8} {c['progress'].get('phase', ''):<8} "
+                f"{c['evaluations']}/{c['budget']} evaluations, {c['failures']} violation(s)")
+        if not quiet and line != last:
+            print(line, flush=True)
+            last = line
+        if c["state"] in ("done", "failed", "canceled"):
+            return c
+        time.sleep(1.0)
+
+
+def cmd_campaign_run(args) -> int:
+    api, token = _auth(args)
+    spec = _read_spec(args.spec)
+    client = Client(api, token)
+    c = client.post("/v1/campaigns", {"spec": spec})        # an ApiError exits 2, in main
+    print(f"{c['ref']} queued: {spec.get('robot')} / {spec.get('policy')}")
+    if not args.wait:
+        return 0
+    c = _follow(client, c["ref"])
+    if c["state"] != "done":
+        print(f"{c['ref']} {c['state']}: {c.get('error') or ''}")
+        return 2
+    for m in c["modes"]:
+        mins = ", ".join(f"{a} {_amount(a, m['minimal'][a])}" for a in m["required"])
+        print(f"  {m['count']:>3} x  {m['label']}   minimal: {mins}   first breach {m['first_t']:.2f} s")
+    if not c["modes"]:
+        print("no violations found. That bounds nothing: this budget, in this space, did not find one.")
+    return 1 if c["failures"] else 0
+
+
+def cmd_program_create(args) -> int:
+    """The experiment every checkpoint of the program will run: a campaign
+    spec without its policy. A full spec is accepted and its policy left out."""
+    api, token = _auth(args)
+    spec = _read_spec(args.spec)
+    policy = spec.pop("policy", None)
+    prog = Client(api, token).post("/v1/programs", {"slug": args.slug, "name": args.name, "standard_spec": spec})
+    std = prog["standard_spec"]
+    print(f"program {prog['slug']}: robot {std['robot']}, {len(std['axes'])} axis(es), "
+          f"{std['search']['method']}, {std['search']['budget']} evaluations")
+    if policy:
+        print(f"  the spec's policy ({policy}) is left out: each checkpoint names its own")
+    return 0
+
+
+def cmd_checkpoint_add(args) -> int:
+    api, token = _auth(args)
+    prog = Client(api, token).post(f"/v1/programs/{args.program}/checkpoints", {
+        "label": args.label, "policy": args.policy, "note": args.note, "baseline": args.baseline})
+    ck = next(c for c in prog["checkpoints"] if c["label"] == args.label)
+    print(f"{prog['slug']}/{ck['label']}: policy {ck['policy']}" + (", the baseline" if ck["baseline"] else ""))
+    return 0
+
+
+def cmd_gate(args) -> int:
+    api, token = _auth(args)
+    client = Client(api, token)
+    try:
+        g = client.post(f"/v1/programs/{args.program}/gate", {"checkpoint": args.checkpoint})
+    except ApiError as exc:
+        print(f"error: {exc.message}", file=sys.stderr)
+        return 2
+    base = g["baseline"]
+    print(f"{g['ref']}: {args.checkpoint} ({g['candidate']['ref']}) against the baseline "
+          f"{base.get('checkpoint') or base['policy']} ({base['ref']})", flush=True)
+    deadline = time.monotonic() + args.timeout
+    while g["state"] != "decided":
+        if time.monotonic() > deadline:
+            print(f"error: no verdict after {args.timeout:.0f} s; is a runner online for this program?",
+                  file=sys.stderr)
+            return 2
+        time.sleep(2.0)
+        g = client.get(f"/v1/gates/{g['ref']}")
+    comp = g["comparison"]
+    print(f"\n{g['verdict'].upper()}: {comp['reason']}")
+    for m in comp.get("modes", []):
+        axes = "; ".join(f"{a['axis']} {a['baseline']:g} -> {_amount(a['axis'], a['candidate'])}" for a in m.get("axes", []))
+        print(f"  {m['change']:<10} {m['label']}{'   ' + axes if axes else ''}")
+    return {"passed": 0, "blocked": 1}.get(g["verdict"], 2)
+
+
+def cmd_status(args) -> int:
+    api, token = _auth(args)
+    client = Client(api, token)
+    me, ov = client.get("/v1/me"), client.get("/v1/overview")
+    print(f"{me['workspace']['name']} ({me['workspace']['slug']}) at {api}")
+    print(f"  runners   {ov['runners']['online']} of {ov['runners']['total']} online")
+    print(f"  campaigns {', '.join(f'{v} {k}' for k, v in ov['campaigns'].items()) or 'none'}")
+    print(f"  gates     {', '.join(f'{v} {k}' for k, v in ov['gates'].items()) or 'none'}")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(prog="teeter", description="Teeter: test learned robot policies on your machines.")
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--api", help="control plane URL (or TEETER_API)")
+    common.add_argument("--token", help="token (or TEETER_TOKEN)")
+    common.add_argument("--token-file", help="read the token from a file")
+    common.add_argument("--header", action="append", metavar="'NAME: VALUE'",
+                        help="send this header with every request too, for a control plane behind an "
+                             "access proxy (repeatable; or TEETER_HEADERS, one per line)")
+    sub = p.add_subparsers(dest="command", required=True)
+
+    r = sub.add_parser("runner", help="run campaigns on this machine")
+    rs = r.add_subparsers(dest="sub", required=True)
+    start = rs.add_parser("start", parents=[common], help="register and run jobs until stopped")
+    start.add_argument("--config", required=True, help="the runner's allowlist (YAML)")
+    start.add_argument("--name", help="how this machine appears on the Runners page")
+    start.add_argument("--once", action="store_true", help="run at most one job, then exit")
+    start.set_defaults(func=cmd_runner_start)
+
+    c = sub.add_parser("campaign", help="plan and follow campaigns")
+    cs = c.add_subparsers(dest="sub", required=True)
+    run = cs.add_parser("run", parents=[common], help="queue a campaign spec and follow it")
+    run.add_argument("spec", help="a teeter.campaign/1 spec, YAML or JSON")
+    run.add_argument("--no-wait", dest="wait", action="store_false", help="queue it and return")
+    run.set_defaults(func=cmd_campaign_run)
+
+    pr = sub.add_parser("program", help="programs: one experiment, many checkpoints")
+    prs = pr.add_subparsers(dest="sub", required=True)
+    pc = prs.add_parser("create", parents=[common], help="fix a program's experiment from a campaign spec")
+    pc.add_argument("--slug", required=True, help="lower case, digits and hyphens, e.g. q2-walk")
+    pc.add_argument("--name", required=True)
+    pc.add_argument("spec", help="a teeter.campaign/1 spec, YAML or JSON; its policy is left out")
+    pc.set_defaults(func=cmd_program_create)
+
+    ckp = sub.add_parser("checkpoint", help="checkpoints of a program")
+    cks = ckp.add_subparsers(dest="sub", required=True)
+    ca = cks.add_parser("add", parents=[common], help="add a checkpoint: a policy name a runner allows")
+    ca.add_argument("--program", required=True)
+    ca.add_argument("--label", required=True, help="e.g. v42")
+    ca.add_argument("--policy", required=True, help="the name in the runner's allowlist")
+    ca.add_argument("--note", default="")
+    ca.add_argument("--baseline", action="store_true", help="make it the program's baseline")
+    ca.set_defaults(func=cmd_checkpoint_add)
+
+    g = sub.add_parser("gate", parents=[common], help="gate a checkpoint against its program's baseline")
+    g.add_argument("--program", required=True)
+    g.add_argument("--checkpoint", required=True)
+    g.add_argument("--timeout", type=float, default=3600.0, help="seconds to wait for a verdict")
+    g.set_defaults(func=cmd_gate)
+
+    s = sub.add_parser("status", parents=[common], help="the workspace at a glance")
+    s.set_defaults(func=cmd_status)
+
+    args = p.parse_args(argv)
+    try:
+        return args.func(args)
+    except ApiError as exc:
+        print(f"error: {exc.message}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

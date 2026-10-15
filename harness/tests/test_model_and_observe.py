@@ -174,3 +174,47 @@ def test_an_unusable_run_is_never_reported_as_a_policy_failure(tmp_path, policy,
 def test_a_usable_run_still_returns_a_trajectory(tmp_path):
     traj = run(_arm_spec(tmp_path), Constant(0.05))
     assert np.all(np.isfinite(traj.tilt_deg)) and traj.t.size > 10
+
+
+def test_relative_joint_pos_is_offset_from_the_starting_pose(quad):
+    """Regression: 'relative' subtracted qpos0, which is all zeros for this
+    model, so a policy trained on joint_pos - default_pos (Isaac Lab,
+    legged_gym) was fed absolute angles. At the keyframe the offsets are zero."""
+    d = mujoco.MjData(quad.model)
+    mujoco.mj_resetDataKeyframe(quad.model, d, 0)
+    mujoco.mj_forward(quad.model, d)
+    rel = ObservationSpec((Term("joint_pos", relative=True),)).build(quad, d, np.zeros(quad.n_actuators))
+    absolute = ObservationSpec((Term("joint_pos"),)).build(quad, d, np.zeros(quad.n_actuators))
+    assert np.allclose(rel, 0.0, atol=1e-12)
+    assert np.allclose(absolute, quad.model.key_qpos[0][quad.qpos_adr])
+    assert not np.allclose(absolute, 0.0), "the fixture must start away from qpos0 to test this"
+
+
+CRATE_FIRST = """<mujoco>
+  <worldbody>
+    <body name="crate" pos="1 0 0.2"><freejoint/><geom type="box" size=".1 .1 .1"/></body>
+    <body name="base" pos="0 0 0.5"><freejoint/><geom type="box" size=".2 .1 .05"/>
+      <body name="leg"><joint name="hip" axis="0 1 0"/><geom type="capsule" fromto="0 0 0 0 0 -.3" size=".02"/></body>
+    </body>
+  </worldbody>
+  <actuator><motor name="m" joint="hip"/></actuator>
+</mujoco>"""
+
+
+def test_base_terms_read_the_bases_own_free_joint(tmp_path):
+    """A loose object declared before the robot takes qpos[0:7]. Reading the
+    base's quaternion from there gave the crate's orientation to the policy."""
+    p = tmp_path / "scene.xml"
+    p.write_text(CRATE_FIRST)
+    robot = load(p, base_body="base")
+    assert robot.base_qpos_adr == 7 and robot.base_dof_adr == 6
+    d = mujoco.MjData(robot.model)
+    d.qpos[3:7] = [0.0, 1.0, 0.0, 0.0]                  # the crate, upside down
+    d.qpos[10:14] = [1.0, 0.0, 0.0, 0.0]                # the robot, upright
+    mujoco.mj_forward(robot.model, d)
+    got = ObservationSpec((Term("base_quat"),)).build(robot, d, np.zeros(1))
+    assert np.allclose(got, [1.0, 0.0, 0.0, 0.0])
+
+    unnamed = load(p)
+    assert unnamed.base_body == "crate"
+    assert any("free joints" in n for n in unnamed.notes), "two free bodies must be called out"

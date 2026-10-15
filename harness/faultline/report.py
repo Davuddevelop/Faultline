@@ -19,12 +19,12 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 
 from .policies import Policy
-from .reduce import ReductionResult, reduce_failure
+from .reduce import SEVERITY_AXES, ReductionResult, reduce_failure
 from .runner import run, sim_environment
 from .search import CampaignResult, Sample
 from .space import SearchSpace
@@ -170,6 +170,7 @@ def build_report(
     max_reduce: int = 12,
     reduce_budget: int = 200,
     bins: int = 4,
+    on_reduced: Callable[[int, int], None] | None = None,
 ) -> Report:
     """Reduce the most severe failures, group them by what they actually need.
 
@@ -177,6 +178,9 @@ def build_report(
     costs a couple of dozen simulations each, and reducing all 300 failures of
     a campaign would cost more than the campaign did. The report states how
     many were reduced so the grouping is never mistaken for exhaustive.
+
+    ``on_reduced(done, total)`` is called after each reduction; a runner
+    reports progress with it, and raising from it stops the report.
     """
     if max_reduce < 1:
         raise ValueError("max_reduce must be at least 1")
@@ -185,7 +189,7 @@ def build_report(
     chosen = failures[:max_reduce]
 
     grouped: dict[tuple[str, tuple[str, ...]], FailureMode] = {}
-    for sample in chosen:
+    for done, sample in enumerate(chosen, 1):
         reduced = reduce_failure(
             spec.with_perturbation(**sample.perturbation),
             policy,
@@ -199,6 +203,8 @@ def build_report(
             grouped[key] = FailureMode(
                 predicate=key[0], required=key[1], members=[sample], exemplar=reduced
             )
+        if on_reduced is not None:
+            on_reduced(done, len(chosen))
 
     modes = sorted(grouped.values(), key=lambda m: len(m.members), reverse=True)
 
@@ -211,9 +217,28 @@ def build_report(
 
 # ─────────────────────────── the deliverables ───────────────────────────
 
+_QUANTISED = frozenset(a.field for a in SEVERITY_AXES if a.quantised)
+
+
+def _unit(axis: str, unit: str) -> str:
+    return f"{unit} requested" if axis in _QUANTISED else unit
+
+
+def _requested_note(report: Report) -> list[str]:
+    """Push and lag land on the control grid, so the value quoted is the one
+    asked for, not the one the robot received."""
+    axes = [a for a in report.campaign.space.axes if a in _QUANTISED]
+    if not axes:
+        return []
+    names = " and ".join(f"`{a}`" for a in axes)
+    what = "is a requested value" if len(axes) == 1 else "are requested values"
+    return [f"- {names} {what}: applied on the {report.spec.control_hz:g} Hz control grid, "
+            "the robot receives a quantised amount, not exactly the value quoted."]
+
+
 def _region_line(axis: str, r: dict[str, float]) -> str:
     return (f"  {axis:<20} {r['min']:>9.4g} .. {r['max']:<9.4g} "
-            f"median {r['median']:<9.4g} {r['unit']}")
+            f"median {r['median']:<9.4g} {_unit(axis, r['unit'])}")
 
 
 def engineering_report(report: Report) -> str:
@@ -249,7 +274,7 @@ def engineering_report(report: Report) -> str:
         ]
         for axis in m.required:
             val = getattr(ex.minimal_spec.perturbation, axis)
-            out.append(f"{axis:<20} {val:.4g} {sp.unit(axis)}")
+            out.append(f"{axis:<20} {val:.4g} {_unit(axis, sp.unit(axis))}")
         out += [
             f"{'-> ' + ex.minimal_violation.predicate:<20} first fires at "
             f"t={ex.minimal_violation.first_t:.2f}s",
@@ -276,6 +301,7 @@ def engineering_report(report: Report) -> str:
         "failures were reduced. The grouping is not exhaustive.",
         "- No claim is made that the policy is safe. This campaign found failures; "
         "it cannot show their absence.",
+        *_requested_note(report),
         "",
     ]
     return "\n".join(out)
@@ -321,7 +347,7 @@ def safety_appendix(report: Report) -> str:
     for axis, a in cov.per_axis.items():
         out.append(
             f"| `{axis}` | {a['declared_min']:g} .. {a['declared_max']:g} "
-            f"| {a['sampled_min']:g} .. {a['sampled_max']:g} | {a['unit']} |"
+            f"| {a['sampled_min']:g} .. {a['sampled_max']:g} | {_unit(axis, a['unit'])} |"
         )
 
     out += [
@@ -361,6 +387,7 @@ def safety_appendix(report: Report) -> str:
         "- Minimal cases are locally minimal: no single axis can be relaxed further, "
         "but a different combination may be smaller.",
         "- This document does not assert conformity with any regulation or standard.",
+        *_requested_note(report),
         "",
     ]
     return "\n".join(out)

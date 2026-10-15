@@ -58,6 +58,12 @@ def test_axes_are_the_harness_axes(rec):
         assert (a["nominal"], a["tolerance"], a["unit"]) == (h.nominal, h.tolerance, h.unit)
 
 
+def test_the_apps_requested_axes_are_the_ones_the_runner_quantises():
+    js = (APP / "js" / "app.js").read_text()
+    m = re.search(r"var REQUESTED = \{([^}]*)\}", js)
+    assert set(re.findall(r"(\w+): 1", m.group(1))) == {a.field for a in SEVERITY_AXES if a.quantised}
+
+
 def test_signals_are_the_trajectory_fields(rec):
     fields = [f for f in Trajectory.__dataclass_fields__ if f != "t"]
     assert rec["signals"] == fields

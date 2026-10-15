@@ -49,6 +49,6 @@ picked by eye.
   page says so beneath the link. Replace it before this page is published.
 - The campaign is against a stand-in quadruped policy. There are no customer
   results and no completed pilots.
-- `41.1%` is a directed-search hit rate, not a failure rate, and the page says
+- `35.9%` is a directed-search hit rate, not a failure rate, and the page says
   so next to it. Only the five uniform-random seeds could support a rate, and
   five is nowhere near enough to claim one.

@@ -153,7 +153,6 @@ class ObservationSpec:
         return "\n".join(rows)
 
     def build(self, robot: RobotModel, data, prev_action: np.ndarray) -> np.ndarray:
-        m = robot.model
         parts: list[np.ndarray] = []
         # body->world rotation of the base; its transpose takes world into body
         R = data.xmat[robot.base_body_id].reshape(3, 3)
@@ -162,15 +161,18 @@ class ObservationSpec:
             if t.kind == "joint_pos":
                 v = data.qpos[robot.qpos_adr]
                 if t.relative:
-                    v = v - m.qpos0[robot.qpos_adr]
+                    v = v - robot.default_joint_pos
             elif t.kind == "joint_vel":
                 v = data.qvel[robot.dof_adr]
             elif t.kind == "base_quat":
-                v = data.qpos[3:7]
+                q0 = robot.base_qpos_adr + 3       # free joint: xyz, then wxyz
+                v = data.qpos[q0:q0 + 4]
             elif t.kind == "base_lin_vel":
-                v = R.T @ data.qvel[0:3]          # qvel[0:3] is world frame
+                d0 = robot.base_dof_adr            # linear part is world frame
+                v = R.T @ data.qvel[d0:d0 + 3]
             elif t.kind == "base_ang_vel":
-                v = data.qvel[3:6]                 # already body frame in MuJoCo
+                d0 = robot.base_dof_adr + 3        # angular part is already body frame
+                v = data.qvel[d0:d0 + 3]
             elif t.kind == "projected_gravity":
                 v = R.T @ np.array([0.0, 0.0, -1.0])
             elif t.kind == "prev_action":

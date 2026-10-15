@@ -1,0 +1,17 @@
+# The build context for api/Dockerfile and runner/Dockerfile. Everything is
+# left out except what the two images copy, above all .teeter/, which holds
+# tokens and the dev database.
+*
+!api/pyproject.toml
+!api/teeter_api/
+!harness/pyproject.toml
+!harness/README.md
+!harness/faultline/
+!harness/models/
+!runner/pyproject.toml
+!runner/teeter_runner/
+!runner/demo-runner.yaml
+!teeter/
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info

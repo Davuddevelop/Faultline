@@ -50,7 +50,7 @@ window.TEETER_EXAMPLE = {
         { kind: 'widened', label: 'tilt_limit via push_impulse_ns', axis: 'push_impulse_ns', unit: 'N·s', before: 7.9, after: 6.2, note: 'falls at a smaller push than v40 did' },
         { kind: 'new', label: 'fallen via slope_deg + sensor_lag_ms', axis: 'slope_deg', unit: '°', before: null, after: 8.5, note: 'with sensor_lag_ms 40 requested; v40 held across the whole slope range' },
         { kind: 'fixed', label: 'tilt_limit via payload_offset_m', axis: 'payload_offset_m', unit: 'm', before: 0.052, after: null, note: 'no longer found anywhere in the declared range' },
-        { kind: 'unchanged', label: 'tilt_limit via push_impulse_ns + torque_loss_pct', axis: 'push_impulse_ns', unit: 'N·s', before: 7.4, after: 7.4, note: 'same minimal case, within tolerance 0.5' }
+        { kind: 'unchanged', label: 'tilt_limit via push_impulse_ns + payload_kg', axis: 'push_impulse_ns', unit: 'N·s', before: 7.4, after: 7.4, note: 'same minimal case, within tolerance 0.5' }
       ]
     },
     'G-0039': {

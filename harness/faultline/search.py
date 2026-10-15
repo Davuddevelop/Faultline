@@ -211,30 +211,47 @@ def _worker_payload(policy: Policy, policy_ref: str | None) -> tuple:
         ) from exc
 
 
+# Called with each sample as it is measured, in index order. A runner streams
+# them to the control plane; raising from it stops the campaign.
+Progress = Callable[[Sample], None]
+
+
 def _map_points(
     spec: RunSpec, policy: Policy, pred: Predicate, space: SearchSpace,
     points, start_index: int, iteration: int, workers: int, policy_ref: str | None,
+    progress: Progress | None = None,
 ) -> list[Sample]:
     """Evaluate a batch. Results come back in index order regardless of the
-    order they finish in, so a parallel campaign is identical to a serial one."""
+    order they finish in, so a parallel campaign is identical to a serial one,
+    and ``progress`` sees them in that same order."""
     tasks = [
         (spec, pred, space.to_kwargs(row), start_index + k, iteration)
         for k, row in enumerate(points)
     ]
+    out: list[Sample] = []
     if workers == 1:
-        return [_evaluate_point(spec, policy, pred, t[2], t[3], t[4]) for t in tasks]
+        for t in tasks:
+            out.append(_evaluate_point(spec, policy, pred, t[2], t[3], t[4]))
+            if progress is not None:
+                progress(out[-1])
+        return out
 
     ref, blob = _worker_payload(policy, policy_ref)
     with ProcessPoolExecutor(
         max_workers=workers, initializer=_init_worker,
         initargs=(ref, blob, spec.model_path),
     ) as pool:
-        return list(pool.map(_eval_in_worker, tasks, chunksize=1))
+        for sample in pool.map(_eval_in_worker, tasks, chunksize=1):
+            out.append(sample)
+            if progress is not None:
+                progress(sample)
+    return out
 
 
 def random_search(
     spec: RunSpec, policy: Policy, space: SearchSpace, *, budget: int = 150, seed: int = 0,
     target_predicate: str | None = None, workers: int = 1, policy_ref: str | None = None,
+    progress: Progress | None = None,
 ) -> CampaignResult:
     """Uniform coverage of the declared volume. The baseline every directed
     method has to beat to justify its complexity."""
@@ -245,11 +262,14 @@ def random_search(
 
     t0 = time.perf_counter()
     # points are drawn up front so the sampler sequence is identical whatever
-    # the worker count
-    points = np.array([[space.sample(rng)[a] for a in space.axes] for _ in range(budget)])
+    # the worker count. One draw per point: the comprehension this replaced
+    # called space.sample() once per axis, so every point spent a whole draw
+    # on each coordinate. Still uniform, but a different sequence from the one
+    # the published record and the directed search's opening round both use.
+    points = rng.uniform(space.lo(), space.hi(), size=(budget, space.dims))
     samples = _map_points(
         spec, policy, pred, space, points, 0, 0,
-        _resolve_workers(workers), policy_ref,
+        _resolve_workers(workers), policy_ref, progress,
     )
     return CampaignResult(
         method="random", space=space, seed=seed, budget=budget,
@@ -264,6 +284,7 @@ def cem_search(
     target_predicate: str | None = None, elite_frac: float = 0.25,
     iterations: int = 6, min_std_frac: float = 0.08,
     workers: int = 1, policy_ref: str | None = None,
+    progress: Progress | None = None,
 ) -> CampaignResult:
     """Cross-entropy method: fit a Gaussian to the most severe samples and
     resample from it, so budget concentrates where violations are dense.
@@ -314,7 +335,7 @@ def cem_search(
         # whole round, so rounds themselves stay sequential. That is also what
         # keeps the result identical to a serial run.
         round_samples = _map_points(
-            spec, policy, pred, space, points, index, it, n_workers, policy_ref,
+            spec, policy, pred, space, points, index, it, n_workers, policy_ref, progress,
         )
         index += len(round_samples)
         samples.extend(round_samples)

@@ -70,6 +70,25 @@ def test_relative_robot_path_resolves_against_the_config(tmp_path):
     assert load(cfg).spec.model_path == str(model_copy.resolve())
 
 
+def test_a_relative_policy_file_resolves_against_the_config_too(tmp_path):
+    (tmp_path / "sub").mkdir()
+    cfg = write(tmp_path / "sub", MINIMAL.replace("policy: stand", "policy: onnx:policies/p.onnx"))
+    assert load(cfg).policy_ref == f"onnx:{(tmp_path / 'sub' / 'policies' / 'p.onnx').resolve()}"
+    assert load(write(tmp_path, MINIMAL)).policy_ref == "stand"
+
+
+def test_a_python_policy_without_an_id_is_named_by_its_reference(tmp_path, monkeypatch):
+    (tmp_path / "idless_policy.py").write_text(
+        "import numpy as np\n"
+        "class Hold:\n"
+        "    def reset(self, seed): pass\n"
+        "    def act(self, obs, t): return np.zeros(12)\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    cfg = write(tmp_path, MINIMAL.replace("policy: stand", "policy: idless_policy:Hold"))
+    c, policy = load(cfg).loaded()
+    assert c.spec.policy_id == policy.id == "idless_policy:Hold"
+
+
 # ------------------------------------------------------- loud, specific errors
 
 def test_missing_robot_is_named(tmp_path):
@@ -183,6 +202,10 @@ def test_run_writes_all_three_deliverables_and_exits_1_on_violations(tmp_path):
 
     doc = json.loads((out / "archive" / "report.json").read_text())
     assert doc["modes"]
+
+    # the archive names the policy that was loaded, not the reference that found it
+    row = json.loads((out / "archive" / "manifest.jsonl").read_text().splitlines()[0])
+    assert row["policy_id"] == load_policy("stand", MODEL).id != "stand"
 
 
 def test_run_exits_0_when_nothing_violates(tmp_path):

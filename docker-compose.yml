@@ -1,0 +1,67 @@
+# The whole product on one machine: Postgres, the control plane (the API, the
+# site and the app) and one runner with the demo allowlist.
+#
+#   docker compose up --build -d
+#   docker compose logs setup            the sign-in link (one use, 30 minutes)
+#   open http://127.0.0.1:8000/app/
+#
+# A CI-style gate, from inside the stack:
+#   docker compose run --rm runner gate --api http://api:8000 \
+#     --token-file /data/ci-token --program quadruped --checkpoint tall-v2
+#
+# TEETER_PORT changes the published port. The database password below is
+# for this local stack only; nothing outside the machine can reach it.
+
+name: teeter
+
+x-api: &api
+  build: {context: ., dockerfile: api/Dockerfile}
+  image: teeter-api:dev
+  environment:
+    TEETER_DATABASE_URL: postgresql+psycopg://teeter:teeter-local@db:5432/teeter
+    TEETER_PUBLIC_URL: http://127.0.0.1:${TEETER_PORT:-8000}
+  volumes: [state:/data]
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: teeter
+      POSTGRES_PASSWORD: teeter-local
+      POSTGRES_DB: teeter
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teeter -d teeter"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Once per start: the demo workspace, program and checkpoints, a runner
+  # token and a CI token in the shared volume (kept if still valid), and a
+  # fresh sign-in link in this service's log.
+  setup:
+    <<: *api
+    command: ["teeter-api", "demo"]
+    depends_on:
+      db: {condition: service_healthy}
+
+  api:
+    <<: *api
+    ports: ["127.0.0.1:${TEETER_PORT:-8000}:8000"]
+    depends_on:
+      setup: {condition: service_completed_successfully}
+    restart: unless-stopped
+
+  runner:
+    build: {context: ., dockerfile: runner/Dockerfile}
+    image: teeter-runner:dev
+    command: ["runner", "start", "--api", "http://api:8000", "--token-file", "/data/runner-token",
+              "--config", "/srv/runner/demo-runner.yaml", "--name", "compose-runner"]
+    volumes: ["state:/data:ro"]
+    depends_on:
+      api: {condition: service_healthy}
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  state:

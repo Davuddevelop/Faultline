@@ -9,7 +9,7 @@ valid axis or predicate is.
 from __future__ import annotations
 
 import importlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -97,6 +97,12 @@ def load_policy(ref: str, model_path: str) -> Policy:
     for method in ("reset", "act"):
         if not callable(getattr(policy, method, None)):
             raise ConfigError(f"policy {ref!r} has no callable {method}()")
+    if not getattr(policy, "id", None):
+        # nothing better to name it by; a policy that knows its version sets id itself
+        try:
+            policy.id = ref
+        except AttributeError as exc:
+            raise ConfigError(f"policy {ref!r} has no id and will not take one; give it an id attribute") from exc
     return policy
 
 
@@ -121,6 +127,23 @@ class Campaign:
     def policy(self) -> Policy:
         return load_policy(self.policy_ref, self.spec.model_path)
 
+    def loaded(self) -> tuple[Campaign, Policy]:
+        """The policy, and this campaign with its spec naming the policy by
+        what was loaded, not by the reference that found it. A file at a path
+        gets overwritten; an archive keyed on the path would say the wrong
+        network produced its results."""
+        policy = self.policy()
+        return replace(self, spec=replace(self.spec, policy_id=policy.id)), policy
+
+
+def _resolve_policy(ref: str, base_dir: Path) -> str:
+    """A policy file's relative path resolves against the config, as the
+    robot's does, so a campaign runs the same from any directory."""
+    kind, sep, path = ref.partition(":")
+    if sep and kind in ("onnx", "torchscript") and not Path(path).is_absolute():
+        return f"{kind}:{(base_dir / path).resolve()}"
+    return ref
+
 
 def load(path: str | Path) -> Campaign:
     path = Path(path)
@@ -131,13 +154,22 @@ def load(path: str | Path) -> Campaign:
         doc = yaml.safe_load(path.read_text())
     except yaml.YAMLError as exc:
         raise ConfigError(f"{path}: not valid YAML — {exc}") from exc
+    return parse(doc, base_dir=path.parent, source=path)
+
+
+def parse(doc: Any, *, base_dir: str | Path, source: str | Path = "<campaign>") -> Campaign:
+    """The same validation as ``load``, for a campaign that arrives as data
+    rather than as a file — from the control plane, say. Relative paths in it
+    resolve against ``base_dir``; ``source`` names it in error messages."""
+    path = Path(source)
+    base_dir = Path(base_dir)
     if not isinstance(doc, dict):
         raise ConfigError(f"{path}: expected a mapping at the top level")
     _check_keys(doc, TOP_LEVEL, "the top level", path)
 
     robot = Path(_require(doc, "robot", path))
     if not robot.is_absolute():
-        robot = (path.parent / robot).resolve()
+        robot = (base_dir / robot).resolve()
     if not robot.exists():
         raise ConfigError(f"{path}: robot model not found: {robot}")
 
@@ -199,10 +231,10 @@ def load(path: str | Path) -> Campaign:
 
     out = Path(report_cfg.get("out", "deliverables"))
     if not out.is_absolute():
-        out = path.parent / out
+        out = base_dir / out
 
     return Campaign(
-        spec=spec, space=space, policy_ref=str(doc["policy"]),
+        spec=spec, space=space, policy_ref=_resolve_policy(str(doc["policy"]), base_dir),
         method=method, budget=budget, target=target,
         workers=int(search.get("workers", 1)),
         reduce_enabled=bool(reduce_cfg.get("enabled", True)),

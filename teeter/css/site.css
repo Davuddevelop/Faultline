@@ -19,16 +19,78 @@
   --mono:"B612 Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   --hatch:repeating-linear-gradient(145deg,var(--ink) 0 1px,transparent 1px 6px);
   --ease:cubic-bezier(.2,.7,.2,1);
-  --wrap:1240px;
-  --rail:164px;
-  --gutter:clamp(16px,2.4vw,28px);
   color-scheme:dark;
 }
+
+/* ═══ device sizes ════════════════════════════════════════════
+   How big things are on each kind of screen is set here and nowhere else.
+   Each class keeps what the class before it set and changes only what
+   differs, so a device is retuned by editing its own block. The widths are
+   the browser's, in CSS pixels: on a Mac or a phone, the screen's resolution
+   divided by its scaling.
+     phone     under 700    iPhone 375-440, most Android phones 360-412
+     tablet    700-1099     iPad portrait 744-1032, iPad 10.2" landscape 1080
+     laptop    1100-1599    MacBook Air 1280-1470, MacBook Pro 14" 1512,
+                            iPad landscape 1133-1376, Windows laptops 1280-1536
+     desktop   1600-2199    MacBook Pro 16" 1728, 1920 x 1080 monitors
+     wide      2200 and up  1440p, 5K and 4K monitors at 100%, ultrawides
+   --scale multiplies every type size and the controls drawn around type.
+   The replay draws the robot in the largest part of its stage that these
+   leave free (js/machine.js), so nothing here needs a matching number in a
+   script. The app (app/css/app.css) has a block of its own after this one. */
+:root{
+  --scale:1;                          /* type, and the controls around it, x */
+  --wrap:1240px;                      /* the widest the page gets */
+  --gutter:16px;                      /* outside the page, each side */
+  --pad:20px;                         /* inside a section, each side */
+  --rail:164px;                       /* the margin column of section numbers (tablet up) */
+  --stage-h:clamp(340px,52vh,480px);  /* the opening replay */
+  --hero-fs:clamp(32px,9.4vw,46px);   /* the opening headline: "We find the / exact condition" holds from 360 */
+  --hero-w:none;                      /* its measure, once it is set over the replay (laptop up) */
+  --hud-w:auto;                       /* the replay's readout */
+}
+@media (min-width:700px){:root{       /* tablet */
+  --gutter:clamp(20px,2.6vw,28px);
+  --pad:clamp(24px,4vw,44px);
+  --stage-h:clamp(460px,62vh,620px);
+  --hero-fs:clamp(40px,5.8vw,60px);
+  --hud-w:292px;
+}}
+@media (min-width:700px) and (max-height:560px){:root{  /* a phone turned sideways */
+  --stage-h:max(300px,calc(100vh - 70px));
+}}
+@media (min-width:1100px){:root{      /* laptop */
+  --gutter:28px;
+  --pad:clamp(36px,3.6vw,52px);
+  --stage-h:clamp(600px,calc(100vh - 84px),920px);
+  --hero-fs:clamp(42px,min(4.3vw,7.4vh),66px);
+  --hero-w:calc(var(--hero-fs) * 10);  /* five lines: "Robots are / learning to move. / We find the / ..." */
+}}
+@media (min-width:1600px){:root{      /* desktop */
+  --scale:1.08;
+  --wrap:min(1600px,86vw);
+  --gutter:36px;
+  --pad:60px;
+  --rail:184px;
+  --stage-h:clamp(680px,calc(100vh - 90px),1080px);
+  --hero-fs:clamp(56px,min(4.2vw,7.4vh),86px);
+  --hud-w:320px;
+}}
+@media (min-width:2200px){:root{      /* wide */
+  --scale:1.2;
+  --wrap:min(2200px,80vw);
+  --gutter:48px;
+  --pad:76px;
+  --rail:208px;
+  --stage-h:clamp(820px,calc(100vh - 100px),1360px);
+  --hero-fs:clamp(72px,min(3.9vw,7.4vh),110px);
+  --hud-w:356px;
+}}
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 html:focus-within{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink-2);font-family:var(--sans);font-stretch:100%;
-  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  font-size:calc(16px * var(--scale));line-height:1.6;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   padding-inline:var(--gutter)}
 h1,h2,h3,p,dl,dd,ul,ol,figure{margin:0}
 ul,ol{padding:0;list-style:none}
@@ -39,27 +101,27 @@ em{font-style:italic;color:var(--ink)}
 svg{display:block;max-width:100%}
 :focus-visible{outline:1px solid var(--ink);outline-offset:3px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.skip{position:absolute;left:-9999px;background:var(--ink);color:var(--bg);padding:10px 16px;font-family:var(--mono);font-size:12px;z-index:100}
+.skip{position:absolute;left:-9999px;background:var(--ink);color:var(--bg);padding:10px 16px;font-family:var(--mono);font-size:calc(12px * var(--scale));z-index:100}
 .skip:focus{left:8px;top:8px}
 
 /* ── type ─────────────────────────────────────────────── */
-.label{font-family:var(--sans);font-stretch:125%;font-weight:600;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.label{font-family:var(--sans);font-stretch:125%;font-weight:600;font-size:calc(10.5px * var(--scale));letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
 .display{font-family:var(--sans);font-stretch:125%;font-weight:500;color:var(--ink);
-  font-size:clamp(34px,5.3vw,74px);line-height:1.01;letter-spacing:-.014em;text-wrap:balance}
-.display--sm{font-size:clamp(28px,3.8vw,52px);max-width:22ch}
+  font-size:calc(clamp(34px,5.3vw,74px) * var(--scale));line-height:1.01;letter-spacing:-.014em;text-wrap:balance}
+.display--sm{font-size:calc(clamp(28px,3.8vw,52px) * var(--scale));max-width:22ch}
 .h2{font-family:var(--sans);font-stretch:118%;font-weight:500;color:var(--ink);
-  font-size:clamp(24px,3vw,38px);line-height:1.1;letter-spacing:-.012em;text-wrap:balance;max-width:24ch}
-.h3{font-family:var(--sans);font-stretch:112.5%;font-weight:600;color:var(--ink);font-size:15.5px}
-.lede{font-size:clamp(16px,1.3vw,18.5px);line-height:1.58;max-width:52ch}
+  font-size:calc(clamp(24px,3vw,38px) * var(--scale));line-height:1.1;letter-spacing:-.012em;text-wrap:balance;max-width:24ch}
+.h3{font-family:var(--sans);font-stretch:112.5%;font-weight:600;color:var(--ink);font-size:calc(15.5px * var(--scale))}
+.lede{font-size:calc(clamp(16px,1.3vw,18.5px) * var(--scale));line-height:1.58;max-width:52ch}
 .text{max-width:62ch}
-.aside{font-size:14px;line-height:1.6;color:var(--ink-3);max-width:66ch}
-.cap{margin-top:12px;font-family:var(--mono);font-size:11.5px;line-height:1.6;color:var(--ink-3)}
+.aside{font-size:calc(14px * var(--scale));line-height:1.6;color:var(--ink-3);max-width:66ch}
+.cap{margin-top:12px;font-family:var(--mono);font-size:calc(11.5px * var(--scale));line-height:1.6;color:var(--ink-3)}
 .cap span[data-v]{color:var(--ink-2)}
-.date{font-family:var(--mono);font-size:clamp(30px,4.4vw,56px);color:var(--ink);line-height:1;letter-spacing:-.04em}
+.date{font-family:var(--mono);font-size:calc(clamp(30px,4.4vw,56px) * var(--scale));color:var(--ink);line-height:1;letter-spacing:-.04em}
 
 /* ── controls ─────────────────────────────────────────── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:12px 22px;
-  font-family:var(--sans);font-stretch:125%;font-weight:600;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:calc(10px * var(--scale));min-height:calc(46px * var(--scale));padding:calc(12px * var(--scale)) calc(22px * var(--scale));
+  font-family:var(--sans);font-stretch:125%;font-weight:600;font-size:calc(11px * var(--scale));letter-spacing:.14em;text-transform:uppercase;
   border:1px solid var(--ink);background:var(--ink);color:var(--bg);text-decoration:none;cursor:pointer;
   transition:background-color .25s var(--ease),border-color .25s var(--ease),color .25s var(--ease)}
 .btn:hover{background:var(--v50);border-color:var(--v50)}
@@ -68,45 +130,39 @@ svg{display:block;max-width:100%}
 .btn--text{background:transparent;border-color:transparent;color:var(--ink-2);padding-inline:0;min-height:36px;
   text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:1px}
 .btn--text:hover{background:transparent;border-color:transparent;color:var(--ink)}
-.btn--sm{min-height:38px;padding:8px 16px;font-size:10px}
+.btn--sm{min-height:calc(38px * var(--scale));padding:calc(8px * var(--scale)) calc(16px * var(--scale));font-size:calc(10px * var(--scale))}
 .btn--text.btn--sm{padding-inline:0}
-.btn--lg{min-height:52px;padding:14px 28px;font-family:var(--mono);font-stretch:100%;font-weight:400;
-  font-size:14px;letter-spacing:.02em;text-transform:none}
+.btn--lg{min-height:calc(52px * var(--scale));padding:calc(14px * var(--scale)) calc(28px * var(--scale));font-family:var(--mono);font-stretch:100%;font-weight:400;
+  font-size:calc(14px * var(--scale));letter-spacing:.02em;text-transform:none}
 .acts{display:flex;flex-wrap:wrap;gap:10px}
 
 /* ── masthead ─────────────────────────────────────────── */
 .mast{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;margin-inline:calc(-1 * var(--gutter));
-  padding:11px var(--gutter);background:rgba(11,11,10,.88);
+  padding:calc(11px * var(--scale)) var(--gutter);background:rgba(11,11,10,.88);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--hair)}
 .mast__in{max-width:var(--wrap);margin-inline:auto;display:flex;align-items:center;gap:20px}
 .mast__lock{width:124px;flex:none;color:var(--ink)}
 .mast__lock svg{width:100%;height:auto}
 .mast__nav{margin-left:auto;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
 .mast__nav::-webkit-scrollbar{display:none}
-.mast__nav a{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);text-decoration:none;padding:8px 9px;white-space:nowrap;
+.mast__nav a{font-family:var(--mono);font-size:calc(10.5px * var(--scale));color:var(--ink-3);text-decoration:none;padding:calc(8px * var(--scale)) calc(9px * var(--scale));white-space:nowrap;
   border:1px solid transparent}
 .mast__nav a:hover{color:var(--ink);border-color:var(--rule)}
 .mast__nav a.is-here{color:var(--ink)}
-@media (max-width:1060px){.mast__nav{display:none}.mast .btn{margin-left:auto}}
+/* the section links need about 1200px beside the mark and the button; below that the button stands alone */
+.mast .btn{flex:none;white-space:nowrap}
+@media (max-width:1199px){.mast__nav{display:none}.mast .btn{margin-left:auto}}
 
 /* ── the sheet ────────────────────────────────────────── */
 .sheet{max-width:var(--wrap);margin:28px auto 56px;background:var(--sheet);border:1px solid var(--rule)}
 .zones{display:grid;grid-template-columns:var(--rail) repeat(8,minmax(0,1fr));border-bottom:1px solid var(--hair)}
-.zones span{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);text-align:center;padding:3px 0;border-left:1px solid var(--hair)}
+.zones span{font-family:var(--mono);font-size:calc(9.5px * var(--scale));color:var(--ink-3);text-align:center;padding:3px 0;border-left:1px solid var(--hair)}
 .zones span:first-child{border-left:0}
 
-.hero{display:grid;gap:clamp(28px,3.4vw,44px);padding:clamp(24px,3.6vw,48px) clamp(20px,4vw,52px) 0;
+.hero{display:grid;gap:clamp(28px,3.4vw,44px);padding:clamp(24px,3.6vw,48px) var(--pad) 0;
   grid-template-columns:minmax(0,1fr)}
 .hero__text{display:grid;gap:24px;align-content:start;grid-template-columns:minmax(0,1fr)}
-.hero .display{font-size:clamp(34px,4.3vw,60px)}
-/* wide screens: headline left, the case for it right, then the replay across the sheet */
-@media (min-width:1000px){
-  .hero__text{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);column-gap:clamp(32px,4vw,64px);align-items:end}
-  .hero__text > .label{grid-column:1 / -1}
-  .hero__text > .display{grid-column:1;grid-row:2 / span 2}
-  .hero__text > .lede{grid-column:2;grid-row:2}
-  .hero__text > .acts{grid-column:2;grid-row:3}
-}
+.hero .display{font-size:var(--hero-fs)}
 .display .mask{display:block;overflow:hidden;padding-bottom:.08em;margin-bottom:-.08em}
 .display .line{display:block}
 .display .line--dim{color:var(--ink-3)}
@@ -117,7 +173,6 @@ svg{display:block;max-width:100%}
   background-color:var(--g950);
   background-image:linear-gradient(var(--g900) 1px,transparent 1px),linear-gradient(90deg,var(--g900) 1px,transparent 1px);
   background-size:24px 24px;background-position:-1px -1px}
-@media (min-width:1000px){.stage__view{aspect-ratio:12/5}}
 .stage__poster,.stage__gl{position:absolute;inset:0;width:100%;height:100%}
 .stage__poster{transition:opacity .6s var(--ease)}
 .stage__poster .poster{position:absolute;inset:5%;width:90%;height:90%}
@@ -131,22 +186,22 @@ svg{display:block;max-width:100%}
 .stage__tick--tr{top:8px;right:8px;border-top-width:1px;border-right-width:1px}
 .stage__tick--bl{bottom:8px;left:8px;border-bottom-width:1px;border-left-width:1px}
 .stage__tick--br{bottom:8px;right:8px;border-bottom-width:1px;border-right-width:1px}
-.stage__cap{font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--ink-3);max-width:64ch}
+.stage__cap{font-family:var(--mono);font-size:calc(11px * var(--scale));line-height:1.6;color:var(--ink-3);max-width:64ch}
 .stage__cap span[data-v]{color:var(--ink-2)}
 
 /* drafting notes that follow the replay: a leader from the point, then the label */
-.note{position:absolute;left:0;top:0;pointer-events:none;font-family:var(--mono);font-size:11px;color:var(--ink);
+.note{position:absolute;left:0;top:0;pointer-events:none;font-family:var(--mono);font-size:calc(11px * var(--scale));color:var(--ink);
   white-space:nowrap;opacity:0;transition:opacity .35s;will-change:transform}
 .note.is-on{opacity:1}
 .note::before{content:"";position:absolute;left:0;bottom:-2px;width:34px;height:1px;background:var(--ink-2);
   transform-origin:0 0;transform:rotate(35deg)}
 .note span{display:block;transform:translate(30px,-12px);background:rgba(11,11,10,.8);padding:2px 6px;border:1px solid var(--rule)}
-.hud{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:rgba(11,11,10,.86);
-  border:1px solid var(--rule);padding:12px 14px;display:grid;gap:10px;font-variant-numeric:tabular-nums}
+.hud{font-family:var(--mono);font-size:calc(11.5px * var(--scale));color:var(--ink-2);background:rgba(11,11,10,.86);
+  border:1px solid var(--rule);padding:calc(12px * var(--scale)) calc(14px * var(--scale));display:grid;gap:calc(10px * var(--scale));font-variant-numeric:tabular-nums}
 @media (min-width:700px){
-  .hud{position:absolute;left:18px;top:18px;width:292px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .hud{position:absolute;right:18px;top:18px;z-index:3;width:var(--hud-w);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 }
-.hud__head{display:flex;justify-content:space-between;gap:10px;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+.hud__head{display:flex;justify-content:space-between;gap:10px;font-size:calc(9.5px * var(--scale));letter-spacing:.12em;text-transform:uppercase;
   color:var(--ink-3);padding-bottom:8px;border-bottom:1px solid var(--hair)}
 .hud__head > span:first-child{color:var(--ink)}
 .hud__head > span:first-child::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ink);
@@ -155,7 +210,7 @@ svg{display:block;max-width:100%}
 @keyframes rec{to{visibility:hidden}}
 .hud__runs{display:none;gap:6px}
 .js:not(.no-motion) .hud__runs{display:flex}
-.hud__runs button{flex:1;font:inherit;font-size:10.5px;padding:7px 8px;border:1px solid var(--rule);background:transparent;
+.hud__runs button{flex:1;white-space:nowrap;font:inherit;font-size:calc(10.5px * var(--scale));padding:7px 8px;border:1px solid var(--rule);background:transparent;
   color:var(--ink-2);cursor:pointer;transition:background-color .2s,color .2s,border-color .2s}
 .hud__runs button:hover{border-color:var(--ink-2);color:var(--ink)}
 .hud__runs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -171,13 +226,27 @@ svg{display:block;max-width:100%}
   background:repeating-linear-gradient(145deg,var(--ink-3) 0 1px,transparent 1px 4px)}
 .hud__rule{border:1px solid var(--rule);padding:6px 8px;color:var(--ink-2);transition:background-color .25s,color .25s}
 .hud__rule.is-fail{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+/* playback (js/machine.js adds it): the rate being played, and the run on a timeline of its own events */
+.hud__play{display:grid;gap:6px;padding-top:9px;border-top:1px solid var(--hair)}
+.hud__mode{margin:0;display:flex;gap:9px;align-items:baseline;font-size:calc(10.5px * var(--scale));color:var(--ink-3)}
+.hud__mode [data-hud="rate"]{color:var(--ink);min-width:4ch}
+.hud__time{position:relative;height:11px}
+.hud__time::before{content:"";position:absolute;left:0;right:0;top:5px;height:1px;background:var(--rule)}
+.hud__after{position:absolute;top:2px;right:0;height:7px;opacity:.5;
+  background:repeating-linear-gradient(145deg,var(--ink-3) 0 1px,transparent 1px 4px)}
+.hud__win{position:absolute;top:0;height:11px;border:1px solid var(--ink-3);border-top:0;border-bottom:0;display:none}
+.stage[data-pass="replay"] .hud__win{display:block}
+.hud__tick{position:absolute;top:1px;width:1px;height:9px;background:var(--ink-3)}
+.hud__tick--breach{top:-1px;height:13px;background:var(--ink-2)}
+.hud__now{position:absolute;top:-2px;width:2px;height:15px;margin-left:-1px;background:var(--ink)}
+.hud__legend{margin:0;font-size:calc(9.5px * var(--scale));letter-spacing:0;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .facts{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--hair);
-  margin-inline:calc(-1 * clamp(20px,4vw,52px))}
+  margin-inline:calc(-1 * var(--pad))}
 .facts > div{padding:14px clamp(14px,2vw,22px);border-left:1px solid var(--hair)}
 .facts > div:first-child{border-left:0}
-.facts dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
-.facts dd{font-family:var(--mono);font-size:12px;color:var(--ink);margin-top:5px;line-height:1.45}
+.facts dt{font-family:var(--mono);font-size:calc(9.5px * var(--scale));letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.facts dd{font-family:var(--mono);font-size:calc(12px * var(--scale));color:var(--ink);margin-top:5px;line-height:1.45}
 @media (max-width:760px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.facts > div:nth-child(3){border-left:0}
   .facts > div:nth-child(n+3){border-top:1px solid var(--hair)}}
 
@@ -186,7 +255,7 @@ svg{display:block;max-width:100%}
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);
   mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
 .ticker__track{display:flex;gap:40px;width:max-content;animation:tape 60s linear infinite;
-  font-family:var(--mono);font-size:12px;color:var(--ink-3);white-space:nowrap}
+  font-family:var(--mono);font-size:calc(12px * var(--scale));color:var(--ink-3);white-space:nowrap}
 .ticker:hover .ticker__track{animation-play-state:paused}
 .ticker__track > *::before{content:"";display:inline-block;width:6px;height:6px;border:1px solid currentColor;margin-right:12px;vertical-align:1px}
 .ticker b{font-weight:400;color:var(--ink)}
@@ -194,20 +263,20 @@ svg{display:block;max-width:100%}
 @keyframes tape{to{transform:translateX(-50%)}}
 
 /* one statement, set large, brightening word by word as it is read */
-.statement{border-top:1px solid var(--rule);padding:clamp(64px,10vw,140px) clamp(20px,4vw,52px)}
-@media (min-width:761px){.statement{padding-left:calc(var(--rail) + clamp(20px,4vw,52px))}}
+.statement{border-top:1px solid var(--rule);padding:clamp(64px,10vw,calc(140px * var(--scale))) var(--pad)}
+@media (min-width:761px){.statement{padding-left:calc(var(--rail) + var(--pad))}}
 .manifesto{font-family:var(--sans);font-stretch:118%;font-weight:500;color:var(--ink);letter-spacing:-.015em;
-  font-size:clamp(28px,4.2vw,58px);line-height:1.08;max-width:24ch;text-wrap:balance}
-.manifesto--lg{font-size:clamp(28px,3.6vw,50px);max-width:22ch}
+  font-size:calc(clamp(28px,4.2vw,58px) * var(--scale));line-height:1.08;max-width:24ch;text-wrap:balance}
+.manifesto--lg{font-size:calc(clamp(28px,3.6vw,50px) * var(--scale));max-width:22ch}
 
 /* sections: numbered in the margin like zones of a drawing */
-.sec{display:grid;grid-template-columns:var(--rail) minmax(0,1fr);border-top:1px solid var(--rule);scroll-margin-top:64px}
+.sec{display:grid;grid-template-columns:var(--rail) minmax(0,1fr);border-top:1px solid var(--rule);scroll-margin-top:calc(64px * var(--scale))}
 .sec__rail{border-right:1px solid var(--hair);padding:clamp(28px,4vw,52px) 16px}
-.sec__rail > *{position:sticky;top:80px}
-.sec__no{font-family:var(--mono);font-size:12px;color:var(--ink)}
-.sec__nm{font-family:var(--sans);font-stretch:125%;font-weight:600;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--ink-3);margin-top:6px;top:100px}
-.sec__body{padding:clamp(28px,4vw,52px) clamp(20px,4vw,52px);display:grid;gap:26px;min-width:0;
+.sec__rail > *{position:sticky;top:calc(80px * var(--scale))}
+.sec__no{font-family:var(--mono);font-size:calc(12px * var(--scale));color:var(--ink)}
+.sec__nm{font-family:var(--sans);font-stretch:125%;font-weight:600;font-size:calc(10px * var(--scale));letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);margin-top:6px;top:calc(100px * var(--scale))}
+.sec__body{padding:clamp(28px,4vw,calc(52px * var(--scale))) var(--pad);display:grid;gap:26px;min-width:0;
   grid-template-columns:minmax(0,1fr)}
 @media (max-width:760px){
   .zones{display:none}
@@ -225,36 +294,36 @@ svg{display:block;max-width:100%}
 
 /* ── TT-103 stages and code ───────────────────────────── */
 .stages{border-top:1px solid var(--hair)}
-.stages li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:16px;padding:16px 0;border-bottom:1px solid var(--hair)}
-.stages p{margin-top:5px;font-size:14.5px;max-width:60ch}
-.balloon{width:26px;height:26px;border-radius:50%;border:1px solid var(--ink-2);display:inline-flex;align-items:center;
-  justify-content:center;font-family:var(--mono);font-size:11px;color:var(--ink)}
-.code{border:1px solid var(--hair);background:var(--bg);max-width:760px}
+.stages li{display:grid;grid-template-columns:calc(40px * var(--scale)) minmax(0,1fr);gap:16px;padding:16px 0;border-bottom:1px solid var(--hair)}
+.stages p{margin-top:5px;font-size:calc(14.5px * var(--scale));max-width:60ch}
+.balloon{width:calc(26px * var(--scale));height:calc(26px * var(--scale));border-radius:50%;border:1px solid var(--ink-2);display:inline-flex;align-items:center;
+  justify-content:center;font-family:var(--mono);font-size:calc(11px * var(--scale));color:var(--ink)}
+.code{border:1px solid var(--hair);background:var(--bg);max-width:calc(760px * var(--scale))}
 .code__bar{display:flex;justify-content:space-between;gap:12px;padding:9px 14px;border-bottom:1px solid var(--hair);
-  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);flex-wrap:wrap}
-.code__body{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--ink-2)}
+  font-family:var(--mono);font-size:calc(10px * var(--scale));letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);flex-wrap:wrap}
+.code__body{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:calc(12px * var(--scale));line-height:1.7;color:var(--ink-2)}
 .code__body code{white-space:pre;font-size:1em;color:inherit}
 .code__body .k{color:var(--ink)}
 .code__body .c{color:var(--ink-3)}
 
 /* ── TT-104 tables and coverage ───────────────────────── */
-.spec{width:100%;max-width:760px;border-collapse:collapse;font-size:14.5px}
+.spec{width:100%;max-width:calc(760px * var(--scale));border-collapse:collapse;font-size:calc(14.5px * var(--scale))}
 .spec th,.spec td{text-align:left;padding:10px 16px 10px 0;border-bottom:1px solid var(--hair)}
-.spec thead th{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+.spec thead th{font-family:var(--mono);font-size:calc(9.5px * var(--scale));letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
   font-weight:400;border-bottom-color:var(--rule)}
 .spec tbody th{font-weight:400;color:var(--ink)}
-.spec td.mono{font-size:12.5px;color:var(--ink-2)}
+.spec td.mono{font-size:calc(12.5px * var(--scale));color:var(--ink-2)}
 .spec .u{text-align:right;padding-right:0}
 .spec thead th:last-child{text-align:right}
 .axes{display:grid}
 .axes .axis{display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.5fr) minmax(130px,.9fr);gap:clamp(10px,1.6vw,20px);
   align-items:center;padding:10px 0;border-bottom:1px solid var(--hair)}
 .axes .axis:last-child{border-bottom:0}
-.axis__name{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.axis__name{font-family:var(--mono);font-size:calc(12px * var(--scale));color:var(--ink-2)}
 .axis__track{position:relative;height:8px;border:1px solid var(--rule);display:block}
 .axis__span{position:absolute;top:0;bottom:0;left:var(--from);width:var(--span);background:var(--ink-3)}
-.axis__nums{font-family:var(--mono);font-size:11.5px;color:var(--ink);text-align:right;line-height:1.35}
-.axis__nums i{display:block;font-style:normal;color:var(--ink-3);font-size:10.5px;margin-top:2px}
+.axis__nums{font-family:var(--mono);font-size:calc(11.5px * var(--scale));color:var(--ink);text-align:right;line-height:1.35}
+.axis__nums i{display:block;font-style:normal;color:var(--ink-3);font-size:calc(10.5px * var(--scale));margin-top:2px}
 @media (max-width:640px){.axes .axis{grid-template-columns:1fr auto;gap:6px 12px}.axis__track{grid-column:1/-1;order:3}}
 
 /* ── figures, all in the drawing's line conventions ───── */
@@ -271,17 +340,17 @@ svg{display:block;max-width:100%}
 .draw .cg.ph0{stroke:var(--ink-2);stroke-width:1}
 .draw .cgf{fill:var(--ink)}
 .draw .ahf,.fig .ahf{fill:var(--ink-2)}
-.draw .dim{font:400 calc(12px * var(--k)) var(--mono);fill:var(--ink)}
-.draw .lab{font:400 calc(11px * var(--k)) var(--mono);fill:var(--ink-2)}
-.draw .sub{font-size:calc(8px * var(--k))}
+.draw .dim{font:400 calc(12px * var(--k) * var(--scale)) var(--mono);fill:var(--ink)}
+.draw .lab{font:400 calc(11px * var(--k) * var(--scale)) var(--mono);fill:var(--ink-2)}
+.draw .sub{font-size:calc(calc(8px * var(--k) * var(--scale)) * var(--scale))}
 /* lettering breaks the lines it crosses, as a draughtsman leaves a gap */
-.draw .dim,.draw .lab{paint-order:stroke;stroke:var(--sheet);stroke-width:calc(4px * var(--k));stroke-linejoin:round}
+.draw .dim,.draw .lab{paint-order:stroke;stroke:var(--sheet);stroke-width:calc(4px * var(--k) * var(--scale));stroke-linejoin:round}
 .fig .grid{stroke:var(--hair);stroke-width:1}
 .fig .axis{stroke:var(--rule);stroke-width:1;fill:none}
-.fig .tick{font:400 calc(10px * var(--k)) var(--mono);fill:var(--ink-3)}
-.fig .unit{font:400 calc(9.5px * var(--k)) var(--mono);fill:var(--ink-3);letter-spacing:.06em}
-.fig .lab{font:400 calc(11px * var(--k)) var(--mono);fill:var(--ink-2);paint-order:stroke;stroke:var(--halo,var(--well));
-  stroke-width:calc(5px * var(--k));stroke-linejoin:round}
+.fig .tick{font:400 calc(10px * var(--k) * var(--scale)) var(--mono);fill:var(--ink-3)}
+.fig .unit{font:400 calc(9.5px * var(--k) * var(--scale)) var(--mono);fill:var(--ink-3);letter-spacing:.06em}
+.fig .lab{font:400 calc(11px * var(--k) * var(--scale)) var(--mono);fill:var(--ink-2);paint-order:stroke;stroke:var(--halo,var(--well));
+  stroke-width:calc(5px * var(--k) * var(--scale));stroke-linejoin:round}
 .fig .lab.hi{fill:var(--ink)}
 .fig .limit{stroke:var(--ink-2);stroke-width:1;stroke-dasharray:3 4}
 .fig .hp{stroke:var(--ink-3);stroke-width:1}
@@ -300,18 +369,18 @@ svg{display:block;max-width:100%}
 /* ── TT-106 campaign ──────────────────────────────────── */
 .counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--hair);border:1px solid var(--hair)}
 .counts > div{background:var(--sheet);padding:16px clamp(12px,1.8vw,20px)}
-.counts dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
-.counts dd{font-family:var(--mono);font-size:clamp(26px,3vw,38px);color:var(--ink);margin-top:10px;line-height:1;letter-spacing:-.04em}
+.counts dt{font-family:var(--mono);font-size:calc(9.5px * var(--scale));letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.counts dd{font-family:var(--mono);font-size:calc(clamp(26px,3vw,38px) * var(--scale));color:var(--ink);margin-top:10px;line-height:1;letter-spacing:-.04em}
 .counts dd i{font-style:normal;font-size:.42em;color:var(--ink-3);letter-spacing:0}
 @media (max-width:640px){.counts{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.inverse{background:var(--ink);color:var(--bg);padding:18px 22px;font-size:15px;line-height:1.55;max-width:none}
+.inverse{background:var(--ink);color:var(--bg);padding:18px 22px;font-size:calc(15px * var(--scale));line-height:1.55;max-width:none}
 .inverse b{font-family:var(--sans);font-stretch:118%;font-weight:600;color:var(--bg)}
 .inverse span[data-v]{font-variant-numeric:tabular-nums}
-.modes{width:100%;border-collapse:collapse;font-size:13px}
+.modes{width:100%;border-collapse:collapse;font-size:calc(13px * var(--scale))}
 .modes th,.modes td{text-align:left;padding:10px 14px 10px 0;border-bottom:1px solid var(--hair)}
-.modes thead th{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+.modes thead th{font-family:var(--mono);font-size:calc(9.5px * var(--scale));letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
   font-weight:400;border-bottom-color:var(--rule)}
-.modes td{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
+.modes td{font-family:var(--mono);font-size:calc(12px * var(--scale));color:var(--ink);white-space:nowrap}
 .modes td:first-child{color:var(--ink-2)}
 @media (max-width:640px){
   .modes thead{display:none}
@@ -319,7 +388,7 @@ svg{display:block;max-width:100%}
   .modes tr{padding:12px 0;border-bottom:1px solid var(--hair)}
   .modes td{border:0;padding:3px 0;white-space:normal}
   .modes td:first-child{color:var(--ink);margin-bottom:4px}
-  .modes td:not(:first-child)::before{content:attr(data-th);display:inline-block;min-width:142px;font-size:9.5px;
+  .modes td:not(:first-child)::before{content:attr(data-th);display:inline-block;min-width:142px;font-size:calc(9.5px * var(--scale));
     letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
 }
 
@@ -327,42 +396,42 @@ svg{display:block;max-width:100%}
 .cards{display:grid;gap:1px;background:var(--hair);border:1px solid var(--hair)}
 @media (min-width:860px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .cards article{background:var(--sheet);padding:20px;display:grid;gap:10px;align-content:start}
-.cards p{font-size:14.5px}
+.cards p{font-size:calc(14.5px * var(--scale))}
 .stack{border-top:1px solid var(--hair)}
 .stack > div{display:grid;grid-template-columns:minmax(120px,.36fr) minmax(0,1fr);gap:18px;padding:12px 0;border-bottom:1px solid var(--hair)}
-.stack dt{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);padding-top:3px}
-.stack dd{color:var(--ink);font-size:14.5px}
+.stack dt{font-family:var(--mono);font-size:calc(10px * var(--scale));letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);padding-top:3px}
+.stack dd{color:var(--ink);font-size:calc(14.5px * var(--scale))}
 @media (max-width:640px){.stack > div{grid-template-columns:1fr;gap:4px}}
 
 /* ── TT-108 status ────────────────────────────────────── */
 .says{border-top:1px solid var(--hair)}
-.says li{display:grid;grid-template-columns:110px minmax(0,1fr);gap:18px;padding:16px 0;border-bottom:1px solid var(--hair)}
-.says b{font-family:var(--mono);font-weight:400;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);padding-top:3px}
+.says li{display:grid;grid-template-columns:calc(110px * var(--scale)) minmax(0,1fr);gap:18px;padding:16px 0;border-bottom:1px solid var(--hair)}
+.says b{font-family:var(--mono);font-weight:400;font-size:calc(10.5px * var(--scale));letter-spacing:.12em;text-transform:uppercase;color:var(--ink);padding-top:3px}
 .says li.no b::before{content:"";display:inline-block;width:11px;height:11px;margin-right:9px;vertical-align:-1px;
   border:1px solid var(--ink-2);background:repeating-linear-gradient(145deg,var(--ink-2) 0 1px,transparent 1px 3.5px)}
-.says span{font-size:14.5px}
+.says span{font-size:calc(14.5px * var(--scale))}
 @media (max-width:640px){.says li{grid-template-columns:1fr;gap:6px}}
 
 /* ── contact and title block ──────────────────────────── */
-.contact{border-top:1px solid var(--rule);padding:clamp(48px,7vw,96px) clamp(20px,4vw,52px) clamp(40px,6vw,80px);
+.contact{border-top:1px solid var(--rule);padding:clamp(48px,7vw,calc(96px * var(--scale))) var(--pad) clamp(40px,6vw,calc(80px * var(--scale)));
   display:grid;gap:22px;justify-items:start;grid-template-columns:minmax(0,1fr)}
 .contact__text{display:grid;gap:22px;justify-items:start;min-width:0}
 @media (min-width:1000px){
   .contact{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);column-gap:clamp(40px,6vw,96px);align-items:center}
 }
 .tipfig{color:var(--ink);min-width:0;margin:0;width:100%}
-.tipfig .draw{max-width:460px;margin-inline:auto}
-.tipfig__read{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 12px;max-width:460px;margin:6px auto 0;
+.tipfig .draw{max-width:calc(460px * var(--scale));margin-inline:auto}
+.tipfig__read{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 12px;max-width:calc(460px * var(--scale));margin:6px auto 0;
   border-top:1px solid var(--hair);padding-top:8px}
 .tipfig__read .btn{white-space:nowrap}
-.readout{font-family:var(--mono);font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.readout{font-family:var(--mono);font-size:calc(13px * var(--scale));color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
 .readout i{font-style:normal;color:var(--ink-3)}
 .tblock{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(0,2.4fr) repeat(5,minmax(0,1fr));border-top:1px solid var(--rule)}
 .tblock > div{padding:10px 12px;border-left:1px solid var(--hair);min-width:0}
 .tblock > div:first-child{border-left:0;display:flex;align-items:center}
-.tblock dt{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
-.tblock dd{font-family:var(--mono);font-size:12px;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tb-mark{width:100%;max-width:116px;color:var(--ink)}
+.tblock dt{font-family:var(--mono);font-size:calc(9px * var(--scale));letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.tblock dd{font-family:var(--mono);font-size:calc(12px * var(--scale));color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-mark{width:100%;max-width:calc(116px * var(--scale));color:var(--ink)}
 .tb-mark svg{width:100%;height:auto}
 @media (max-width:899px){
   .tblock{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -431,8 +500,8 @@ svg{display:block;max-width:100%}
 
 /* TT-103: a line runs down the balloons as the stages are read */
 .stages{position:relative}
-.stages__line{position:absolute;left:13px;top:30px;bottom:30px;width:1px;background:var(--ink);transform-origin:50% 0;pointer-events:none}
-.stages::before{content:"";position:absolute;left:13px;top:30px;bottom:30px;width:1px;background:var(--rule)}
+.stages__line{position:absolute;left:calc(13px * var(--scale));top:calc(16px + calc(14px * var(--scale)));bottom:calc(16px + calc(14px * var(--scale)));width:1px;background:var(--ink);transform-origin:50% 0;pointer-events:none}
+.stages::before{content:"";position:absolute;left:calc(13px * var(--scale));top:calc(16px + calc(14px * var(--scale)));bottom:calc(16px + calc(14px * var(--scale)));width:1px;background:var(--rule)}
 .balloon{position:relative;z-index:1;background:var(--sheet);transition:background-color .3s,color .3s,border-color .3s}
 .stages li.is-on .balloon{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
@@ -445,10 +514,10 @@ svg{display:block;max-width:100%}
 @media (min-width:1180px){.pillars{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .pillars li{background:var(--sheet);padding:22px 20px 24px;display:grid;gap:12px;align-content:start;transition:background-color .3s}
 .pillars li:hover{background:var(--well)}
-.pillars p{font-size:14px;line-height:1.6}
-.pic{width:110px;height:auto;fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;margin-bottom:6px}
+.pillars p{font-size:calc(14px * var(--scale));line-height:1.6}
+.pic{width:calc(110px * var(--scale));height:auto;fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;margin-bottom:6px}
 .pic .dash{stroke:var(--ink-3);stroke-dasharray:4 4}
-.subhead{margin-top:14px;font-stretch:125%;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.subhead{margin-top:14px;font-stretch:125%;font-size:calc(11px * var(--scale));letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
 
 /* TT-109: the plan, as a datum line with stations */
 .plan{position:relative;display:grid;margin-top:8px}
@@ -457,9 +526,9 @@ svg{display:block;max-width:100%}
 .plan li{position:relative;display:grid;gap:8px;align-content:start}
 .plan li::before{content:"";position:absolute;width:11px;height:11px;border-radius:50%;border:1px solid var(--ink-2);background:var(--sheet);z-index:1}
 .plan li.plan__now::before{background:var(--ink);border-color:var(--ink);box-shadow:0 0 0 5px var(--sheet),0 0 0 6px var(--ink-3)}
-.plan__tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.plan__tag{font-family:var(--mono);font-size:calc(10px * var(--scale));letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
 .plan__now .plan__tag{color:var(--ink)}
-.plan p{font-size:14px;line-height:1.6}
+.plan p{font-size:calc(14px * var(--scale));line-height:1.6}
 @media (min-width:900px){
   .plan{grid-template-columns:repeat(4,minmax(0,1fr));gap:28px}
   .plan::before,.plan__line{left:5px;right:0;top:5px;height:1px}
@@ -487,12 +556,13 @@ body::after{content:"";position:fixed;inset:-50%;pointer-events:none;z-index:90;
 .sheet{border:0;background:transparent;margin-top:0}
 .zones{display:none}
 .sec,.statement,.contact,.tblock{border-top-color:var(--hair)}
-.micro{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);line-height:1.7;margin:0}
+.micro{font-family:var(--mono);font-size:calc(10px * var(--scale));letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);line-height:1.7;margin:0}
 
 /* the opening: the replay fills the screen, the headline sits over it */
 .hero{padding:0;gap:0}
-.hero .display{font-size:clamp(38px,5.4vw,84px);line-height:.98;letter-spacing:-.02em}
-.stage__view{aspect-ratio:auto;height:clamp(460px,64vh,620px);border:0;
+.hero .display{line-height:.98;letter-spacing:-.02em}
+/* --frame-inset and --frame-gap: where js/machine.js may draw the robot, inside the view and clear of its panels */
+.stage__view{aspect-ratio:auto;height:var(--stage-h);border:0;--frame-inset:10% 5% 8% 5%;--frame-gap:16px;
   background:
     radial-gradient(ellipse 55% 60% at 66% 44%,rgba(233,230,222,.11),transparent 70%),
     linear-gradient(var(--g900) 1px,transparent 1px),linear-gradient(90deg,var(--g900) 1px,transparent 1px),var(--g950);
@@ -506,24 +576,36 @@ body::after{content:"";position:fixed;inset:-50%;pointer-events:none;z-index:90;
 .stage__tag{position:absolute;left:48px;top:20px;z-index:2}
 .stage__drag{position:absolute;right:48px;top:20px;z-index:2}
 .stage__drag::before{content:"↔ ";color:var(--ink-2)}
-.stage__cap{font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--ink-3);max-width:80ch;
-  padding:14px clamp(20px,4vw,52px) 0;margin:0}
+.stage__cap{font-family:var(--mono);font-size:calc(11px * var(--scale));line-height:1.6;color:var(--ink-3);max-width:80ch;
+  padding:14px var(--pad) 0;margin:0}
 .stage__cap span[data-v]{color:var(--ink-2)}
-.hero__text{padding:clamp(28px,5vw,48px) clamp(20px,4vw,52px) 8px}
-@media (min-width:1000px){
+.hero__text{padding:clamp(28px,5vw,48px) var(--pad) 8px}
+@media (min-width:700px){.stage__view{--frame-inset:8% 3% 8% 3%}}
+/* tablet: the readout stands at the foot of the stage, so the robot is framed above it,
+   in the part of a portrait screen that is seen first */
+@media (min-width:700px) and (max-width:1099px){.hero .hud{top:auto;bottom:18px}}
+/* laptop up: the headline is set over the replay, in a column the full height of
+   the stage, so the robot is framed beside it and never under it */
+@media (min-width:1100px){
   .hero{display:grid;grid-template-columns:minmax(0,1fr)}
   .hero > .hero__text,.hero > .stage{grid-area:1 / 1}
-  .stage__view{height:clamp(640px,90vh,920px)}
+  .stage__view{--frame-inset:48px 28px 11% 28px}
   .stage__view::after{background:
-    linear-gradient(to top,var(--bg) 0,rgba(11,11,10,.88) 24%,transparent 58%),
+    linear-gradient(to top,var(--bg) 0,rgba(11,11,10,.85) 13%,transparent 40%),
     linear-gradient(to right,rgba(11,11,10,.75),transparent 46%),
     radial-gradient(ellipse 120% 90% at 60% 40%,transparent 55%,rgba(11,11,10,.8) 100%)}
-  .hero > .hero__text{z-index:3;align-self:end;pointer-events:none;padding:0 clamp(28px,4vw,56px) clamp(44px,6vh,72px)}
+  .hero > .hero__text{z-index:3;align-self:stretch;align-content:end;pointer-events:none;box-sizing:content-box;
+    max-width:max(var(--hero-w),calc(540px * var(--scale)));
+    padding:calc(clamp(84px,13vh,108px) * var(--scale)) var(--pad) clamp(44px,6vh,calc(76px * var(--scale)))}
+  .hero > .hero__text > .display{max-width:10em}
+  /* a short screen keeps the whole opening: the stage grows to hold the text rather than the text running out of it */
+  .hero > .stage{align-self:stretch}
+  .hero > .stage > .stage__view{height:auto;min-height:var(--stage-h)}
   .hero__text a,.hero__text button{pointer-events:auto}
   .hero > .stage__cap{grid-row:2}
   .hero > .facts{grid-row:3;margin-top:28px}
   .hud{left:auto;right:28px;top:60px}
-  .stage__drag{right:auto;left:48px;top:62px}
+  .stage__drag{right:auto;left:48px;top:calc(20px + 42px * var(--scale))}
 }
 .facts{margin-inline:0}
 
@@ -535,18 +617,17 @@ body::after{content:"";position:fixed;inset:-50%;pointer-events:none;z-index:90;
   background:radial-gradient(circle,rgba(233,230,222,.10),transparent 62%);pointer-events:none}
 @media (min-width:1000px){
   .contact{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);align-items:center}
-  .emblem{display:block;width:min(340px,26vw)}
+  .emblem{display:block;width:min(calc(340px * var(--scale)),26vw)}
 }
 
 /* the wordmark, set as wide as the page */
-.colophon{border-top:1px solid var(--hair);padding:clamp(48px,8vw,120px) clamp(20px,4vw,52px) clamp(28px,4vw,48px);overflow:hidden}
+.colophon{border-top:1px solid var(--hair);padding:clamp(48px,8vw,calc(120px * var(--scale))) var(--pad) clamp(28px,4vw,calc(48px * var(--scale)));overflow:hidden}
 .colophon svg{width:100%;height:auto;color:var(--ink);display:block}
 .colophon__line{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:22px}
-@media (min-width:1000px){
-  .hero > .hero__text{grid-template-columns:minmax(0,1fr);max-width:min(52%,640px);gap:22px}
-  .hero > .hero__text > *{grid-column:1 !important;grid-row:auto !important}
-  .hero .display{font-size:clamp(38px,4.3vw,66px)}
-  .hero .lede{max-width:46ch;font-size:16.5px}
+@media (min-width:1100px){
+  .hero > .hero__text{gap:calc(22px * var(--scale))}
+  .hero .lede{max-width:46ch;font-size:calc(16.5px * var(--scale))}
 }
-.mast__lock{width:156px}
+.mast__lock{width:calc(156px * var(--scale))}
 @media (max-width:699px){.stage__drag{display:none}}
+@media (min-width:700px) and (max-width:1099px){.stage__drag{right:auto;left:48px;top:62px}}

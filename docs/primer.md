@@ -413,8 +413,8 @@ Measured on our published campaign, five seeds by 150 simulations each:
 
 | Method | Hit rate |
 | --- | --- |
-| Random | 3.9% |
-| Directed (CEM) | 41.1% |
+| Random | 1.6% |
+| Directed (CEM) | 35.9% |
 
 An order of magnitude more failures for the same compute.
 

@@ -1,0 +1,9 @@
+# The demo runner's allowlist. The control plane names robots and policies;
+# only the names listed here can run on this machine. See teeter_runner/config.py.
+max_workers: -1
+robots:
+  quadruped: ../harness/models/quadruped.xml
+policies:
+  stand: stand
+  tall: teeter_runner.demo_policies:Tall
+  crouch: teeter_runner.demo_policies:Crouch

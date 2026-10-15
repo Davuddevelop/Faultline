@@ -30,7 +30,9 @@ STARTER = """\
 robot: {robot}
 
 # "stand" is the built-in baseline that holds a stance. Point this at your own
-# policy as "module:Attr" — anything with reset(seed) and act(obs, t).
+# policy: an exported file as "onnx:path.onnx" or "torchscript:path.pt" (with
+# an "observation:" list in the order it was trained on), or Python as
+# "module:Attr", anything with reset(seed) and act(obs, t).
 policy: stand
 
 duration_s: 5.0
@@ -88,13 +90,13 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 
 def _run_campaign(c: Campaign, quiet: bool = False) -> tuple[int, Path | None]:
-    policy = c.policy()
+    c, policy = c.loaded()
     search = cem_search if c.method == "cem" else random_search
 
     if not quiet:
         print(f"campaign  {c.source}")
         print(f"  robot     {c.spec.model_path}")
-        print(f"  policy    {c.policy_ref}")
+        print(f"  policy    {c.policy_ref}  ({policy.id})")
         print(f"  space     {c.space.dims} axes")
         par = "" if c.workers == 1 else f", {c.workers} workers"
         print(f"  search    {c.method}, {c.budget} simulations{par}")
