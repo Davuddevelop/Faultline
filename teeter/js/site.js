@@ -259,8 +259,8 @@
   }
 
   /* ══ the hero: the simulator's record, replayed in 3D (js/machine.js) ═
-     From laptop width up the headline is set over the stage; the robot is
-     framed clear of it, whatever size the stylesheet gives each. */
+     The robot is framed clear of the readout and of the words, should a
+     layout ever set them over the stage. */
   var stage = document.querySelector('[data-replay]');
   var dataEl = document.getElementById('replay-data');
   if (!stage || !dataEl || !window.TeeterMachine || !motion) return;
