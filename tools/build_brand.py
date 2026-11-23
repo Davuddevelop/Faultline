@@ -611,10 +611,10 @@ def social_svg(lockup_body, lockup_vb_w, lockup_vb_h):
     lw = 330
     sc = lw / lockup_vb_w
     o.append(f'<g transform="translate(72 74) scale({f(sc)})" fill="#E9E6DE" color="#E9E6DE">{lockup_body}</g>')
-    lines = ["We find the exact", "condition where", "your robot falls."]
+    lines = ["We find the exact", "condition where", "your robot dog falls."]
     for i, ln in enumerate(lines):
         o.append(f'<text x="72" y="{300 + i * 66}" class="soc-h">{ln}</text>')
-    o.append('<text x="72" y="560" class="soc-m">Adversarial testing for learned robot policies</text>')
+    o.append('<text x="72" y="560" class="soc-m">Adversarial testing for legged robots</text>')
     o.append('<text x="1128" y="560" class="soc-m" text-anchor="end">teeter, v.: to sway at the edge of falling</text>')
     css = ('<style>.soc-h{font-family:Archivo,sans-serif;font-stretch:125%;font-variation-settings:"wdth" 125;'
            'font-weight:500;font-size:56px;fill:#E9E6DE;letter-spacing:-.5px}'
@@ -940,7 +940,7 @@ def main():
         "dim-anatomy": dim_anatomy_svg(),
         "modes": modes_rows(campaign),
         "social": inline("0 0 1200 630", social_svg(lockup("soc")[1], lw, lh),
-                         "Social preview: the Teeter lockup, the line 'We find the exact condition where your robot falls', and the mark drawn as an instrument behind it."),
+                         "Social preview: the Teeter lockup, the line 'We find the exact condition where your robot dog falls', and the mark drawn as an instrument behind it."),
     }
     used = inject(ROOT / "teeter" / "brand" / "index.html", standard)
     missing = sorted(set(standard) - set(used))

@@ -9,12 +9,12 @@ setTimeout(function () { if (!/\bmotion-ok\b/.test(document.documentElement.clas
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Teeter — we find the exact condition where your robot falls</title>
-<meta name="description" content="Teeter stress-tests trained robot control policies in simulation: it searches the physical conditions you declare for the ones that break your rules, reduces the worst to the smallest condition that still causes them, and hands back evidence anyone can re-run.">
+<title>Teeter — we find the exact condition where your robot dog falls</title>
+<meta name="description" content="Teeter stress-tests the trained walking policies of robot dogs and other legged robots in simulation: it searches the physical conditions you declare for the ones that break your rules, reduces the worst to the smallest condition that still causes them, and hands back evidence anyone can re-run.">
 <meta name="theme-color" content="#0B0B0A">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Teeter — we find the exact condition where your robot falls">
-<meta property="og:description" content="Adversarial testing for learned robot control policies.">
+<meta property="og:title" content="Teeter — we find the exact condition where your robot dog falls">
+<meta property="og:description" content="Adversarial testing for legged robots, starting with robot dogs.">
 <!-- og:image must be an absolute URL once the site has a domain -->
 <meta property="og:image" content="assets/og.png">
 <link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
@@ -43,13 +43,13 @@ setTimeout(function () { if (!/\bmotion-ok\b/.test(document.documentElement.clas
   <!-- ═══ TT-100 · opening ═══════════════════════════════════ -->
   <section class="hero" id="top" aria-labelledby="h-top">
     <div class="hero__text">
-      <p class="label" data-intro>Adversarial testing for learned robot policies</p>
+      <p class="label" data-intro>Adversarial testing for legged robots</p>
       <h1 class="display" id="h-top">
-        <span class="mask"><span class="line line--dim" data-intro-line>Robots are learning to move.</span></span>
+        <span class="mask"><span class="line line--dim" data-intro-line>Robot dogs are learning to walk.</span></span>
         <span class="mask"><span class="line" data-intro-line>We find the exact condition where they fall.</span></span>
       </h1>
-      <p class="lede" data-intro>Teeter stress-tests trained robot control policies in simulation. It searches
-        the physical conditions you declare (pushes, slopes, sensor lag, weak motors) for the ones that
+      <p class="lede" data-intro>Teeter stress-tests the trained walking policies of robot dogs in simulation. It searches
+        the physical conditions you declare (pushes, slopes, slippery floors, sensor lag, weak motors) for the ones that
         break your rules, reduces the worst to the smallest condition that still causes them, and hands
         back evidence anyone can re-run.</p>
       <div class="acts" data-intro>
@@ -121,7 +121,7 @@ setTimeout(function () { if (!/\bmotion-ok\b/.test(document.documentElement.clas
     <div class="sec__body">
       <h2 class="h2" id="h-gap" data-rise>A policy that passes your test suite has only passed your test suite.</h2>
       <div class="cols cols--2e">
-        <p class="text" data-fade>A modern robot does not run hand-written control code. It runs a neural network
+        <p class="text" data-fade>A robot dog that walks on a learned policy does not run a hand-written gait. It runs a neural network
           trained in simulation that maps what it senses to what its motors do. It holds under the
           conditions it was trained on, offers no guarantee anywhere else, and nothing inside it
           signals when a situation is unfamiliar.</p>
@@ -424,14 +424,14 @@ setTimeout(function () { if (!/\bmotion-ok\b/.test(document.documentElement.clas
     <div class="sec__body">
       <p class="manifesto manifesto--lg" id="h-next" data-scrub>Every learned machine that ships should arrive with a
         list of the conditions that break it.</p>
-      <p class="text" data-fade>Learned policies are leaving the lab for warehouses, farms, factories and homes. Each will
-        meet floors, loads and shoves nobody trained it on. We want those found in simulation, by someone
+      <p class="text" data-fade>Robot dogs are leaving the lab for inspection rounds in plants, tunnels and building sites. Each will
+        meet wet floors, slopes, loads and shoves nobody trained it on. We want those found in simulation, by someone
         looking on purpose, before they are found in the world.</p>
       <ol class="plan" data-plan>
         <li class="plan__now"><span class="plan__tag">Now</span><h3 class="h3">One robot, one campaign</h3>
           <p>The harness runs end to end on our own stand-in quadruped. Everything on this page comes from it.</p></li>
         <li><span class="plan__tag">A · ~90 days</span><h3 class="h3">Someone else's robot</h3>
-          <p>Done when someone who is not us can point it at their own robot and policy, run a campaign, and
+          <p>Done when someone who is not us can point it at their own robot dog and policy, run a campaign, and
             compare two checkpoints.</p></li>
         <li><span class="plan__tag">B · ~90 days after A</span><h3 class="h3">Calibration</h3>
           <p>Done when a campaign emits a calibrated interval, shown correct on synthetic ground truth, with the
@@ -448,7 +448,7 @@ setTimeout(function () { if (!/\bmotion-ok\b/.test(document.documentElement.clas
   <section class="contact" id="contact" aria-labelledby="h-contact">
     <div class="contact__text">
       <p class="label">Talk to us</p>
-      <h2 class="display display--sm" id="h-contact" data-rise>If you ship a learned policy into Europe, we want to hear your plan.</h2>
+      <h2 class="display display--sm" id="h-contact" data-rise>If you ship a robot dog with a learned policy into Europe, we want to hear your plan.</h2>
       <p class="lede">Not a demo request. We are trying to learn what evidence teams actually need before
         January 2027. If you already know, that is worth more to us than a signup.</p>
       <!-- TODO: hello@teeter.dev is invented. Replace before this page is published. -->
@@ -460,7 +460,7 @@ setTimeout(function () { if (!/\bmotion-ok\b/.test(document.documentElement.clas
 
   <div class="colophon">
     <div aria-hidden="true" data-wordmark><!-- gen:wordmark-xl --><svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 82.20 12" aria-hidden="true" focusable="false"><path transform="scale(0.1)" d="M0,0 h124 v16 h-124 ZM53,22 h18 v78 h-18 Z M150,0 h18 v100 h-18 ZM174,0 h80 v16 h-80 ZM174,42 h68 v16 h-68 ZM174,84 h80 v16 h-80 Z M280,0 h18 v100 h-18 ZM304,0 h80 v16 h-80 ZM304,42 h68 v16 h-68 ZM304,84 h80 v16 h-80 Z M410,0 h124 v16 h-124 ZM463,22 h18 v78 h-18 Z M560,0 h18 v100 h-18 ZM584,0 h80 v16 h-80 ZM584,42 h68 v16 h-68 ZM584,84 h80 v16 h-80 Z M690,0 h18 v100 h-18 ZM714,0 H773 A29,29 0 0 1 773,58 H714 Z M714,16 H773 A13,13 0 0 1 773,42 H714 Z M746,64 L768,64 L802,100 L780,100 Z" fill="currentColor" fill-rule="evenodd"/></svg><!-- /gen:wordmark-xl --></div>
-    <div class="colophon__line"><p class="micro">Teeter · adversarial testing for learned robot policies</p>
+    <div class="colophon__line"><p class="micro">Teeter · adversarial testing for legged robots</p>
       <p class="micro">Baku · pre-product · <a href="brand/">identity standard ↗</a></p></div>
   </div>
 

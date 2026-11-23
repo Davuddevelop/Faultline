@@ -141,7 +141,7 @@
   /* sign in */
   S.login = function () {
     return '<div class="gate-page"><aside class="hero-side" aria-hidden="true"><p class="micro">TT-301 · Teeter</p><div class="hero-side__mark">' + A.R.brand.mark2 + '</div>' +
-      '<p class="hero-side__q">Robots are learning to move. We find the exact condition where they fall.</p></aside>' +
+      '<p class="hero-side__q">Robot dogs are learning to walk. We find the exact condition where they fall.</p></aside>' +
       '<div class="gate-form"><span class="gate-form__lock">' + A.R.brand.lockup + '</span>' +
       '<div><p class="micro">TT-301 · Sign in · ' + esc(st.host) + '</p><h1 class="ph__title" style="margin-top:8px">Sign in to your workspace</h1></div>' +
       (st.methods.workos ? '<a class="btn" href="/v1/auth/workos/login">Sign in</a><p class="fine">Through WorkOS, with the address your workspace invited.</p><div class="or">or with a link</div>' : '') +

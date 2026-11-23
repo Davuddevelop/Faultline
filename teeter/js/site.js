@@ -83,9 +83,40 @@
   document.querySelectorAll('[data-rise]').forEach(function (el) {
     if (!motion) return;
     var words = splitWords(el);
-    approach(el, function () { G.set(words, { yPercent: 110 }); },
-      function () { G.to(words, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: .025 }); });
+    approach(el, function () { G.set(words, { yPercent: 110, filter: 'blur(8px)' }); },
+      function () { G.to(words, { yPercent: 0, filter: 'blur(0px)', duration: 1, ease: 'expo.out', stagger: .025, clearProps: 'filter' }); });
   });
+
+  /* ── section labels scramble into place (mono, cockpit-style) ── */
+  if (motion) {
+    var GL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789·/';
+    document.querySelectorAll('.sec__nm').forEach(function (el) {
+      var final = el.textContent, done = false;
+      approach(el, function () {}, function () {
+        if (done) return; done = true;
+        var t0 = performance.now(), dur = 700;
+        (function tick(now) {
+          var k = Math.min(1, (now - t0) / dur), out = '';
+          for (var i = 0; i < final.length; i++) {
+            var c = final[i];
+            out += (c === ' ' || i < k * final.length) ? c : GL[(Math.random() * GL.length) | 0];
+          }
+          el.textContent = out;
+          if (k < 1) requestAnimationFrame(tick); else el.textContent = final;
+        })(t0);
+      });
+    });
+  }
+
+  /* ── a faint spotlight follows the pointer over the hero grid ── */
+  if (motion && window.matchMedia('(hover:hover) and (pointer:fine)').matches) {
+    var hero = document.querySelector('.hero');
+    if (hero) hero.addEventListener('pointermove', function (e) {
+      var r = hero.getBoundingClientRect();
+      hero.style.setProperty('--sx', (e.clientX - r.left) + 'px');
+      hero.style.setProperty('--sy', (e.clientY - r.top) + 'px');
+    });
+  }
   document.querySelectorAll('[data-fade]').forEach(function (el) {
     approach(el, function () { G.set(el, { autoAlpha: 0, y: 22 }); },
       function () { G.to(el, { autoAlpha: 1, y: 0, duration: 1, ease: 'power3.out', clearProps: 'transform' }); });
