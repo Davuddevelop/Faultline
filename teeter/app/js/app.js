@@ -320,7 +320,7 @@
       '<p class="hero-side__q">' + q + '</p></aside>';
   }
   S.login = function () {
-    return '<div class="gate-page">' + heroSide('Robots are learning to move. We find the exact condition where they fall.') +
+    return '<div class="gate-page">' + heroSide('Robot dogs are learning to walk. We find the exact condition where they fall.') +
       '<div class="gate-form"><span class="gate-form__lock">' + R.brand.lockup + '</span>' +
       '<div><p class="micro">TT-301 · Sign in</p><h1 class="ph__title" style="margin-top:8px">Sign in to your workspace</h1></div>' +
       '<p class="fine">Teeter is invite-only while pilots run. Every workspace is set up with us on a call.</p>' +
