@@ -1,7 +1,7 @@
 """A small PPO trainer (CPU, parallel rollouts) that exports an ONNX brain.
 
-    python research/ppo.py --out brainA.onnx --push-max 0   --steps 400000 --seed 0
-    python research/ppo.py --out brainB.onnx --push-max 4.5 --steps 400000 --seed 0 --init brainA.pt
+    python research/ppo.py --out brainA.onnx --mode none --steps 400000 --seed 0
+    python research/ppo.py --out brainB.onnx --mode uniform --steps 200000 --seed 0 --init brainA.pt
 
 Rollouts run in worker processes with a numpy copy of the network; updates run
 in torch. The ONNX graph contains the stance and action scale, so Teeter's
@@ -18,14 +18,15 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from env import ACTION_SCALE, StandEnv  # noqa: E402
+from sampling import make_sampler  # noqa: E402
 
 H = 64
 _env = None
 
 
-def _init(push_max, seed):
+def _init(cfg, seed):
     global _env
-    _env = StandEnv(push_max, seed)
+    _env = StandEnv(make_sampler(**cfg), seed)
 
 
 def _mlp(x, W):  # numpy forward: returns actor mean and value
@@ -96,13 +97,15 @@ def export_onnx(actor, stance, path):
 def main():
     import torch
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", required=True); ap.add_argument("--push-max", type=float, default=0.0)
+    ap.add_argument("--out", required=True); ap.add_argument("--mode", choices=["none", "uniform", "failures"], default="none")
+    ap.add_argument("--box-scale", type=float, default=1.0); ap.add_argument("--failures")
     ap.add_argument("--steps", type=int, default=400_000); ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--init", help="start from a saved .pt (brain A) instead of from scratch")
     ap.add_argument("--workers", type=int, default=4); ap.add_argument("--batch", type=int, default=8192)
     a = ap.parse_args()
     torch.manual_seed(a.seed); torch.set_num_threads(1)
-    probe = StandEnv(0.0, 0)
+    probe = StandEnv(None, 0)
+    cfg = dict(mode=a.mode, box_scale=a.box_scale, failures_path=a.failures)
     actor, critic = build(probe.n_obs, probe.n_act)
     log_std = torch.nn.Parameter(torch.full((probe.n_act,), -1.0))
     if a.init:
@@ -111,7 +114,7 @@ def main():
     opt = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()) + [log_std], lr=3e-4)
     per = a.batch // a.workers
     done_steps = 0; it = 0
-    with ProcessPoolExecutor(a.workers, initializer=_init, initargs=(a.push_max, a.seed * 1000)) as ex:
+    with ProcessPoolExecutor(a.workers, initializer=_init, initargs=(cfg, a.seed * 1000)) as ex:
         while done_steps < a.steps:
             W = weights(actor, critic); ls = log_std.detach().numpy().astype(np.float64)
             futs = [ex.submit(_rollout, W, ls, per, a.seed * 100000 + it * 10 + i) for i in range(a.workers)]

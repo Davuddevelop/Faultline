@@ -17,6 +17,8 @@ import mujoco
 import numpy as np
 
 from faultline.model import load as load_model
+from faultline.runner import _apply_perturbation
+from faultline.spec import Perturbation, RunSpec
 from faultline.observe import ObservationSpec
 
 MODEL = str(Path(__file__).resolve().parents[1] / "models" / "quadruped.xml")
@@ -29,7 +31,9 @@ EPISODE_STEPS = 200         # 4 s
 
 
 class StandEnv:
-    def __init__(self, push_max_ns: float = 0.0, seed: int = 0) -> None:
+    def __init__(self, sampler=None, seed: int = 0) -> None:
+        """sampler: f(rng) -> dict of Perturbation fields, or None for no perturbation."""
+        self.sampler = sampler
         self.robot = load_model(MODEL, base_body=None)
         self.model = self.robot.model
         self.data = mujoco.MjData(self.model)
@@ -39,21 +43,39 @@ class StandEnv:
         self.steps_per_ctrl = max(1, round((1.0 / CONTROL_HZ) / self.model.opt.timestep))
         self.n_obs = self.obs_spec.size(self.robot)
         self.n_act = self.model.nu
-        self.push_max = float(push_max_ns)
         self.rng = np.random.default_rng(seed)
 
     def reset(self) -> np.ndarray:
+        kw = dict(self.sampler(self.rng)) if self.sampler else {}
+        self.push_t = float(self.rng.uniform(0.5, 1.5))
+        self.lag_steps = int(round(kw.get("sensor_lag_ms", 0.0) / 1000.0 * CONTROL_HZ))
+        kw.pop("sensor_lag_ms", None)
+        # conditions that change the model (slope, motors, payload) need a fresh copy
+        # each episode, built by the harness's own function so training and testing agree
+        if any(kw.get(k) for k in ("slope_deg", "torque_loss_pct", "payload_kg", "friction_mu")):
+            self.robot = load_model(MODEL, base_body=None)
+            self.model = self.robot.model
+            spec = RunSpec(MODEL, "train", Perturbation(**{k: v for k, v in kw.items() if k != "push_impulse_ns"}))
+            _apply_perturbation(self.model, spec, self.robot.base_body_id)
+            self.data = mujoco.MjData(self.model)
+        elif self.model.opt.gravity[2] != -9.81 or self.model.actuator_forcerange[0, 1] != 18.0:
+            self.robot = load_model(MODEL, base_body=None)      # last episode was perturbed; start clean
+            self.model = self.robot.model
+            self.data = mujoco.MjData(self.model)
         mujoco.mj_resetDataKeyframe(self.model, self.data, 0)
         self.k = 0
         self.prev_a = np.zeros(self.n_act)
-        # one push per episode, magnitude and direction at random; none for the calm brain
         self.push_force = np.zeros(6)
-        self.push_t = float(self.rng.uniform(0.5, 1.5))
-        if self.push_max > 0:
-            mag = float(self.rng.uniform(0.0, self.push_max)) / PUSH_WINDOW_S
+        mag = kw.get("push_impulse_ns", 0.0) / PUSH_WINDOW_S
+        if mag > 0:
             yaw = float(self.rng.uniform(0.0, 2 * np.pi))
             self.push_force[:3] = [mag * np.cos(yaw), mag * np.sin(yaw), 0.0]
-        return self.obs_spec.build(self.robot, self.data, self.prev_a)
+        self.hist = []
+        return self._obs()
+
+    def _obs(self) -> np.ndarray:
+        self.hist.append(self.obs_spec.build(self.robot, self.data, self.prev_a))
+        return self.hist[max(0, len(self.hist) - 1 - self.lag_steps)]
 
     def step(self, a: np.ndarray):
         a = np.clip(np.asarray(a, dtype=float), -1.0, 1.0)
@@ -75,4 +97,4 @@ class StandEnv:
         self.prev_a = a
         done = fell or bad
         timeout = self.k >= EPISODE_STEPS
-        return self.obs_spec.build(self.robot, self.data, self.prev_a), r, done, timeout
+        return self._obs(), r, done, timeout
