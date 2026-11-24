@@ -12,17 +12,22 @@ to test whether toughness carries over to problems nobody practised.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
 
-TRAIN_BOX = {
-    "push_impulse_ns": (0.0, 9.0),
+_DEFAULT_BOX = {
+    "push_impulse_ns": (0.0, float(os.environ.get("TEETER_PUSH_MAX", "9.0"))),
     "slope_deg": (0.0, 10.0),
     "torque_loss_pct": (0.0, 15.0),
     "payload_kg": (0.0, 2.0),
     "payload_offset_m": (0.0, 0.06),
 }
+
+
+# TEETER_BOX='{"torque_loss_pct": [0, 40]}' overrides single ranges, for choosing the test box.
+TRAIN_BOX = {**_DEFAULT_BOX, **{k: tuple(v) for k, v in json.loads(os.environ.get("TEETER_BOX", "{}")).items()}}
 
 
 def make_sampler(mode: str, box_scale: float = 1.0, failures_path: str | None = None,
