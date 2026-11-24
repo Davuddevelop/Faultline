@@ -30,3 +30,12 @@ Pilot 3 (2026-11-24, software check, not experiment data; five seeds per brain, 
 | C | 10, 13, 22, 15, 14 | 14.8 (about 5%) |
 
 C failed less than B in all five seeds. With sensor lag added as a condition nobody trained on, the same order held (A 62.6, B 40.6, C 7.2). Caveats: C's training starts were found by Teeter's search in the same box it is tested in, so some of C's edge may be familiarity with that box. Friction is not yet tested, the box was chosen after seeing A fail, and one test seed was used. These are pilot numbers for planning, not a result.
+
+Held-out tests on the pilot-3 brains (2026-11-24, same caveats, fresh test seeds, 300 uniform samples per brain per test; mean failures of 300 over five seeds):
+
+| Test | A | B | C |
+| --- | --- | --- | --- |
+| Friction added as a condition, friction_mu 0.3 to 0.9 (a proposed range), trained on none | 61.4 | 44.4 | 17.0 |
+| Every trained range pushed 25% further out (torque loss capped at 95%), a region C's training starts never covered | 101.6 | 79.4 | 50.2 |
+
+C failed less than B in all five seeds in both tests. The edge over B is smaller beyond the trained ranges (about 37% fewer failures) than inside them, which is the expected direction. Still a pilot: one simplified simulated robot, ranges chosen after the fact, one set of test seeds.
